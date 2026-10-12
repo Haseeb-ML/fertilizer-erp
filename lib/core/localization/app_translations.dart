@@ -1,0 +1,419 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'language_provider.dart';
+
+class AppTranslations {
+  static const Map<String, Map<String, String>> _localizedValues = {
+    'en': {
+      // General & Common
+      'app_title': 'Fertilizer Business ERP',
+      'save': 'Save',
+      'cancel': 'Cancel',
+      'delete': 'Delete',
+      'edit': 'Edit',
+      'search': 'Search...',
+      'filter': 'Filter',
+      'refresh': 'Refresh',
+      'confirm': 'Confirm',
+      'actions': 'Actions',
+      'date': 'Date',
+      'status': 'Status',
+      'notes': 'Notes',
+      'loading': 'Loading...',
+      'error': 'Error occurred',
+      'no_data': 'No records found',
+      'yes': 'Yes',
+      'no': 'No',
+      'all': 'All',
+      'today': 'Today',
+      'this_week': 'This Week',
+      'this_month': 'This Month',
+      'details': 'Details',
+
+      // Navigation
+      'nav_dashboard': 'Dashboard',
+      'nav_sales': 'Sales',
+      'nav_inventory': 'Inventory',
+      'nav_more': 'More',
+
+      // Dashboard
+      'dashboard_title': 'Dashboard',
+      'todays_sales': "Today's Sales",
+      'todays_purchases': "Today's Purchases",
+      'expenses': 'Expenses',
+      'cash_in_hand': 'Cash Balance',
+      'customer_receivables': 'Customer Receivables',
+      'supplier_payables': 'Supplier Payables',
+      'net_profit': 'Net Profit',
+      'low_stock_alerts': 'Low Stock Alerts',
+      'quick_actions': 'Quick Actions',
+      'recent_sales': 'Recent Sales',
+      'recent_purchases': 'Recent Purchases',
+      'view_all': 'View All',
+
+      // Quick Actions
+      'action_new_sale': 'New Sale',
+      'action_purchase': 'Stock Purchase',
+      'action_add_item': 'Add Product',
+      'action_new_customer': 'New Customer',
+      'action_receive_cash': 'Receive Dues',
+      'action_pay_supplier': 'Pay Supplier',
+      'action_add_expense': 'Add Expense',
+      'action_adjust_stock': 'Stock Adjust',
+
+      // More Menu Modules
+      'modules_header': 'ERP Business Modules',
+      'mod_purchases': 'Purchase Management',
+      'mod_purchases_sub': 'Record stock purchases, company bills & purchase returns',
+      'mod_customers': 'Customers & Farmers',
+      'mod_customers_sub': 'Customer directory, credit ledgers, and account statements',
+      'mod_suppliers': 'Suppliers & Companies',
+      'mod_suppliers_sub': 'Company directory, payable ledgers, and purchase history',
+      'mod_payments': 'Payments & Ledgers',
+      'mod_payments_sub': 'Receive customer dues, pay suppliers, view cash/bank vouchers',
+      'mod_expenses': 'Daily Business Expenses',
+      'mod_expenses_sub': 'Shop rent, loading/unloading (Hammali), transport, and utilities',
+      'mod_cashbook': 'Daily Cashbook (Rokarr)',
+      'mod_cashbook_sub': 'Daily cash opening, inflows, outflows, and closing balance',
+      'mod_reports': 'Reports & Analytics',
+      'mod_reports_sub': 'Sales, FIFO Profit & Loss, Inventory valuation, and customer dues',
+      'mod_settings': 'Business Settings',
+      'mod_settings_sub': 'Agency name, address, NTN, PIN security, and preferences',
+      'mod_backup': 'Data Backup & Restore',
+      'mod_backup_sub': 'Export and restore complete SQLite database safely offline',
+      'mod_language': 'Language / زبان',
+      'mod_language_sub': 'Switch between English and Urdu (اردو)',
+
+      // Language Switcher
+      'select_language': 'Select Language / زبان کا انتخاب',
+      'english': 'English',
+      'urdu': 'اردو (Urdu)',
+      'language_changed': 'Language changed successfully',
+
+      // Sales & POS
+      'sales_title': 'Sales & Invoices',
+      'new_sale_pos': 'Point of Sale (POS)',
+      'invoice_no': 'Invoice #',
+      'customer': 'Customer / Farmer',
+      'walk_in_customer': 'Walk-in Customer (Cash)',
+      'search_customer': 'Select or search customer...',
+      'search_product': 'Search fertilizer or pesticide...',
+      'cart': 'Cart Items',
+      'cart_empty': 'Cart is empty. Add products below.',
+      'unit_rate': 'Rate',
+      'qty': 'Qty',
+      'total': 'Total',
+      'subtotal': 'Subtotal',
+      'discount': 'Discount',
+      'grand_total': 'Grand Total',
+      'amount_paid': 'Amount Received',
+      'balance_due': 'Balance Due (Credit)',
+      'payment_mode': 'Payment Mode',
+      'cash': 'Cash',
+      'credit': 'Credit (Udhaar)',
+      'bank': 'Bank Transfer',
+      'complete_sale': 'Complete Sale & Save',
+      'print_invoice': 'Print Invoice',
+      'share_invoice': 'Share Invoice',
+
+      // Inventory & Products
+      'inventory_title': 'Inventory & Products',
+      'add_product': 'Add New Product',
+      'edit_product': 'Edit Product',
+      'product_name': 'Product Name',
+      'category': 'Category',
+      'brand': 'Company / Brand',
+      'bag_size': 'Bag Size / Weight',
+      'unit': 'Unit',
+      'purchase_price': 'Purchase Price',
+      'selling_price': 'Selling Price',
+      'opening_stock': 'Opening Stock',
+      'current_stock': 'Current Stock',
+      'min_alert_level': 'Min Alert Level',
+      'in_stock': 'In Stock',
+      'low_stock': 'Low Stock',
+      'out_of_stock': 'Out of Stock',
+      'stock_value': 'Stock Value',
+      'bags': 'Bags',
+
+      // Purchases
+      'purchases_title': 'Purchases & Bills',
+      'new_purchase': 'New Stock Purchase',
+      'purchase_no': 'Bill #',
+      'supplier': 'Fertilizer Company / Supplier',
+      'freight': 'Freight / Transport',
+      'unloading_hammali': 'Loading / Unloading (Hammali)',
+
+      // Customers & Farmers
+      'customers_title': 'Customers & Farmers',
+      'add_customer': 'Add New Customer',
+      'customer_name': 'Farmer / Customer Name',
+      'mobile_no': 'Mobile Number',
+      'village_address': 'Village / Address',
+      'credit_limit': 'Credit Limit',
+      'current_balance': 'Current Balance',
+      'ledger': 'Account Ledger',
+      'receive_payment': 'Receive Payment',
+
+      // Suppliers & Companies
+      'suppliers_title': 'Companies & Suppliers',
+      'add_supplier': 'Add Fertilizer Company',
+      'company_name': 'Company / Supplier Name',
+      'company_phone': 'Contact Phone',
+      'total_payable': 'Total Payable',
+      'pay_supplier': 'Pay Supplier',
+
+      // Payments & Ledgers
+      'payments_title': 'Payments & Vouchers',
+      'receipt_voucher': 'Receipt Voucher (Customer)',
+      'payment_voucher': 'Payment Voucher (Supplier)',
+      'debit': 'Debit (بنام)',
+      'credit_term': 'Credit (جمع)',
+      'running_balance': 'Balance (میزان)',
+
+      // Expenses & Cashbook
+      'expenses_title': 'Business Expenses',
+      'add_expense': 'Record New Expense',
+      'expense_category': 'Expense Category',
+      'cashbook_title': 'Daily Cashbook (Rokarr)',
+      'opening_cash': 'Opening Cash',
+      'cash_in': 'Total Cash In',
+      'cash_out': 'Total Cash Out',
+      'closing_cash': 'Closing Cash Balance',
+
+      // Settings
+      'settings_title': 'Business Settings',
+      'business_name': 'Agency / Shop Name',
+      'owner_name': 'Proprietor Name',
+      'contact_phone': 'Contact Phone',
+      'shop_address': 'Shop Address / Market',
+      'ntn_strn': 'NTN / STRN #',
+      'pin_security': 'App Security PIN',
+      'enable_pin': 'Enable PIN Protection',
+      'enter_pin': 'Enter 4-digit PIN',
+      'backup_restore': 'Database Backup & Restore',
+      'app_language': 'App Language',
+      'clear_database': 'Delete All Database Data',
+      'clear_database_sub': 'Permanently delete all sales, inventory, ledgers, and transactions',
+      'wipe_database_warning': 'WARNING: This will permanently delete all records from the database. This action CANNOT be undone!',
+      'wipe_database_confirm': 'Are you sure you want to delete all database records?',
+    },
+    'ur': {
+      // General & Common
+      'app_title': 'کھاد بزنس ای آر پی',
+      'save': 'محفوظ کریں',
+      'cancel': 'منسوخ کریں',
+      'delete': 'حذف کریں',
+      'edit': 'ترمیم کریں',
+      'search': 'تلاش کریں...',
+      'filter': 'فلٹر',
+      'refresh': 'تازہ کریں',
+      'confirm': 'تصدیق کریں',
+      'actions': 'اقدامات',
+      'date': 'تاریخ',
+      'status': 'حیثیت',
+      'notes': 'تفصیل / نوٹ',
+      'loading': 'براہ کرم انتظار کریں...',
+      'error': 'خرابی پیش آگئی',
+      'no_data': 'کوئی ریکارڈ نہیں ملا',
+      'yes': 'جی ہاں',
+      'no': 'نہیں',
+      'all': 'سب',
+      'today': 'آج',
+      'this_week': 'اس ہفتے',
+      'this_month': 'اس مہینے',
+      'details': 'تفصیلات',
+
+      // Navigation
+      'nav_dashboard': 'ڈیش بورڈ',
+      'nav_sales': 'فروخت',
+      'nav_inventory': 'اسٹاک و کھاد',
+      'nav_more': 'مزید مینیو',
+
+      // Dashboard
+      'dashboard_title': 'ڈیش بورڈ',
+      'todays_sales': 'آج کی کل فروخت',
+      'todays_purchases': 'آج کی خریداری',
+      'expenses': 'کل اخراجات',
+      'cash_in_hand': 'کیش بیلنس (نقد رقم)',
+      'customer_receivables': 'گاہکوں سے واجب الوصول',
+      'supplier_payables': 'کمپنیوں کو واجب الادا',
+      'net_profit': 'خالص منافع',
+      'low_stock_alerts': 'کم اسٹاک الرٹس',
+      'quick_actions': 'فوری اختیارات',
+      'recent_sales': 'حالیہ فروخت بل',
+      'recent_purchases': 'حالیہ خریداری بل',
+      'view_all': 'سب دیکھیں',
+
+      // Quick Actions
+      'action_new_sale': 'نئی فروخت',
+      'action_purchase': 'کھاد خریداری',
+      'action_add_item': 'پراڈکٹ شامل کریں',
+      'action_new_customer': 'نیا گاہک',
+      'action_receive_cash': 'وصولی کھاتہ',
+      'action_pay_supplier': 'کمپنی کو ادائیگی',
+      'action_add_expense': 'خرچہ درج کریں',
+      'action_adjust_stock': 'اسٹاک درستگی',
+
+      // More Menu Modules
+      'modules_header': 'کاروباری ماڈیولز (ای آر پی)',
+      'mod_purchases': 'کھاد خریداری اور بلز',
+      'mod_purchases_sub': 'نئی خریداری، کمپنی بلز اور واپسی کا مکمل ریکارڈ',
+      'mod_customers': 'گاہک اور زمیندار',
+      'mod_customers_sub': 'زمینداروں کی فہرست، ادھار کھاتہ اور لیجر اسٹیٹمنٹ',
+      'mod_suppliers': 'سپلائرز اور کھاد کمپنیاں',
+      'mod_suppliers_sub': 'کھاد کمپنیاں، واجب الادا رقم اور خریداری تاریخ',
+      'mod_payments': 'ادائیگیاں اور کھاتہ جات',
+      'mod_payments_sub': 'گاہکوں سے وصولیاں، کمپنیوں کو ادائیگیاں، کیش واؤچر',
+      'mod_expenses': 'روزانہ کے کاروباری اخراجات',
+      'mod_expenses_sub': 'دکان کرایہ، پلے داری (حمّالی)، ٹرانسپورٹ اور بلز',
+      'mod_cashbook': 'روزنامچہ کیش بک (روکڑ)',
+      'mod_cashbook_sub': 'ابتدائی نقد، کل آمدن، کل اخراجات اور اختتامی کیش',
+      'mod_reports': 'رپورٹس اور کھاتہ جات',
+      'mod_reports_sub': 'سیلز، منافع و نقصان (FIFO)، اسٹاک مالیت اور بقایا جات',
+      'mod_settings': 'کاروباری ترتیبات (سیٹنگز)',
+      'mod_settings_sub': 'دکان کا نام، پتہ، این ٹی این، سیکیورٹی پن کوڈ',
+      'mod_backup': 'ڈیٹا بیک اپ اور بحالی',
+      'mod_backup_sub': 'ڈیٹا بیس کو محفوظ کریں اور باآسانی بحال کریں',
+      'mod_language': 'زبان تبدیل کریں (Language)',
+      'mod_language_sub': 'اردو اور انگلش میں سے منتخب کریں',
+
+      // Language Switcher
+      'select_language': 'زبان کا انتخاب کریں / Select Language',
+      'english': 'English (انگریزی)',
+      'urdu': 'اردو (Urdu)',
+      'language_changed': 'زبان کامیابی سے تبدیل ہو گئی',
+
+      // Sales & POS
+      'sales_title': 'سیلز اور انوائسز',
+      'new_sale_pos': 'نئی فروخت (کاؤنٹر سیل)',
+      'invoice_no': 'انوائس نمبر #',
+      'customer': 'گاہک / زمیندار',
+      'walk_in_customer': 'عام خریدار (نقد)',
+      'search_customer': 'گاہک یا زمیندار منتخب کریں...',
+      'search_product': 'کھاد یا دوائی تلاش کریں...',
+      'cart': 'منتخب اشیاء (کارٹ)',
+      'cart_empty': 'کارٹ خالی ہے۔ نیچے سے کھاد شامل کریں۔',
+      'unit_rate': 'ریٹ فی بوری',
+      'qty': 'تعداد',
+      'total': 'کل رقم',
+      'subtotal': 'ذیلی میزان',
+      'discount': 'رعایت / ڈسکاؤنٹ',
+      'grand_total': 'کل قابل ادائیگی رقم',
+      'amount_paid': 'وصول شدہ رقم',
+      'balance_due': 'بقایا ادھار',
+      'payment_mode': 'ادائیگی کا ذریعہ',
+      'cash': 'نقد (کیش)',
+      'credit': 'ادھار (کھاتہ)',
+      'bank': 'بینک ٹرانسفر',
+      'complete_sale': 'فروخت محفوظ کریں',
+      'print_invoice': 'بل پرنٹ کریں',
+      'share_invoice': 'بل شیئر کریں',
+
+      // Inventory & Products
+      'inventory_title': 'اسٹاک و کھاد فہرست',
+      'add_product': 'نئی پراڈکٹ شامل کریں',
+      'edit_product': 'پراڈکٹ تبدیل کریں',
+      'product_name': 'کھاد / پراڈکٹ کا نام',
+      'category': 'کیٹیگری',
+      'brand': 'کمپنی / برانڈ',
+      'bag_size': 'بوری وزن / سائز',
+      'unit': 'یونٹ',
+      'purchase_price': 'قیمتِ خرید',
+      'selling_price': 'قیمتِ فروخت',
+      'opening_stock': 'ابتدائی اسٹاک',
+      'current_stock': 'موجودہ اسٹاک',
+      'min_alert_level': 'کم از کم الرٹ',
+      'in_stock': 'دستیاب اسٹاک',
+      'low_stock': 'کم اسٹاک',
+      'out_of_stock': 'ختم شدہ',
+      'stock_value': 'کل اسٹاک مالیت',
+      'bags': 'بوریاں',
+
+      // Purchases
+      'purchases_title': 'خریداری و کمپنی بلز',
+      'new_purchase': 'نئی کھاد خریداری',
+      'purchase_no': 'کمپنی بل نمبر #',
+      'supplier': 'کھاد کمپنی / ڈسٹری بیوٹر',
+      'freight': 'کرایہ / ٹرانسپورٹ',
+      'unloading_hammali': 'پلے داری / حمّالی',
+
+      // Customers & Farmers
+      'customers_title': 'گاہک اور زمیندار',
+      'add_customer': 'نیا گاہک درج کریں',
+      'customer_name': 'زمیندار کا نام',
+      'mobile_no': 'موبائل نمبر',
+      'village_address': 'گاؤں / چک کا پتہ',
+      'credit_limit': 'ادھار کی حد',
+      'current_balance': 'موجودہ بقایا واجبات',
+      'ledger': 'کھاتہ لیجر',
+      'receive_payment': 'ادائیگی وصول کریں',
+
+      // Suppliers & Companies
+      'suppliers_title': 'کمپنیاں اور سپلائرز',
+      'add_supplier': 'نئی کھاد کمپنی درج کریں',
+      'company_name': 'کمپنی کا نام',
+      'company_phone': 'رابطہ نمبر',
+      'total_payable': 'کل واجب الادا رقم',
+      'pay_supplier': 'کمپنی کو ادائیگی کریں',
+
+      // Payments & Ledgers
+      'payments_title': 'ادائیگیاں اور واؤچرز',
+      'receipt_voucher': 'وصولی واؤچر (گاہک)',
+      'payment_voucher': 'ادائیگی واؤچر (کمپنی)',
+      'debit': 'بنام (ڈیبٹ)',
+      'credit_term': 'جمع (کریڈٹ)',
+      'running_balance': 'بقایا میزان',
+
+      // Expenses & Cashbook
+      'expenses_title': 'روزانہ کے اخراجات',
+      'add_expense': 'نیا خرچہ درج کریں',
+      'expense_category': 'خرچے کی مد',
+      'cashbook_title': 'روزنامچہ روکڑ (کیش بک)',
+      'opening_cash': 'ابتدائی نقد رقم',
+      'cash_in': 'کل وصولی / آمدن',
+      'cash_out': 'کل اخراجات و ادائیگیاں',
+      'closing_cash': 'اختتامی نقد بیلنس',
+
+      // Settings
+      'settings_title': 'کاروباری سیٹنگز',
+      'business_name': 'دکان / ایجنسی کا نام',
+      'owner_name': 'مالک کا نام',
+      'contact_phone': 'رابطہ فون نمبر',
+      'shop_address': 'دکان کا پتہ / گلہ منڈی',
+      'ntn_strn': 'این ٹی این / سیلز ٹیکس #',
+      'pin_security': 'سیکیورٹی پن کوڈ',
+      'enable_pin': 'پن کوڈ سیکیورٹی فعال کریں',
+      'enter_pin': '4 ہندسوں کا پن درج کریں',
+      'backup_restore': 'ڈیٹا بیک اپ اور بحالی',
+      'app_language': 'ایپ کی زبان',
+      'clear_database': 'پورا ڈیٹا بیس ڈیلیٹ کریں',
+      'clear_database_sub': 'تمام سیلز، اسٹاک، کھاتے اور اخراجات مکمل حذف کریں',
+      'wipe_database_warning': 'انتباہ: یہ عمل تمام ریکارڈز کو مستقل طور پر ڈیلیٹ کر دے گا۔ یہ واپس نہیں لایا جا سکتا!',
+      'wipe_database_confirm': 'کیا آپ واقعی تمام ڈیٹا بیس ریکارڈز ڈیلیٹ کرنا چاہتے ہیں؟',
+    },
+  };
+
+  /// Translate a key using current language code
+  static String tr(WidgetRef ref, String key) {
+    final lang = ref.watch(languageProvider);
+    return translate(key, lang);
+  }
+
+  /// Translate using a specific language code ('en' or 'ur')
+  static String translate(String key, String langCode) {
+    final map = _localizedValues[langCode] ?? _localizedValues['en']!;
+    return map[key] ?? _localizedValues['en']?[key] ?? key;
+  }
+
+  /// Check if active language is Urdu
+  static bool isUrdu(WidgetRef ref) {
+    return ref.watch(languageProvider) == 'ur';
+  }
+}
+
+/// Extension on WidgetRef for fast and clean inline translation: `ref.tr('key')`
+extension WidgetRefTranslation on WidgetRef {
+  String tr(String key) => AppTranslations.tr(this, key);
+  bool get isUrdu => AppTranslations.isUrdu(this);
+}
