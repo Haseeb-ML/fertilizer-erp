@@ -80,55 +80,63 @@ class DatabaseHelper {
   }
 
   static Future<void> seedDefaultProducts(DatabaseExecutor db) async {
-    final count = Sqflite.firstIntValue(
-      await db.rawQuery(
-        'SELECT COUNT(*) FROM ${DatabaseTables.products}',
-      ),
-    );
-    if (count == 0) {
+    try {
       final now = DateTime.now().toIso8601String();
       final products = KissanFeedsData.getProducts();
       for (final p in products) {
-        final id = await db.insert(DatabaseTables.products, p.toMap());
-        if (p.openingStock > 0) {
-          await db.insert(DatabaseTables.stockCostLayers, {
-            'product_id': id,
-            'purchase_id': null,
-            'purchase_date': now.substring(0, 10),
-            'unit_cost': p.purchasePrice,
-            'initial_quantity': p.openingStock,
-            'remaining_quantity': p.openingStock,
-            'created_at': now,
-          });
+        final existing = await db.query(
+          DatabaseTables.products,
+          where: 'sku = ?',
+          whereArgs: [p.sku],
+        );
+        if (existing.isEmpty) {
+          final id = await db.insert(DatabaseTables.products, p.toMap());
+          if (p.openingStock > 0) {
+            await db.insert(DatabaseTables.stockCostLayers, {
+              'product_id': id,
+              'purchase_id': null,
+              'purchase_date': now.substring(0, 10),
+              'unit_cost': p.purchasePrice,
+              'original_quantity': p.openingStock,
+              'remaining_quantity': p.openingStock,
+              'created_at': now,
+            });
 
-          await db.insert(DatabaseTables.stockMovements, {
-            'product_id': id,
-            'product_name': p.name,
-            'movement_type': 'OPENING_STOCK',
-            'quantity': p.openingStock,
-            'balance_after': p.openingStock,
-            'reference_id': null,
-            'reference_type': 'OPENING',
-            'notes': 'Initial opening stock',
-            'movement_date': now.substring(0, 10),
-            'created_at': now,
-          });
+            await db.insert(DatabaseTables.stockMovements, {
+              'product_id': id,
+              'product_name': p.name,
+              'movement_type': 'OPENING_STOCK',
+              'quantity': p.openingStock,
+              'balance_after': p.openingStock,
+              'reference_id': null,
+              'reference_type': 'OPENING',
+              'notes': 'Initial opening stock',
+              'movement_date': now.substring(0, 10),
+              'created_at': now,
+            });
+          }
         }
       }
+    } catch (_) {
+      // Graceful fallback
     }
   }
 
   static Future<void> seedDefaultSuppliers(DatabaseExecutor db) async {
-    final count = Sqflite.firstIntValue(
-      await db.rawQuery(
-        'SELECT COUNT(*) FROM ${DatabaseTables.suppliers}',
-      ),
-    );
-    if (count == 0) {
-      await db.insert(
+    try {
+      final existing = await db.query(
         DatabaseTables.suppliers,
-        KissanFeedsData.defaultSupplier.toMap(),
+        where: 'name = ?',
+        whereArgs: [KissanFeedsData.defaultSupplier.name],
       );
+      if (existing.isEmpty) {
+        await db.insert(
+          DatabaseTables.suppliers,
+          KissanFeedsData.defaultSupplier.toMap(),
+        );
+      }
+    } catch (_) {
+      // Graceful fallback
     }
   }
 
