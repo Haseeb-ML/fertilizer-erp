@@ -4,8 +4,9 @@ class AppConstants {
   static const String currencySymbol = '₨';
   static const String currencyCode = 'PKR';
 
-  // Fertilizer Product Categories
+  // Fertilizer & Feed Product Categories
   static const List<String> fertilizerCategories = [
+    'Cattle Feed / Vanda (وانڈا)',
     'Urea',
     'DAP (Di-Ammonium Phosphate)',
     'NP (NitroPhos)',
@@ -21,6 +22,7 @@ class AppConstants {
 
   // Common Brands in Pakistan
   static const List<String> popularBrands = [
+    'Kissan Feeds',
     'Engro Fertilizers',
     'FFC (Fauji Fertilizer Company)',
     'Fatima Fertilizer',
@@ -35,6 +37,7 @@ class AppConstants {
 
   // Common Units of Measurement
   static const List<String> unitsOfMeasurement = [
+    'Bag (40 Kg)',
     'Bag (50 Kg)',
     'Bag (25 Kg)',
     'Bag (10 Kg)',

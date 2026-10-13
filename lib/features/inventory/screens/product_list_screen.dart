@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/data/kissan_feeds_data.dart';
 import '../../../core/localization/app_translations.dart';
 import '../../../core/models/product.dart';
 import '../../../core/providers/app_providers.dart';
@@ -55,6 +56,41 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
     });
   }
 
+  Future<void> _importKissanFeedsProducts() async {
+    final repo = ref.read(productRepoProvider);
+    final kissanProducts = KissanFeedsData.getProducts();
+    int addedCount = 0;
+    for (final p in kissanProducts) {
+      final existing = await repo.getProducts(search: p.sku);
+      if (!existing.any((e) => e.sku == p.sku)) {
+        await repo.insertProduct(p);
+        addedCount++;
+      }
+    }
+
+    final supplierRepo = ref.read(supplierRepoProvider);
+    final existingSuppliers = await supplierRepo.getSuppliers(
+      search: 'Kissan Feeds',
+    );
+    if (existingSuppliers.isEmpty) {
+      await supplierRepo.insertSupplier(KissanFeedsData.defaultSupplier);
+    }
+
+    _refreshProducts();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            addedCount > 0
+                ? '$addedCount Kissan Feeds products added to inventory!'
+                : 'All 17 Kissan Feeds products are already present in inventory.',
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,6 +106,26 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
               );
               if (added == true) _refreshProducts();
             },
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (val) {
+              if (val == 'import_kissan') {
+                _importKissanFeedsProducts();
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'import_kissan',
+                child: Row(
+                  children: [
+                    const Icon(Icons.inventory, color: AppColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Text(ref.tr('load_kissan_feeds')),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -155,20 +211,62 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 }
                 final products = snapshot.data ?? [];
                 if (products.isEmpty) {
-                  return EmptyStateView(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'No Products Found',
-                    description:
-                        'Add your fertilizer inventory or adjust filters to view items.',
-                    buttonLabel: 'Add First Product',
-                    onButtonPressed: () async {
-                      final added = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => const ProductFormScreen(),
-                        ),
-                      );
-                      if (added == true) setState(() {});
-                    },
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: AppColors.textMuted,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No Products Found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Load Kissan Feeds official catalog or add custom fertilizer items.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton.icon(
+                            onPressed: _importKissanFeedsProducts,
+                            icon: const Icon(Icons.download),
+                            label: Text(ref.tr('load_kissan_feeds')),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              final added =
+                                  await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => const ProductFormScreen(),
+                                ),
+                              );
+                              if (added == true) _refreshProducts();
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Custom Product'),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 }
 

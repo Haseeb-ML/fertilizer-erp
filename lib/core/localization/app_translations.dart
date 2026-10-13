@@ -119,6 +119,7 @@ class AppTranslations {
       // Inventory & Products
       'inventory_title': 'Inventory & Products',
       'add_product': 'Add New Product',
+      'load_kissan_feeds': 'Load Kissan Feeds (17 Items)',
       'edit_product': 'Edit Product',
       'product_name': 'Product Name',
       'category': 'Category',
@@ -313,6 +314,7 @@ class AppTranslations {
       // Inventory & Products
       'inventory_title': 'اسٹاک و کھاد فہرست',
       'add_product': 'نئی پراڈکٹ شامل کریں',
+      'load_kissan_feeds': 'کسان فیڈز ونڈا لوڈ کریں (17 آئٹمز)',
       'edit_product': 'پراڈکٹ تبدیل کریں',
       'product_name': 'کھاد / پراڈکٹ کا نام',
       'category': 'کیٹیگری',
