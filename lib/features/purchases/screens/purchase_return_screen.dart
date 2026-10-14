@@ -132,6 +132,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
 
                 DropdownButtonFormField<PurchaseItem>(
                   value: _selectedItem,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Select Product to Return',
                   ),
@@ -141,6 +142,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                           value: item,
                           child: Text(
                             '${item.productName} (${item.quantity.toStringAsFixed(0)} ${item.unit} @ ${CurrencyFormatter.format(item.unitPrice)})',
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       )
@@ -171,17 +173,24 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
 
                 DropdownButtonFormField<String>(
                   value: _refundType,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Adjustment / Refund Treatment',
                   ),
                   items: const [
                     DropdownMenuItem(
                       value: 'LEDGER_ADJUST',
-                      child: Text('Adjust Supplier Ledger (Reduce Payable)'),
+                      child: Text(
+                        'Adjust Supplier Ledger (Reduce Payable)',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     DropdownMenuItem(
                       value: 'CASH_REFUND',
-                      child: Text('Cash Refund Received'),
+                      child: Text(
+                        'Cash Refund Received',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                   onChanged: (val) {

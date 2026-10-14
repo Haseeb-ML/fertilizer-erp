@@ -6,6 +6,7 @@ import '../../../core/models/sale_item.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/validators.dart';
+import '../../dashboard/controllers/dashboard_controller.dart';
 
 class SaleReturnScreen extends ConsumerStatefulWidget {
   final Sale sale;
@@ -72,6 +73,10 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
         reason: _reasonController.text.trim(),
       );
 
+      ref.read(salesUpdateTriggerProvider.notifier).state++;
+      ref.read(productsUpdateTriggerProvider.notifier).state++;
+      ref.invalidate(dashboardDataProvider);
+
       if (mounted) {
         Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -136,6 +141,7 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
 
                 DropdownButtonFormField<SaleItem>(
                   value: _selectedItem,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Select Product to Return',
                   ),
@@ -145,6 +151,7 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
                           value: item,
                           child: Text(
                             '${item.productName} (${item.quantity.toStringAsFixed(0)} ${item.unit} @ ${CurrencyFormatter.format(item.unitPrice)})',
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       )
@@ -175,6 +182,7 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
 
                 DropdownButtonFormField<String>(
                   value: _refundType,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Refund / Adjustment Mode',
                   ),
@@ -185,11 +193,15 @@ class _SaleReturnScreenState extends ConsumerState<SaleReturnScreen> {
                         value: 'LEDGER_ADJUST',
                         child: Text(
                           'Adjust Customer Balance (Reduce Receivable)',
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     const DropdownMenuItem(
                       value: 'CASH_REFUND',
-                      child: Text('Cash Refund Paid to Customer'),
+                      child: Text(
+                        'Cash Refund Paid to Customer',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                   onChanged: (val) {

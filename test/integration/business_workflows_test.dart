@@ -254,7 +254,8 @@ void main() {
         // Verify customer ledger entry
         final ledger = await customerRepo.getCustomerLedger(custId);
         expect(ledger.length, 1);
-        expect(ledger.first.transactionType, 'SALE');
+        expect(ledger.first.transactionType, anyOf('SALE', 'CREDIT_SALE'));
+        expect(ledger.first.isSale, isTrue);
         expect(ledger.first.debit, 47500.0);
         expect(ledger.first.runningBalance, 47500.0);
       },

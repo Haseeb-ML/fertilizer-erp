@@ -6,6 +6,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../dashboard/controllers/dashboard_controller.dart';
 import 'sale_return_screen.dart';
 
 class SaleDetailScreen extends ConsumerStatefulWidget {
@@ -27,28 +28,37 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
     await PdfService.printSaleInvoice(sale: sale, settings: settings);
   }
 
+  Future<void> _shareInvoice(Sale sale) async {
+    final settings = await ref.read(settingsRepoProvider).getSettings();
+    await PdfService.shareSaleInvoice(sale: sale, settings: settings);
+  }
+
   Future<void> _reverseSale(Sale sale) async {
     final reasonController = TextEditingController();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         title: const Text('Reverse Sales Invoice?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Reversing this sale will restore the stock deducted and reverse all customer ledger effects.',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Reason for Reversal *',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Reversing this sale will restore the stock deducted and reverse all customer ledger effects.',
+                style: TextStyle(fontSize: 13),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  labelText: 'Reason for Reversal *',
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -72,6 +82,11 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
         await ref
             .read(saleRepoProvider)
             .reverseSale(sale.id!, reasonController.text.trim());
+
+        ref.read(salesUpdateTriggerProvider.notifier).state++;
+        ref.read(productsUpdateTriggerProvider.notifier).state++;
+        ref.invalidate(dashboardDataProvider);
+
         if (mounted) {
           setState(() {});
           ScaffoldMessenger.of(context).showSnackBar(
@@ -100,6 +115,34 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       appBar: AppBar(
         title: const Text('Sales Invoice Details'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: 'Recalculate Profit',
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              await ref
+                  .read(saleRepoProvider)
+                  .recalculateSaleProfit(widget.saleId);
+              if (!mounted) return;
+              setState(() {});
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Gross profit recalculated using current rates',
+                  ),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Share PDF Invoice',
+            onPressed: () async {
+              final sale = await _fetchSale();
+              if (sale != null) _shareInvoice(sale);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.print),
             tooltip: 'Print Invoice',
@@ -203,20 +246,38 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, idx) {
                       final item = sale.items[idx];
+                      final itemCostTotal = item.quantity * item.unitCost;
+                      final itemProfit = item.totalPrice - itemCostTotal;
                       return ListTile(
                         title: Text(
                           item.productName,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
-                          '${item.quantity.toStringAsFixed(0)} ${item.unit} @ ${CurrencyFormatter.format(item.unitPrice)}',
+                          '${item.quantity.toStringAsFixed(0)} ${item.unit} @ ${CurrencyFormatter.format(item.unitPrice)}'
+                          '${item.unitCost > 0 ? ' • Cost: ${CurrencyFormatter.format(item.unitCost)}' : ''}',
                         ),
-                        trailing: Text(
-                          CurrencyFormatter.format(item.totalPrice),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              CurrencyFormatter.format(item.totalPrice),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            if (item.unitCost > 0)
+                              Text(
+                                'Profit: ${CurrencyFormatter.format(itemProfit)}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
                         ),
                       );
                     },
@@ -261,6 +322,12 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                               : AppColors.success,
                         ),
                         const Divider(height: 20),
+                        if (sale.totalCost > 0)
+                          _row(
+                            'Total Cost (COGS):',
+                            CurrencyFormatter.format(sale.totalCost),
+                            color: AppColors.textSecondary,
+                          ),
                         _row(
                           'Gross Profit (Management View):',
                           CurrencyFormatter.format(sale.grossProfit),
@@ -275,11 +342,22 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
 
                 // Action buttons
                 ElevatedButton.icon(
-                  onPressed: () => _printInvoice(sale),
-                  icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('Print / Share PDF Invoice'),
+                  onPressed: () => _shareInvoice(sale),
+                  icon: const Icon(Icons.share),
+                  label: const Text('Share PDF (واٹس ایپ پر شیئر کریں)'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                OutlinedButton.icon(
+                  onPressed: () => _printInvoice(sale),
+                  icon: const Icon(Icons.print),
+                  label: const Text('Print Invoice'),
+                  style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 13),
                   ),
                 ),

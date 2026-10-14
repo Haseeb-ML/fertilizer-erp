@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' as io;
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import '../database/database_helper.dart';
@@ -67,6 +68,16 @@ class BackupService {
 
       final jsonString = jsonEncode(backupData);
 
+      if (kIsWeb) {
+        return BackupResult(
+          success: true,
+          message:
+              'Backup successfully created (${tableCounts.values.fold(0, (a, b) => a + b)} records)',
+          filePath: null,
+          tableCounts: tableCounts,
+        );
+      }
+
       String targetDirPath;
       if (customDirectory != null) {
         targetDirPath = customDirectory;
@@ -75,7 +86,7 @@ class BackupService {
           final tempDir = await getTemporaryDirectory();
           targetDirPath = tempDir.path;
         } catch (_) {
-          targetDirPath = Directory.systemTemp.path;
+          targetDirPath = io.Directory.systemTemp.path;
         }
       }
 
@@ -84,7 +95,7 @@ class BackupService {
           .replaceAll(':', '-')
           .replaceAll('.', '-');
       final fileName = 'fertilizer_erp_backup_$timestamp.json';
-      final file = File('$targetDirPath/$fileName');
+      final file = io.File('$targetDirPath/$fileName');
       await file.writeAsString(jsonString);
 
       return BackupResult(

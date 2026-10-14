@@ -44,4 +44,16 @@ class PurchaseItem {
       totalPrice: (map['total_price'] as num?)?.toDouble() ?? 0.0,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PurchaseItem &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          productId == other.productId &&
+          productName == other.productName;
+
+  @override
+  int get hashCode => Object.hash(id, productId, productName);
 }

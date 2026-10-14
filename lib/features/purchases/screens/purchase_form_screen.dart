@@ -94,6 +94,8 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
+            scrollable: true,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             title: const Text('Add Purchase Item'),
             content: SingleChildScrollView(
               child: Column(
@@ -101,11 +103,15 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                 children: [
                   DropdownButtonFormField<Product>(
                     value: selectedProduct,
+                    isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Product'),
                     items: products
                         .map(
                           (p) =>
-                              DropdownMenuItem(value: p, child: Text(p.name)),
+                              DropdownMenuItem(
+                                value: p,
+                                child: Text(p.name, overflow: TextOverflow.ellipsis),
+                              ),
                         )
                         .toList(),
                     onChanged: (p) {
@@ -292,12 +298,17 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                   future: ref.read(supplierRepoProvider).getSuppliers(),
                   builder: (context, snapshot) {
                     final suppliers = snapshot.data ?? [];
+                    final Supplier? safeValue = (_selectedSupplier != null &&
+                            suppliers.any((s) => s.id == _selectedSupplier!.id))
+                        ? suppliers.firstWhere((s) => s.id == _selectedSupplier!.id)
+                        : null;
                     return Row(
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<Supplier>(
-                            value: _selectedSupplier,
-                            hint: const Text('Select Supplier / Company *'),
+                            value: safeValue,
+                            isExpanded: true,
+                            hint: const Text('Select Supplier / Company *', overflow: TextOverflow.ellipsis),
                             decoration: const InputDecoration(
                               prefixIcon: Icon(Icons.factory),
                             ),
@@ -487,6 +498,7 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                             Expanded(
                               child: DropdownButtonFormField<String>(
                                 value: _paymentMethod,
+                                isExpanded: true,
                                 decoration: const InputDecoration(
                                   labelText: 'Payment Mode',
                                 ),
@@ -494,7 +506,7 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                                     .map(
                                       (m) => DropdownMenuItem(
                                         value: m,
-                                        child: Text(m),
+                                        child: Text(m, overflow: TextOverflow.ellipsis),
                                       ),
                                     )
                                     .toList(),

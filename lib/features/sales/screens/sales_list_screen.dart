@@ -47,18 +47,28 @@ class _SalesListScreenState extends ConsumerState<SalesListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to reactive update trigger so sales list auto-updates whenever a sale is made anywhere
+    ref.listen<int>(salesUpdateTriggerProvider, (_, __) {
+      _refreshSales();
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: Text(ref.tr('sales_title')),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: ref.tr('refresh'),
+            onPressed: _refreshSales,
+          ),
+          IconButton(
             icon: const Icon(Icons.point_of_sale),
             tooltip: ref.tr('new_sale_pos'),
             onPressed: () async {
-              final done = await Navigator.of(context).push<bool>(
+              await Navigator.of(context).push<bool>(
                 MaterialPageRoute(builder: (_) => const SalesPosScreen()),
               );
-              if (done == true) _refreshSales();
+              _refreshSales();
             },
           ),
         ],
@@ -82,109 +92,156 @@ class _SalesListScreenState extends ConsumerState<SalesListScreen> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                final sales = snapshot.data ?? [];
-                if (sales.isEmpty) {
-                  return EmptyStateView(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'No Sales Invoices Found',
-                    description:
-                        'Start selling fertilizer bags from the Point of Sale.',
-                    buttonLabel: 'Open POS / New Sale',
-                    onButtonPressed: () async {
-                      final done = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => const SalesPosScreen(),
-                        ),
-                      );
-                      if (done == true) setState(() {});
-                    },
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: AppColors.danger,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Error loading sales: ${snapshot.error}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: AppColors.danger),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _refreshSales,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Try Again'),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: sales.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final s = sales[index];
-
-                    return Card(
-                      child: ListTile(
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => SaleDetailScreen(saleId: s.id!),
-                            ),
-                          );
-                          setState(() {});
-                        },
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              s.invoiceNumber,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                            Text(
-                              CurrencyFormatter.format(s.grandTotal),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Text(
-                              'Customer: ${s.customerName} • Date: ${s.saleDate}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                StatusBadge(
-                                  label: s.isReversed
-                                      ? 'REVERSED'
-                                      : s.paymentStatus,
-                                  isDanger:
-                                      s.isReversed ||
-                                      s.paymentStatus == 'UNPAID',
-                                  isWarning: s.paymentStatus == 'PARTIAL',
-                                  isSuccess:
-                                      !s.isReversed &&
-                                      s.paymentStatus == 'PAID',
+                final sales = snapshot.data ?? [];
+                if (sales.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: () async => _refreshSales(),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.65,
+                          child: EmptyStateView(
+                            icon: Icons.receipt_long_outlined,
+                            title: 'No Sales Invoices Found',
+                            description:
+                                'Start selling fertilizer bags from the Point of Sale.',
+                            buttonLabel: 'Open POS / New Sale',
+                            onButtonPressed: () async {
+                              await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => const SalesPosScreen(),
                                 ),
-                                if (s.balanceDue > 0)
-                                  Text(
-                                    'Due: ${CurrencyFormatter.format(s.balanceDue)}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.danger,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ],
+                              );
+                              _refreshSales();
+                            },
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      ],
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async => _refreshSales(),
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(12),
+                    itemCount: sales.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final s = sales[index];
+
+                      return Card(
+                        child: ListTile(
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => SaleDetailScreen(saleId: s.id!),
+                              ),
+                            );
+                            _refreshSales();
+                          },
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                s.invoiceNumber,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                CurrencyFormatter.format(s.grandTotal),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(
+                                'Customer: ${s.customerName} • Date: ${s.saleDate}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  StatusBadge(
+                                    label: s.isReversed
+                                        ? 'REVERSED'
+                                        : s.paymentStatus,
+                                    isDanger:
+                                        s.isReversed ||
+                                        s.paymentStatus == 'UNPAID',
+                                    isWarning: s.paymentStatus == 'PARTIAL',
+                                    isSuccess:
+                                        !s.isReversed &&
+                                        s.paymentStatus == 'PAID',
+                                  ),
+                                  if (s.balanceDue > 0)
+                                    Text(
+                                      'Due: ${CurrencyFormatter.format(s.balanceDue)}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.danger,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 );
               },
             ),
@@ -193,10 +250,10 @@ class _SalesListScreenState extends ConsumerState<SalesListScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          final done = await Navigator.of(context).push<bool>(
+          await Navigator.of(context).push<bool>(
             MaterialPageRoute(builder: (_) => const SalesPosScreen()),
           );
-          if (done == true) setState(() {});
+          _refreshSales();
         },
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.point_of_sale, color: Colors.white),

@@ -177,6 +177,16 @@ class PurchaseRepository {
       }
 
       // Update Supplier Ledger:
+      final itemsSummary = purchase.items.map((i) {
+        final qty = i.quantity == i.quantity.roundToDouble()
+            ? i.quantity.toInt().toString()
+            : i.quantity.toString();
+        return '$qty ${i.unit} ${i.productName}';
+      }).join(', ');
+      final desc = itemsSummary.isNotEmpty
+          ? 'Purchase #${purchase.invoiceNumber} ($itemsSummary)'
+          : 'Purchase Invoice #${purchase.invoiceNumber}';
+
       // 1. Credit the grand total (increases supplier payable)
       await AccountingService.addSupplierLedgerEntry(
         txn,
@@ -185,7 +195,7 @@ class PurchaseRepository {
         transactionType: 'PURCHASE',
         referenceId: purchaseId,
         referenceNumber: purchase.invoiceNumber,
-        description: 'Purchase Invoice #${purchase.invoiceNumber}',
+        description: desc,
         debit: 0.0,
         credit: purchase.grandTotal,
       );

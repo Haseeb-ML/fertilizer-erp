@@ -83,6 +83,18 @@ class SaleRepository {
     return Sale.fromMap(maps.first, items: items);
   }
 
+  Future<Sale?> getSaleByInvoiceNumber(String invoiceNumber) async {
+    final db = await _dbHelper.database;
+    final maps = await db.query(
+      DatabaseTables.sales,
+      where: 'invoice_number = ?',
+      whereArgs: [invoiceNumber],
+    );
+    if (maps.isEmpty) return null;
+    final items = await getSaleItems(maps.first['id'] as int);
+    return Sale.fromMap(maps.first, items: items);
+  }
+
   Future<List<SaleItem>> getSaleItems(int saleId) async {
     final db = await _dbHelper.database;
     final maps = await db.query(
@@ -194,29 +206,68 @@ class SaleRepository {
 
       // If customer is selected, update Customer Ledger
       if (sale.customerId != null && sale.customerId! > 0) {
+        final itemsDetailedSummary = sale.items.map((i) {
+          final qty = i.quantity == i.quantity.roundToDouble()
+              ? i.quantity.toInt().toString()
+              : i.quantity.toString();
+          final rate = i.unitPrice == i.unitPrice.roundToDouble()
+              ? i.unitPrice.toInt().toString()
+              : i.unitPrice.toStringAsFixed(0);
+          return '$qty ${i.unit} ${i.productName} @ ₨$rate';
+        }).join(', ');
+
+        final transactionType = sale.balanceDue <= 0
+            ? 'CASH_SALE'
+            : (sale.paidAmount > 0 ? 'PARTIAL_SALE' : 'CREDIT_SALE');
+
+        final typeLabel = sale.balanceDue <= 0
+            ? 'Cash Sale'
+            : (sale.paidAmount > 0 ? 'Partial Credit Sale' : 'Credit Sale');
+
+        final desc = itemsDetailedSummary.isNotEmpty
+            ? '$typeLabel #${sale.invoiceNumber} ($itemsDetailedSummary)'
+            : 'Sales Invoice #${sale.invoiceNumber}';
+
         // 1. Debit the grand total (increases customer receivable)
         await AccountingService.addCustomerLedgerEntry(
           txn,
           customerId: sale.customerId!,
           transactionDate: today,
-          transactionType: 'SALE',
+          transactionType: transactionType,
           referenceId: saleId,
           referenceNumber: sale.invoiceNumber,
-          description: 'Sales Invoice #${sale.invoiceNumber}',
+          description: desc,
           debit: sale.grandTotal,
           credit: 0.0,
         );
 
-        // 2. If paid amount was received on invoice creation, credit customer ledger
+        // 2. If paid amount was received on invoice creation, credit customer ledger & record payment
         if (sale.paidAmount > 0) {
+          final paymentId = await txn.insert(DatabaseTables.payments, {
+            'payment_type': 'CUSTOMER_PAYMENT',
+            'party_type': 'Customer',
+            'party_id': sale.customerId!,
+            'party_name': sale.customerName,
+            'reference_invoice_id': saleId,
+            'reference_invoice_number': sale.invoiceNumber,
+            'amount': sale.paidAmount,
+            'payment_date': today,
+            'payment_method': sale.paymentMethod,
+            'reference_number': sale.invoiceNumber,
+            'notes':
+                'Payment received on ${sale.paymentMethod} Sale #${sale.invoiceNumber}',
+            'created_at': now,
+          });
+
           await AccountingService.addCustomerLedgerEntry(
             txn,
             customerId: sale.customerId!,
             transactionDate: today,
             transactionType: 'PAYMENT_RECEIVED',
-            referenceId: saleId,
+            referenceId: paymentId,
             referenceNumber: sale.invoiceNumber,
-            description: 'Cash received on Sale #${sale.invoiceNumber}',
+            description:
+                'Payment Received (${sale.paymentMethod}) on Sale #${sale.invoiceNumber}',
             debit: 0.0,
             credit: sale.paidAmount,
           );
@@ -432,5 +483,91 @@ class SaleRepository {
         );
       }
     });
+  }
+
+  /// Recalculates total_cost and gross_profit for a specific sale
+  Future<void> recalculateSaleProfit(int saleId) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      await recalculateSingleSale(txn, saleId);
+    });
+  }
+
+  /// Helper to recalculate a single sale's cost and profit
+  static Future<void> recalculateSingleSale(
+    DatabaseExecutor db,
+    int saleId,
+  ) async {
+    final saleRows = await db.query(
+      DatabaseTables.sales,
+      where: 'id = ?',
+      whereArgs: [saleId],
+    );
+    if (saleRows.isEmpty) return;
+    final saleMap = saleRows.first;
+    final grandTotal = (saleMap['grand_total'] as num?)?.toDouble() ?? 0.0;
+
+    final items = await db.query(
+      DatabaseTables.saleItems,
+      where: 'sale_id = ?',
+      whereArgs: [saleId],
+    );
+
+    double totalCost = 0.0;
+    for (final item in items) {
+      final itemId = item['id'] as int;
+      final productId = item['product_id'] as int;
+      final qty = (item['quantity'] as num?)?.toDouble() ?? 0.0;
+      double unitCost = (item['unit_cost'] as num?)?.toDouble() ?? 0.0;
+
+      final prodRows = await db.query(
+        DatabaseTables.products,
+        columns: ['purchase_price'],
+        where: 'id = ?',
+        whereArgs: [productId],
+      );
+      final productPurchasePrice = prodRows.isNotEmpty
+          ? ((prodRows.first['purchase_price'] as num?)?.toDouble() ?? 0.0)
+          : 0.0;
+
+      final purchaseCount =
+          Sqflite.firstIntValue(
+            await db.rawQuery(
+              'SELECT COUNT(*) FROM ${DatabaseTables.purchaseItems} WHERE product_id = ?',
+              [productId],
+            ),
+          ) ??
+          0;
+
+      // If no purchases exist, all stock was from opening stock -> use current purchase_price
+      if (purchaseCount == 0 && productPurchasePrice > 0) {
+        unitCost = productPurchasePrice;
+        await db.update(
+          DatabaseTables.saleItems,
+          {'unit_cost': unitCost},
+          where: 'id = ?',
+          whereArgs: [itemId],
+        );
+      }
+
+      totalCost += qty * unitCost;
+    }
+
+    final grossProfit = grandTotal - totalCost;
+    await db.update(
+      DatabaseTables.sales,
+      {'total_cost': totalCost, 'gross_profit': grossProfit},
+      where: 'id = ?',
+      whereArgs: [saleId],
+    );
+  }
+
+  /// Helper to recalculate all sales profits across the database
+  static Future<void> recalculateAllSalesProfits(DatabaseExecutor db) async {
+    final sales = await db.query(DatabaseTables.sales, columns: ['id']);
+    for (final s in sales) {
+      final saleId = s['id'] as int;
+      await recalculateSingleSale(db, saleId);
+    }
   }
 }

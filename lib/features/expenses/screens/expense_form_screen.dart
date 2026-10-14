@@ -123,29 +123,45 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                DropdownButtonFormField<String>(
-                  value: _selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Expense Category *',
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                  items: AppConstants.expenseCategories
-                      .map(
-                        (c) => DropdownMenuItem(
-                          value: c,
-                          child: Text(c, style: const TextStyle(fontSize: 13)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => _selectedCategory = val);
-                  },
-                ),
+          child: Builder(
+            builder: (context) {
+              final categories = List<String>.from(AppConstants.expenseCategories);
+              if (!categories.contains(_selectedCategory)) {
+                categories.insert(0, _selectedCategory);
+              }
+              final methods = ['Cash', 'Bank Transfer', 'Other'];
+              if (!methods.contains(_paymentMethod)) {
+                methods.insert(0, _paymentMethod);
+              }
+
+              return Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _selectedCategory,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Expense Category *',
+                        prefixIcon: Icon(Icons.category),
+                      ),
+                      items: categories
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(
+                                c,
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _selectedCategory = val);
+                      },
+                    ),
                 const SizedBox(height: 12),
 
                 TextFormField(
@@ -182,12 +198,16 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _paymentMethod,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Paid Via',
                         ),
                         items: ['Cash', 'Bank Transfer', 'Other']
                             .map(
-                              (m) => DropdownMenuItem(value: m, child: Text(m)),
+                              (m) => DropdownMenuItem(
+                                value: m,
+                                child: Text(m, overflow: TextOverflow.ellipsis),
+                              ),
                             )
                             .toList(),
                         onChanged: (val) {
@@ -248,7 +268,9 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                 ),
               ],
             ),
-          ),
+          );
+        },
+      ),
         ),
       ),
     );

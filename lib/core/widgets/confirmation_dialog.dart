@@ -45,6 +45,8 @@ class ConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
@@ -60,9 +62,11 @@ class ConfirmationDialog extends StatelessWidget {
           ),
         ],
       ),
-      content: Text(
-        message,
-        style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+      content: SingleChildScrollView(
+        child: Text(
+          message,
+          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+        ),
       ),
       actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       actions: [

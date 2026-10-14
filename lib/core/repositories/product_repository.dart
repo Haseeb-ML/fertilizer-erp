@@ -111,12 +111,97 @@ class ProductRepository {
     final db = await _dbHelper.database;
     final now = DateTime.now().toIso8601String();
     final map = product.copyWith(updatedAt: now).toMap();
-    return await db.update(
-      DatabaseTables.products,
-      map,
-      where: 'id = ?',
-      whereArgs: [product.id],
-    );
+    return await db.transaction<int>((txn) async {
+      final rows = await txn.update(
+        DatabaseTables.products,
+        map,
+        where: 'id = ?',
+        whereArgs: [product.id],
+      );
+
+      // Keep opening stock cost layers in sync with the new purchase price
+      await txn.update(
+        DatabaseTables.stockCostLayers,
+        {'unit_cost': product.purchasePrice},
+        where: 'product_id = ? AND purchase_id IS NULL',
+        whereArgs: [product.id],
+      );
+
+      // Recalculate profit for past sales that were fulfilled from opening stock
+      if (product.id != null) {
+        await syncProductSalesCostAndProfit(
+          txn,
+          product.id!,
+          product.purchasePrice,
+        );
+      }
+
+      return rows;
+    });
+  }
+
+  Future<void> syncProductSalesCostAndProfit(
+    DatabaseExecutor db,
+    int productId,
+    double newPurchasePrice,
+  ) async {
+    final purchaseCount =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM ${DatabaseTables.purchaseItems} WHERE product_id = ?',
+            [productId],
+          ),
+        ) ??
+        0;
+
+    // If no purchase bills exist, all sales of this product were sourced from opening stock
+    if (purchaseCount == 0 && newPurchasePrice > 0) {
+      await db.update(
+        DatabaseTables.saleItems,
+        {'unit_cost': newPurchasePrice},
+        where: 'product_id = ?',
+        whereArgs: [productId],
+      );
+
+      final saleItemRows = await db.query(
+        DatabaseTables.saleItems,
+        columns: ['sale_id'],
+        distinct: true,
+        where: 'product_id = ?',
+        whereArgs: [productId],
+      );
+
+      for (final r in saleItemRows) {
+        final sId = r['sale_id'] as int;
+        final saleRows = await db.query(
+          DatabaseTables.sales,
+          where: 'id = ?',
+          whereArgs: [sId],
+        );
+        if (saleRows.isEmpty) continue;
+        final grandTotal =
+            (saleRows.first['grand_total'] as num?)?.toDouble() ?? 0.0;
+
+        final allItems = await db.query(
+          DatabaseTables.saleItems,
+          where: 'sale_id = ?',
+          whereArgs: [sId],
+        );
+        double totalCost = 0.0;
+        for (final it in allItems) {
+          final q = (it['quantity'] as num?)?.toDouble() ?? 0.0;
+          final c = (it['unit_cost'] as num?)?.toDouble() ?? 0.0;
+          totalCost += q * c;
+        }
+        final grossProfit = grandTotal - totalCost;
+        await db.update(
+          DatabaseTables.sales,
+          {'total_cost': totalCost, 'gross_profit': grossProfit},
+          where: 'id = ?',
+          whereArgs: [sId],
+        );
+      }
+    }
   }
 
   Future<void> adjustStock({
@@ -236,4 +321,71 @@ class ProductRepository {
     );
     return (res.first['valuation'] as num?)?.toDouble() ?? 0.0;
   }
+
+  Future<Map<String, int>> getProductUsageStats(int productId) async {
+    final db = await _dbHelper.database;
+    final salesCount = Sqflite.firstIntValue(await db.rawQuery(
+      'SELECT COUNT(*) FROM ${DatabaseTables.saleItems} WHERE product_id = ?',
+      [productId],
+    )) ?? 0;
+    final purchasesCount = Sqflite.firstIntValue(await db.rawQuery(
+      'SELECT COUNT(*) FROM ${DatabaseTables.purchaseItems} WHERE product_id = ?',
+      [productId],
+    )) ?? 0;
+    return {'sales': salesCount, 'purchases': purchasesCount};
+  }
+
+  Future<void> deleteProduct(int productId, {bool force = false}) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final salesCount = Sqflite.firstIntValue(await txn.rawQuery(
+        'SELECT COUNT(*) FROM ${DatabaseTables.saleItems} WHERE product_id = ?',
+        [productId],
+      )) ?? 0;
+      final purchasesCount = Sqflite.firstIntValue(await txn.rawQuery(
+        'SELECT COUNT(*) FROM ${DatabaseTables.purchaseItems} WHERE product_id = ?',
+        [productId],
+      )) ?? 0;
+
+      if ((salesCount > 0 || purchasesCount > 0) && !force) {
+        throw Exception(
+          'Cannot delete product: Linked to $salesCount sale(s) and $purchasesCount purchase(s).',
+        );
+      }
+
+      await txn.delete(
+        DatabaseTables.stockCostLayers,
+        where: 'product_id = ?',
+        whereArgs: [productId],
+      );
+      await txn.delete(
+        DatabaseTables.stockMovements,
+        where: 'product_id = ?',
+        whereArgs: [productId],
+      );
+
+      if (force) {
+        await txn.delete(
+          DatabaseTables.saleItems,
+          where: 'product_id = ?',
+          whereArgs: [productId],
+        );
+        await txn.delete(
+          DatabaseTables.purchaseItems,
+          where: 'product_id = ?',
+          whereArgs: [productId],
+        );
+      }
+
+      final count = await txn.delete(
+        DatabaseTables.products,
+        where: 'id = ?',
+        whereArgs: [productId],
+      );
+      if (count == 0) {
+        throw Exception('Product not found or already deleted');
+      }
+    });
+  }
 }
+

@@ -38,6 +38,11 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
         title: const Text('Purchase Invoices'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => setState(() {}),
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'New Purchase',
             onPressed: () async {
@@ -70,41 +75,56 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                 }
                 final purchases = snapshot.data ?? [];
                 if (purchases.isEmpty) {
-                  return EmptyStateView(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'No Purchase Invoices Found',
-                    description:
-                        'Record stock purchases from companies and distributors.',
-                    buttonLabel: 'Record First Purchase',
-                    onButtonPressed: () async {
-                      final created = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => const PurchaseFormScreen(),
+                  return RefreshIndicator(
+                    onRefresh: () async => setState(() {}),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.65,
+                          child: EmptyStateView(
+                            icon: Icons.receipt_long_outlined,
+                            title: 'No Purchase Invoices Found',
+                            description:
+                                'Record stock purchases from companies and distributors.',
+                            buttonLabel: 'Record First Purchase',
+                            onButtonPressed: () async {
+                              final created =
+                                  await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => const PurchaseFormScreen(),
+                                ),
+                              );
+                              if (created == true) setState(() {});
+                            },
+                          ),
                         ),
-                      );
-                      if (created == true) setState(() {});
-                    },
+                      ],
+                    ),
                   );
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: purchases.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final p = purchases[index];
+                return RefreshIndicator(
+                  onRefresh: () async => setState(() {}),
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(12),
+                    itemCount: purchases.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final p = purchases[index];
 
-                    return Card(
-                      child: ListTile(
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  PurchaseDetailScreen(purchaseId: p.id!),
-                            ),
-                          );
-                          setState(() {});
-                        },
+                      return Card(
+                        child: ListTile(
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    PurchaseDetailScreen(purchaseId: p.id!),
+                              ),
+                            );
+                            setState(() {});
+                          },
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 8,
@@ -172,9 +192,10 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
                       ),
                     );
                   },
-                );
-              },
-            ),
+                ),
+              );
+            },
+          ),
           ),
         ],
       ),

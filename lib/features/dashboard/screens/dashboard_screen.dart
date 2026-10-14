@@ -12,15 +12,22 @@ import '../../../core/widgets/kpi_card.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../inventory/screens/product_detail_screen.dart';
 import '../../inventory/screens/product_form_screen.dart';
+import '../../inventory/screens/product_list_screen.dart';
 import '../../inventory/screens/stock_adjustment_dialog.dart';
 import '../../customers/screens/customer_form_screen.dart';
+import '../../customers/screens/customer_list_screen.dart';
+import '../../suppliers/screens/supplier_list_screen.dart';
 import '../../purchases/screens/purchase_detail_screen.dart';
 import '../../purchases/screens/purchase_form_screen.dart';
+import '../../purchases/screens/purchase_list_screen.dart';
 import '../../sales/screens/sales_pos_screen.dart';
+import '../../sales/screens/sales_list_screen.dart';
 import '../../sales/screens/sale_detail_screen.dart';
 import '../../payments/screens/receive_payment_screen.dart';
 import '../../payments/screens/make_payment_screen.dart';
 import '../../expenses/screens/expense_form_screen.dart';
+import '../../expenses/screens/expense_list_screen.dart';
+import '../../expenses/screens/cashbook_screen.dart';
 import '../controllers/dashboard_controller.dart';
 import '../widgets/quick_action_button.dart';
 
@@ -356,6 +363,14 @@ class DashboardScreen extends ConsumerWidget {
                         subtitle: 'Period Revenue',
                         icon: Icons.trending_up,
                         iconColor: AppColors.primary,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SalesListScreen(),
+                            ),
+                          );
+                          ref.invalidate(dashboardDataProvider);
+                        },
                       ),
                       KpiCard(
                         title: ref.tr('todays_purchases'),
@@ -363,6 +378,14 @@ class DashboardScreen extends ConsumerWidget {
                         subtitle: 'Period Stock In',
                         icon: Icons.shopping_cart,
                         iconColor: AppColors.secondary,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const PurchaseListScreen(),
+                            ),
+                          );
+                          ref.invalidate(dashboardDataProvider);
+                        },
                       ),
                       KpiCard(
                         title: ref.tr('expenses'),
@@ -370,6 +393,14 @@ class DashboardScreen extends ConsumerWidget {
                         subtitle: 'Operational Costs',
                         icon: Icons.receipt_outlined,
                         iconColor: AppColors.danger,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ExpenseListScreen(),
+                            ),
+                          );
+                          ref.invalidate(dashboardDataProvider);
+                        },
                       ),
                       KpiCard(
                         title: ref.tr('cash_in_hand'),
@@ -377,6 +408,14 @@ class DashboardScreen extends ConsumerWidget {
                         subtitle: 'Cash in Hand',
                         icon: Icons.account_balance_wallet,
                         iconColor: AppColors.success,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CashbookScreen(),
+                            ),
+                          );
+                          ref.invalidate(dashboardDataProvider);
+                        },
                       ),
                       KpiCard(
                         title: ref.tr('customer_receivables'),
@@ -386,6 +425,14 @@ class DashboardScreen extends ConsumerWidget {
                         subtitle: 'Market Credit Due',
                         icon: Icons.people_outline,
                         iconColor: AppColors.danger,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CustomerListScreen(),
+                            ),
+                          );
+                          ref.invalidate(dashboardDataProvider);
+                        },
                       ),
                       KpiCard(
                         title: ref.tr('supplier_payables'),
@@ -393,6 +440,14 @@ class DashboardScreen extends ConsumerWidget {
                         subtitle: 'Company Liabilities',
                         icon: Icons.factory_outlined,
                         iconColor: AppColors.warning,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SupplierListScreen(),
+                            ),
+                          );
+                          ref.invalidate(dashboardDataProvider);
+                        },
                       ),
                       KpiCard(
                         title: ref.tr('inventory_title'),
@@ -401,6 +456,14 @@ class DashboardScreen extends ConsumerWidget {
                         subtitle: 'Bags / Liters',
                         icon: Icons.inventory_2_outlined,
                         iconColor: const Color(0xFF0288D1),
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ProductListScreen(),
+                            ),
+                          );
+                          ref.invalidate(dashboardDataProvider);
+                        },
                       ),
                       KpiCard(
                         title: ref.tr('stock_value'),
@@ -410,6 +473,14 @@ class DashboardScreen extends ConsumerWidget {
                         subtitle: 'FIFO Cost Basis',
                         icon: Icons.attach_money,
                         iconColor: AppColors.primaryLight,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ProductListScreen(),
+                            ),
+                          );
+                          ref.invalidate(dashboardDataProvider);
+                        },
                       ),
                     ],
                   ),

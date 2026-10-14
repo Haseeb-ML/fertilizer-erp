@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:io' as io;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -10,9 +11,10 @@ class LanguageNotifier extends StateNotifier<String> {
   static const String _prefFileName = 'app_language_pref.txt';
 
   Future<void> _loadLanguagePreference() async {
+    if (kIsWeb) return;
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/$_prefFileName');
+      final file = io.File('${dir.path}/$_prefFileName');
       if (await file.exists()) {
         final savedLang = (await file.readAsString()).trim();
         if (savedLang == 'ur' || savedLang == 'en') {
@@ -28,9 +30,10 @@ class LanguageNotifier extends StateNotifier<String> {
     if (langCode != 'en' && langCode != 'ur') return;
     if (state == langCode) return;
     state = langCode;
+    if (kIsWeb) return;
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/$_prefFileName');
+      final file = io.File('${dir.path}/$_prefFileName');
       await file.writeAsString(langCode);
     } catch (_) {
       // Ignore disk persistence errors in tests or restricted envs

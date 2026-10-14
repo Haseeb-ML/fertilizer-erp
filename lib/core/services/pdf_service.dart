@@ -2,14 +2,16 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/sale.dart';
 import '../models/business_settings.dart';
 import '../models/ledger_entry.dart';
+import '../models/report_models.dart';
 import '../utils/currency_formatter.dart';
 
 class PdfService {
-  /// Generates and previews/prints or shares a PDF Invoice
-  static Future<void> printSaleInvoice({
+  /// Builds the pw.Document for a PDF Invoice
+  static Future<pw.Document> buildSaleInvoiceDocument({
     required Sale sale,
     required BusinessSettings settings,
   }) async {
@@ -292,14 +294,48 @@ class PdfService {
       ),
     );
 
+    return pdf;
+  }
+
+  /// Previews / prints the PDF invoice via system print spooler
+  static Future<void> printSaleInvoice({
+    required Sale sale,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildSaleInvoiceDocument(sale: sale, settings: settings);
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
       name: 'Invoice_${sale.invoiceNumber}.pdf',
     );
   }
 
-  /// Generates and previews Customer or Supplier Statement PDF
-  static Future<void> printLedgerStatement({
+  /// Directly opens native share sheet (WhatsApp, Email, Drive, etc.) with the PDF invoice
+  static Future<void> shareSaleInvoice({
+    required Sale sale,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildSaleInvoiceDocument(sale: sale, settings: settings);
+    final bytes = await pdf.save();
+    try {
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: 'Invoice_${sale.invoiceNumber}.pdf',
+      );
+    } catch (_) {
+      final xFile = XFile.fromData(
+        bytes,
+        name: 'Invoice_${sale.invoiceNumber}.pdf',
+        mimeType: 'application/pdf',
+      );
+      await Share.shareXFiles(
+        [xFile],
+        text: 'Sales Invoice ${sale.invoiceNumber} - ${sale.customerName}',
+      );
+    }
+  }
+
+  /// Builds the pw.Document for Customer or Supplier Statement PDF
+  static Future<pw.Document> buildLedgerStatementDocument({
     required String partyName,
     required String partyType,
     required List<LedgerEntry> entries,
@@ -391,7 +427,11 @@ class PdfService {
                     (e) => pw.TableRow(
                       children: [
                         _td(e.transactionDate),
-                        _td(e.description),
+                        _td(
+                          e.itemsDetails.isNotEmpty
+                              ? '${e.description}\n${e.itemsDetails.map((d) => "• $d").join("\n")}'
+                              : e.description,
+                        ),
                         _td(
                           e.debit > 0
                               ? CurrencyFormatter.format(
@@ -428,9 +468,487 @@ class PdfService {
       ),
     );
 
+    return pdf;
+  }
+
+  /// Previews / prints Customer or Supplier Statement PDF
+  static Future<void> printLedgerStatement({
+    required String partyName,
+    required String partyType,
+    required List<LedgerEntry> entries,
+    required double currentBalance,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildLedgerStatementDocument(
+      partyName: partyName,
+      partyType: partyType,
+      entries: entries,
+      currentBalance: currentBalance,
+      settings: settings,
+    );
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
       name: '${partyName}_Statement.pdf',
+    );
+  }
+
+  /// Directly opens native share sheet (WhatsApp, Email, Drive, etc.) with the PDF statement
+  static Future<void> shareLedgerStatement({
+    required String partyName,
+    required String partyType,
+    required List<LedgerEntry> entries,
+    required double currentBalance,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildLedgerStatementDocument(
+      partyName: partyName,
+      partyType: partyType,
+      entries: entries,
+      currentBalance: currentBalance,
+      settings: settings,
+    );
+    final bytes = await pdf.save();
+    try {
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: '${partyName}_Statement.pdf',
+      );
+    } catch (_) {
+      final xFile = XFile.fromData(
+        bytes,
+        name: '${partyName}_Statement.pdf',
+        mimeType: 'application/pdf',
+      );
+      await Share.shareXFiles(
+        [xFile],
+        text: '$partyType Statement - $partyName',
+      );
+    }
+  }
+
+  /// Builds the pw.Document for Profit & Loss Statement PDF
+  static Future<pw.Document> buildProfitLossDocument({
+    required ProfitLossReport report,
+    required BusinessSettings settings,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final pdf = pw.Document();
+
+    pw.MemoryImage? logoImage;
+    try {
+      final imageBytes = await rootBundle.load('assets/images/app_logo.png');
+      logoImage = pw.MemoryImage(imageBytes.buffer.asUint8List());
+    } catch (_) {
+      // Graceful fallback
+    }
+
+    final isProfit = report.netProfit >= 0;
+    final periodText = (fromDate != null &&
+            fromDate.isNotEmpty &&
+            toDate != null &&
+            toDate.isNotEmpty)
+        ? '$fromDate to $toDate'
+        : (fromDate != null && fromDate.isNotEmpty
+            ? 'From $fromDate'
+            : 'All Time');
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        header: (context) {
+          return pw.Column(
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    children: [
+                      if (logoImage != null)
+                        pw.Container(
+                          width: 44,
+                          height: 44,
+                          margin: const pw.EdgeInsets.only(right: 12),
+                          child: pw.ClipRRect(
+                            horizontalRadius: 6,
+                            verticalRadius: 6,
+                            child: pw.Image(logoImage),
+                          ),
+                        ),
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            settings.businessName,
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.green900,
+                            ),
+                          ),
+                          if (settings.phone.isNotEmpty)
+                            pw.Text(
+                              'Phone: ${settings.phone}',
+                              style: const pw.TextStyle(fontSize: 10),
+                            ),
+                          if (settings.address.isNotEmpty)
+                            pw.Text(
+                              settings.address,
+                              style: const pw.TextStyle(fontSize: 10),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(
+                        'PROFIT & LOSS STATEMENT',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.green900,
+                        ),
+                      ),
+                      pw.SizedBox(height: 2),
+                      pw.Text(
+                        'Period: $periodText',
+                        style: const pw.TextStyle(fontSize: 9),
+                      ),
+                      pw.Text(
+                        'Generated: ${DateTime.now().toLocal().toString().substring(0, 16)}',
+                        style: const pw.TextStyle(
+                          fontSize: 8,
+                          color: PdfColors.grey700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 8),
+              pw.Divider(thickness: 1.5, color: PdfColors.green900),
+              pw.SizedBox(height: 12),
+            ],
+          );
+        },
+        build: (context) => [
+          // KPI Metric Summary Row
+          pw.Row(
+            children: [
+              _metricBox(
+                'Net Revenue',
+                CurrencyFormatter.formatPdf(report.netRevenue),
+                PdfColors.blue800,
+              ),
+              pw.SizedBox(width: 8),
+              _metricBox(
+                'COGS (Cost)',
+                CurrencyFormatter.formatPdf(report.costOfGoodsSold),
+                PdfColors.grey800,
+              ),
+              pw.SizedBox(width: 8),
+              _metricBox(
+                'Gross Profit',
+                '${CurrencyFormatter.formatPdf(report.grossProfit)}\n(${report.grossMarginPercent.toStringAsFixed(1)}%)',
+                PdfColors.green800,
+              ),
+              pw.SizedBox(width: 8),
+              _metricBox(
+                isProfit ? 'Net Profit' : 'Net Loss',
+                '${CurrencyFormatter.formatPdf(report.netProfit.abs())}\n(${report.netMarginPercent.toStringAsFixed(1)}%)',
+                isProfit ? PdfColors.green900 : PdfColors.red900,
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 16),
+
+          // Trading & Operating Statement Table
+          pw.Text(
+            '1. Financial Statement Summary',
+            style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Container(
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300),
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            padding: const pw.EdgeInsets.all(12),
+            child: pw.Column(
+              children: [
+                _totalRow(
+                  'Gross Sales Revenue',
+                  CurrencyFormatter.formatPdf(report.totalRevenue),
+                ),
+                if (report.totalReturns > 0)
+                  _totalRow(
+                    'Less: Sales Returns',
+                    '- ${CurrencyFormatter.formatPdf(report.totalReturns)}',
+                    color: PdfColors.red800,
+                  ),
+                _totalRow(
+                  'Net Sales Revenue',
+                  CurrencyFormatter.formatPdf(report.netRevenue),
+                  isBold: true,
+                ),
+                pw.Divider(color: PdfColors.grey300, height: 10),
+                _totalRow(
+                  'Less: Cost of Goods Sold (Dynamic FIFO COGS)',
+                  '- ${CurrencyFormatter.formatPdf(report.costOfGoodsSold)}',
+                ),
+                pw.Divider(color: PdfColors.grey400, height: 12),
+                _totalRow(
+                  'GROSS PROFIT',
+                  '${CurrencyFormatter.formatPdf(report.grossProfit)}  (${report.grossMarginPercent.toStringAsFixed(1)}% Margin)',
+                  isBold: true,
+                  fontSize: 11,
+                  color: PdfColors.green900,
+                ),
+                pw.Divider(color: PdfColors.grey300, height: 10),
+                _totalRow(
+                  'Less: Operating Expenses',
+                  '- ${CurrencyFormatter.formatPdf(report.totalExpenses)}',
+                  color: PdfColors.red800,
+                ),
+                pw.Divider(color: PdfColors.grey900, thickness: 1.5, height: 14),
+                _totalRow(
+                  isProfit ? 'ESTIMATED NET PROFIT' : 'NET LOSS',
+                  '${isProfit ? "" : "-"}${CurrencyFormatter.formatPdf(report.netProfit.abs())}  (${report.netMarginPercent.toStringAsFixed(1)}% Margin)',
+                  isBold: true,
+                  fontSize: 12,
+                  color: isProfit ? PdfColors.green900 : PdfColors.red900,
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 18),
+
+          // Product-wise profitability breakdown (if any)
+          if (report.productBreakdown.isNotEmpty) ...[
+            pw.Text(
+              '2. Product-wise Profit Breakdown',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 6),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  children: [
+                    _th('#'),
+                    _th('Product Name'),
+                    _th('Category'),
+                    _th('Qty Sold'),
+                    _th('Revenue'),
+                    _th('Cost (COGS)'),
+                    _th('Gross Profit'),
+                    _th('Margin %'),
+                  ],
+                ),
+                ...report.productBreakdown.asMap().entries.map((entry) {
+                  final idx = entry.key + 1;
+                  final item = entry.value;
+                  return pw.TableRow(
+                    children: [
+                      _td(idx.toString(), align: pw.TextAlign.center),
+                      _td(item.productName),
+                      _td(item.category),
+                      _td(
+                        item.quantitySold == item.quantitySold.roundToDouble()
+                            ? item.quantitySold.toInt().toString()
+                            : item.quantitySold.toString(),
+                        align: pw.TextAlign.center,
+                      ),
+                      _td(
+                        CurrencyFormatter.formatPdf(item.totalRevenue),
+                        align: pw.TextAlign.right,
+                      ),
+                      _td(
+                        CurrencyFormatter.formatPdf(item.totalCost),
+                        align: pw.TextAlign.right,
+                      ),
+                      _td(
+                        CurrencyFormatter.formatPdf(item.grossProfit),
+                        align: pw.TextAlign.right,
+                      ),
+                      _td(
+                        '${item.marginPercent.toStringAsFixed(1)}%',
+                        align: pw.TextAlign.center,
+                      ),
+                    ],
+                  );
+                }),
+              ],
+            ),
+            pw.SizedBox(height: 18),
+          ],
+
+          // Operating Expenses breakdown (if any)
+          if (report.expenseBreakdown.isNotEmpty) ...[
+            pw.Text(
+              '3. Operating Expenses Breakdown',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 6),
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300),
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  children: [
+                    _th('#'),
+                    _th('Expense Category'),
+                    _th('Amount'),
+                    _th('% of Expenses'),
+                  ],
+                ),
+                ...report.expenseBreakdown.asMap().entries.map((entry) {
+                  final idx = entry.key + 1;
+                  final exp = entry.value;
+                  return pw.TableRow(
+                    children: [
+                      _td(idx.toString(), align: pw.TextAlign.center),
+                      _td(exp.category),
+                      _td(
+                        CurrencyFormatter.formatPdf(exp.amount),
+                        align: pw.TextAlign.right,
+                      ),
+                      _td(
+                        '${exp.percentage.toStringAsFixed(1)}%',
+                        align: pw.TextAlign.center,
+                      ),
+                    ],
+                  );
+                }),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+          ],
+
+          // Signature section
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'Prepared By: __________________',
+                    style: const pw.TextStyle(fontSize: 9),
+                  ),
+                  pw.SizedBox(height: 4),
+                  pw.Text(
+                    'This is a computer-generated statement.',
+                    style: const pw.TextStyle(
+                      fontSize: 8,
+                      color: PdfColors.grey600,
+                    ),
+                  ),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'Authorized Signature: __________________',
+                    style: const pw.TextStyle(fontSize: 9),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return pdf;
+  }
+
+  /// Prints the Profit & Loss Statement via system print spooler
+  static Future<void> printProfitLossStatement({
+    required ProfitLossReport report,
+    required BusinessSettings settings,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final pdf = await buildProfitLossDocument(
+      report: report,
+      settings: settings,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Profit_and_Loss_Statement.pdf',
+    );
+  }
+
+  /// Shares the Profit & Loss Statement via WhatsApp / system share sheet
+  static Future<void> shareProfitLossStatement({
+    required ProfitLossReport report,
+    required BusinessSettings settings,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final pdf = await buildProfitLossDocument(
+      report: report,
+      settings: settings,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
+    final bytes = await pdf.save();
+    try {
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: 'Profit_and_Loss_Statement.pdf',
+      );
+    } catch (_) {
+      final xFile = XFile.fromData(
+        bytes,
+        name: 'Profit_and_Loss_Statement.pdf',
+        mimeType: 'application/pdf',
+      );
+      await Share.shareXFiles(
+        [xFile],
+        text: 'Profit & Loss Statement - ${settings.businessName}',
+      );
+    }
+  }
+
+  static pw.Widget _metricBox(String label, String value, PdfColor color) {
+    return pw.Expanded(
+      child: pw.Container(
+        padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: color, width: 1),
+          borderRadius: pw.BorderRadius.circular(6),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            pw.Text(
+              label,
+              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+              textAlign: pw.TextAlign.center,
+            ),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              value,
+              style: pw.TextStyle(
+                fontSize: 9,
+                fontWeight: pw.FontWeight.bold,
+                color: color,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

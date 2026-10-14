@@ -25,7 +25,7 @@ class KissanFeedsData {
         brand: 'Kissan Feeds',
         bagSize: '40 Kg',
         unit: 'Bag',
-        purchasePrice: 4225.0,
+        purchasePrice: 3000.0,
         sellingPrice: 4325.0,
         openingStock: defaultStock,
         currentStock: defaultStock,

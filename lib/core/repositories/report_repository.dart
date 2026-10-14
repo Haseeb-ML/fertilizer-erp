@@ -13,16 +13,23 @@ class ReportRepository {
     String? toDate,
   }) async {
     final db = await _dbHelper.database;
+    final cleanFrom = (fromDate != null && fromDate.trim().isNotEmpty)
+        ? (fromDate.trim().length > 10 ? fromDate.trim().substring(0, 10) : fromDate.trim())
+        : null;
+    final cleanTo = (toDate != null && toDate.trim().isNotEmpty)
+        ? (toDate.trim().length > 10 ? toDate.trim().substring(0, 10) : toDate.trim())
+        : null;
+
     final whereClauses = <String>['is_reversed = 0'];
     final whereArgs = <dynamic>[];
 
-    if (fromDate != null && fromDate.isNotEmpty) {
-      whereClauses.add('sale_date >= ?');
-      whereArgs.add(fromDate);
+    if (cleanFrom != null) {
+      whereClauses.add('SUBSTR(sale_date, 1, 10) >= ?');
+      whereArgs.add(cleanFrom);
     }
-    if (toDate != null && toDate.isNotEmpty) {
-      whereClauses.add('sale_date <= ?');
-      whereArgs.add(toDate);
+    if (cleanTo != null) {
+      whereClauses.add('SUBSTR(sale_date, 1, 10) <= ?');
+      whereArgs.add(cleanTo);
     }
 
     final query =
@@ -60,16 +67,23 @@ class ReportRepository {
     String? toDate,
   }) async {
     final db = await _dbHelper.database;
+    final cleanFrom = (fromDate != null && fromDate.trim().isNotEmpty)
+        ? (fromDate.trim().length > 10 ? fromDate.trim().substring(0, 10) : fromDate.trim())
+        : null;
+    final cleanTo = (toDate != null && toDate.trim().isNotEmpty)
+        ? (toDate.trim().length > 10 ? toDate.trim().substring(0, 10) : toDate.trim())
+        : null;
+
     final whereClauses = <String>['s.is_reversed = 0'];
     final whereArgs = <dynamic>[];
 
-    if (fromDate != null && fromDate.isNotEmpty) {
-      whereClauses.add('s.sale_date >= ?');
-      whereArgs.add(fromDate);
+    if (cleanFrom != null) {
+      whereClauses.add('SUBSTR(s.sale_date, 1, 10) >= ?');
+      whereArgs.add(cleanFrom);
     }
-    if (toDate != null && toDate.isNotEmpty) {
-      whereClauses.add('s.sale_date <= ?');
-      whereArgs.add(toDate);
+    if (cleanTo != null) {
+      whereClauses.add('SUBSTR(s.sale_date, 1, 10) <= ?');
+      whereArgs.add(cleanTo);
     }
 
     final query =
@@ -80,8 +94,8 @@ class ReportRepository {
         COALESCE(p.category, 'General') as category,
         COALESCE(SUM(si.quantity), 0) as total_qty,
         COALESCE(SUM(si.total_price), 0) as total_revenue,
-        COALESCE(SUM(si.quantity * si.unit_cost), 0) as total_cost,
-        COALESCE(SUM(si.total_price - (si.quantity * si.unit_cost)), 0) as profit
+        COALESCE(SUM(si.quantity * CASE WHEN si.unit_cost > 0 THEN si.unit_cost WHEN p.purchase_price > 0 THEN p.purchase_price ELSE 0 END), 0) as total_cost,
+        COALESCE(SUM(si.total_price - (si.quantity * CASE WHEN si.unit_cost > 0 THEN si.unit_cost WHEN p.purchase_price > 0 THEN p.purchase_price ELSE 0 END)), 0) as profit
       FROM ${DatabaseTables.saleItems} si
       JOIN ${DatabaseTables.sales} s ON si.sale_id = s.id
       LEFT JOIN ${DatabaseTables.products} p ON si.product_id = p.id
@@ -137,56 +151,199 @@ class ReportRepository {
     String? toDate,
   }) async {
     final db = await _dbHelper.database;
-    final salesWhere = <String>['is_reversed = 0'];
-    final expWhere = <String>[];
+    final cleanFrom = (fromDate != null && fromDate.trim().isNotEmpty)
+        ? (fromDate.trim().length > 10 ? fromDate.trim().substring(0, 10) : fromDate.trim())
+        : null;
+    final cleanTo = (toDate != null && toDate.trim().isNotEmpty)
+        ? (toDate.trim().length > 10 ? toDate.trim().substring(0, 10) : toDate.trim())
+        : null;
+
+    final salesWhere = <String>['s.is_reversed = 0'];
     final salesArgs = <dynamic>[];
-    final expArgs = <dynamic>[];
 
-    if (fromDate != null && fromDate.isNotEmpty) {
-      salesWhere.add('sale_date >= ?');
-      salesArgs.add(fromDate);
-      expWhere.add('expense_date >= ?');
-      expArgs.add(fromDate);
+    if (cleanFrom != null) {
+      salesWhere.add('SUBSTR(s.sale_date, 1, 10) >= ?');
+      salesArgs.add(cleanFrom);
     }
-    if (toDate != null && toDate.isNotEmpty) {
-      salesWhere.add('sale_date <= ?');
-      salesArgs.add(toDate);
-      expWhere.add('expense_date <= ?');
-      expArgs.add(toDate);
+    if (cleanTo != null) {
+      salesWhere.add('SUBSTR(s.sale_date, 1, 10) <= ?');
+      salesArgs.add(cleanTo);
     }
 
+    // 1. Total revenue and invoice count
     final salesRes = await db.rawQuery('''
       SELECT 
-        COALESCE(SUM(grand_total), 0) as revenue,
-        COALESCE(SUM(total_cost), 0) as cogs,
-        COALESCE(SUM(gross_profit), 0) as gross_profit
-      FROM ${DatabaseTables.sales}
+        COUNT(s.id) as total_invoices,
+        COALESCE(SUM(s.grand_total), 0) as total_revenue,
+        COALESCE(SUM(s.total_cost), 0) as stored_cogs,
+        COALESCE(SUM(s.gross_profit), 0) as stored_gross_profit
+      FROM ${DatabaseTables.sales} s
       WHERE ${salesWhere.join(' AND ')}
     ''', salesArgs);
 
-    final expQuery = expWhere.isNotEmpty
-        ? 'WHERE ${expWhere.join(' AND ')}'
-        : '';
+    final totalInvoices = (salesRes.first['total_invoices'] as int?) ?? 0;
+    final grossRevenue =
+        (salesRes.first['total_revenue'] as num?)?.toDouble() ?? 0.0;
+    final storedCogs =
+        (salesRes.first['stored_cogs'] as num?)?.toDouble() ?? 0.0;
+
+    // 2. Dynamic COGS from sale items with fallback to product purchase price
+    final cogsRes = await db.rawQuery('''
+      SELECT 
+        COALESCE(SUM(
+          si.quantity * CASE 
+            WHEN si.unit_cost > 0 THEN si.unit_cost 
+            WHEN p.purchase_price > 0 THEN p.purchase_price 
+            ELSE 0 
+          END
+        ), 0) as item_cogs
+      FROM ${DatabaseTables.saleItems} si
+      JOIN ${DatabaseTables.sales} s ON si.sale_id = s.id
+      LEFT JOIN ${DatabaseTables.products} p ON si.product_id = p.id
+      WHERE ${salesWhere.join(' AND ')}
+    ''', salesArgs);
+
+    final itemCogs = (cogsRes.first['item_cogs'] as num?)?.toDouble() ?? 0.0;
+    final calculatedCogs = itemCogs > 0 ? itemCogs : storedCogs;
+
+    // 3. Sales Returns deduction
+    final returnsWhere = <String>["r.return_type = 'SALE_RETURN'"];
+    final returnsArgs = <dynamic>[];
+    if (cleanFrom != null) {
+      returnsWhere.add('SUBSTR(r.return_date, 1, 10) >= ?');
+      returnsArgs.add(cleanFrom);
+    }
+    if (cleanTo != null) {
+      returnsWhere.add('SUBSTR(r.return_date, 1, 10) <= ?');
+      returnsArgs.add(cleanTo);
+    }
+
+    final returnsRes = await db.rawQuery('''
+      SELECT 
+        COALESCE(SUM(r.total_amount), 0) as total_returns,
+        COALESCE(SUM(
+          r.quantity * CASE 
+            WHEN p.purchase_price > 0 THEN p.purchase_price 
+            ELSE 0 
+          END
+        ), 0) as returned_cost
+      FROM ${DatabaseTables.returns} r
+      LEFT JOIN ${DatabaseTables.products} p ON r.product_id = p.id
+      WHERE ${returnsWhere.join(' AND ')}
+    ''', returnsArgs);
+
+    final totalReturns =
+        (returnsRes.first['total_returns'] as num?)?.toDouble() ?? 0.0;
+    final returnedCost =
+        (returnsRes.first['returned_cost'] as num?)?.toDouble() ?? 0.0;
+
+    final netRevenue = grossRevenue - totalReturns;
+    final effectiveCogs =
+        (calculatedCogs - returnedCost).clamp(0.0, double.infinity);
+    final grossProfit = netRevenue - effectiveCogs;
+
+    // 4. Operating Expenses & Category Breakdown
+    final expWhere = <String>[];
+    final expArgs = <dynamic>[];
+    if (cleanFrom != null) {
+      expWhere.add('SUBSTR(expense_date, 1, 10) >= ?');
+      expArgs.add(cleanFrom);
+    }
+    if (cleanTo != null) {
+      expWhere.add('SUBSTR(expense_date, 1, 10) <= ?');
+      expArgs.add(cleanTo);
+    }
+
+    final expWhereClause =
+        expWhere.isNotEmpty ? 'WHERE ${expWhere.join(' AND ')}' : '';
     final expRes = await db.rawQuery('''
-      SELECT COALESCE(SUM(amount), 0) as total_expenses
+      SELECT 
+        COALESCE(category, 'General') as category,
+        COALESCE(SUM(amount), 0) as category_total
       FROM ${DatabaseTables.expenses}
-      $expQuery
+      $expWhereClause
+      GROUP BY category
+      ORDER BY category_total DESC
     ''', expArgs);
 
-    final revenue = (salesRes.first['revenue'] as num?)?.toDouble() ?? 0.0;
-    final cogs = (salesRes.first['cogs'] as num?)?.toDouble() ?? 0.0;
-    final grossProfit =
-        (salesRes.first['gross_profit'] as num?)?.toDouble() ?? 0.0;
-    final totalExpenses =
-        (expRes.first['total_expenses'] as num?)?.toDouble() ?? 0.0;
+    double totalExpenses = 0.0;
+    final expenseList = <Map<String, dynamic>>[];
+    for (final row in expRes) {
+      final cat = row['category'] as String? ?? 'General';
+      final amt = (row['category_total'] as num?)?.toDouble() ?? 0.0;
+      totalExpenses += amt;
+      expenseList.add({'category': cat, 'amount': amt});
+    }
+
+    final expenseBreakdown = expenseList.map((e) {
+      final amt = e['amount'] as double;
+      final pct = totalExpenses > 0 ? (amt / totalExpenses * 100) : 0.0;
+      return ExpenseCategoryBreakdown(
+        category: e['category'] as String,
+        amount: amt,
+        percentage: pct,
+      );
+    }).toList();
+
+    // 5. Product-wise Profit Breakdown
+    final productProfitRes = await db.rawQuery('''
+      SELECT 
+        si.product_id,
+        si.product_name,
+        COALESCE(p.category, 'General') as category,
+        COALESCE(SUM(si.quantity), 0) as total_qty,
+        COALESCE(SUM(si.total_price), 0) as total_rev,
+        COALESCE(SUM(
+          si.quantity * CASE 
+            WHEN si.unit_cost > 0 THEN si.unit_cost 
+            WHEN p.purchase_price > 0 THEN p.purchase_price 
+            ELSE 0 
+          END
+        ), 0) as total_cost
+      FROM ${DatabaseTables.saleItems} si
+      JOIN ${DatabaseTables.sales} s ON si.sale_id = s.id
+      LEFT JOIN ${DatabaseTables.products} p ON si.product_id = p.id
+      WHERE ${salesWhere.join(' AND ')}
+      GROUP BY si.product_id, si.product_name
+      ORDER BY total_rev DESC
+    ''', salesArgs);
+
+    final productBreakdown = productProfitRes.map((r) {
+      final rev = (r['total_rev'] as num?)?.toDouble() ?? 0.0;
+      final cost = (r['total_cost'] as num?)?.toDouble() ?? 0.0;
+      final profit = rev - cost;
+      final margin = rev > 0 ? (profit / rev * 100) : 0.0;
+      return ProductProfitBreakdown(
+        productId: r['product_id'] as int? ?? 0,
+        productName: r['product_name'] as String? ?? '',
+        category: r['category'] as String? ?? 'General',
+        quantitySold: (r['total_qty'] as num?)?.toDouble() ?? 0.0,
+        totalRevenue: rev,
+        totalCost: cost,
+        grossProfit: profit,
+        marginPercent: margin,
+      );
+    }).toList();
+
     final netProfit = grossProfit - totalExpenses;
+    final grossMarginPct =
+        netRevenue > 0 ? (grossProfit / netRevenue * 100) : 0.0;
+    final netMarginPct =
+        netRevenue > 0 ? (netProfit / netRevenue * 100) : 0.0;
 
     return ProfitLossReport(
-      totalRevenue: revenue,
-      costOfGoodsSold: cogs,
+      totalRevenue: grossRevenue,
+      totalReturns: totalReturns,
+      netRevenue: netRevenue,
+      costOfGoodsSold: effectiveCogs,
       grossProfit: grossProfit,
+      grossMarginPercent: grossMarginPct,
       totalExpenses: totalExpenses,
       netProfit: netProfit,
+      netMarginPercent: netMarginPct,
+      totalInvoices: totalInvoices,
+      expenseBreakdown: expenseBreakdown,
+      productBreakdown: productBreakdown,
     );
   }
 

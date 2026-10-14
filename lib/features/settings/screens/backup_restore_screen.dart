@@ -1,5 +1,7 @@
-import 'dart:io';
+import 'dart:convert';
+import 'dart:io' as io;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -44,6 +46,8 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         return StatefulBuilder(
           builder: (dialogCtx, setDialogState) {
             return AlertDialog(
+              scrollable: true,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               icon: const Icon(
                 Icons.warning_amber_rounded,
                 color: AppColors.danger,
@@ -56,10 +60,11 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                   fontSize: 16,
                 ),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   const Text(
                     'All transaction and inventory records will be permanently erased.\n\nTip: You can export a backup before wiping data if you wish.',
                     style: TextStyle(fontSize: 13),
@@ -78,6 +83,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                   ),
                 ],
               ),
+            ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(false),
@@ -142,6 +148,27 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
   Future<void> _exportBackup() async {
     setState(() => _isProcessing = true);
     final dbHelper = ref.read(databaseHelperProvider);
+
+    if (kIsWeb) {
+      final jsonString =
+          await BackupService.exportBackupToJson(dbHelper: dbHelper);
+      setState(() => _isProcessing = false);
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .replaceAll('.', '-');
+      final fileName = 'fertilizer_erp_backup_$timestamp.json';
+      final xFile = XFile.fromData(
+        Uint8List.fromList(utf8.encode(jsonString)),
+        name: fileName,
+        mimeType: 'application/json',
+      );
+      await Share.shareXFiles([xFile], text: 'Fertilizer ERP Backup File');
+      _lastBackupMessage = 'Backup downloaded successfully';
+      if (mounted) setState(() {});
+      return;
+    }
+
     final result = await BackupService.exportBackup(dbHelper: dbHelper);
     setState(() => _isProcessing = false);
 
@@ -155,6 +182,8 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       await showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
+          scrollable: true,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           title: const Row(
             children: [
               Icon(Icons.check_circle, color: AppColors.success),
@@ -162,8 +191,10 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
               Text('Backup Created'),
             ],
           ),
-          content: Text(
-            '${result.message}\nSaved to local storage.\nWould you like to share or save a copy to your Google Drive / WhatsApp?',
+          content: SingleChildScrollView(
+            child: Text(
+              '${result.message}\nSaved to local storage.\nWould you like to share or save a copy to your Google Drive / WhatsApp?',
+            ),
           ),
           actions: [
             TextButton(
@@ -200,12 +231,21 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     final pickerResult = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json'],
+      withData: true,
     );
 
-    if (pickerResult == null || pickerResult.files.single.path == null) return;
+    if (pickerResult == null) return;
+    final pickedFile = pickerResult.files.single;
 
-    final file = File(pickerResult.files.single.path!);
-    final jsonContent = await file.readAsString();
+    String jsonContent;
+    if (pickedFile.bytes != null) {
+      jsonContent = utf8.decode(pickedFile.bytes!);
+    } else if (pickedFile.path != null) {
+      final file = io.File(pickedFile.path!);
+      jsonContent = await file.readAsString();
+    } else {
+      return;
+    }
 
     // 2. Validate first
     try {

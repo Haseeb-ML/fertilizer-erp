@@ -82,20 +82,76 @@ class CashbookSummary {
   });
 }
 
+class ExpenseCategoryBreakdown {
+  final String category;
+  final double amount;
+  final double percentage;
+
+  ExpenseCategoryBreakdown({
+    required this.category,
+    required this.amount,
+    required this.percentage,
+  });
+}
+
+class ProductProfitBreakdown {
+  final int productId;
+  final String productName;
+  final String category;
+  final double quantitySold;
+  final double totalRevenue;
+  final double totalCost;
+  final double grossProfit;
+  final double marginPercent;
+
+  ProductProfitBreakdown({
+    required this.productId,
+    required this.productName,
+    required this.category,
+    required this.quantitySold,
+    required this.totalRevenue,
+    required this.totalCost,
+    required this.grossProfit,
+    required this.marginPercent,
+  });
+}
+
 class ProfitLossReport {
   final double totalRevenue;
+  final double totalReturns;
+  final double netRevenue;
   final double costOfGoodsSold;
   final double grossProfit;
+  final double grossMarginPercent;
   final double totalExpenses;
   final double netProfit;
+  final double netMarginPercent;
+  final int totalInvoices;
+  final List<ExpenseCategoryBreakdown> expenseBreakdown;
+  final List<ProductProfitBreakdown> productBreakdown;
 
   ProfitLossReport({
     required this.totalRevenue,
+    this.totalReturns = 0.0,
+    double? netRevenue,
     required this.costOfGoodsSold,
     required this.grossProfit,
+    double? grossMarginPercent,
     required this.totalExpenses,
     required this.netProfit,
-  });
+    double? netMarginPercent,
+    this.totalInvoices = 0,
+    this.expenseBreakdown = const [],
+    this.productBreakdown = const [],
+  })  : netRevenue = netRevenue ?? (totalRevenue - totalReturns),
+        grossMarginPercent = grossMarginPercent ??
+            ((netRevenue ?? (totalRevenue - totalReturns)) > 0
+                ? (grossProfit / (netRevenue ?? (totalRevenue - totalReturns)) * 100)
+                : 0.0),
+        netMarginPercent = netMarginPercent ??
+            ((netRevenue ?? (totalRevenue - totalReturns)) > 0
+                ? (netProfit / (netRevenue ?? (totalRevenue - totalReturns)) * 100)
+                : 0.0);
 }
 
 class PartyBalanceReport {

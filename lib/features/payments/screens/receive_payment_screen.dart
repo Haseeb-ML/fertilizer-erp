@@ -125,9 +125,14 @@ class _ReceivePaymentScreenState extends ConsumerState<ReceivePaymentScreen> {
                   future: ref.read(customerRepoProvider).getCustomers(),
                   builder: (context, snapshot) {
                     final customers = snapshot.data ?? [];
+                    final Customer? safeValue = (_selectedCustomer != null &&
+                            customers.any((c) => c.id == _selectedCustomer!.id))
+                        ? customers.firstWhere((c) => c.id == _selectedCustomer!.id)
+                        : null;
                     return DropdownButtonFormField<Customer>(
-                      value: _selectedCustomer,
-                      hint: const Text('Select Customer / Farmer *'),
+                      value: safeValue,
+                      isExpanded: true,
+                      hint: const Text('Select Customer / Farmer *', overflow: TextOverflow.ellipsis),
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.person),
                       ),
@@ -137,6 +142,7 @@ class _ReceivePaymentScreenState extends ConsumerState<ReceivePaymentScreen> {
                               value: c,
                               child: Text(
                                 '${c.name} (${CurrencyFormatter.format(c.currentBalance)})',
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           )
@@ -211,12 +217,16 @@ class _ReceivePaymentScreenState extends ConsumerState<ReceivePaymentScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _paymentMethod,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Payment Mode',
                         ),
                         items: AppConstants.paymentMethods
                             .map(
-                              (m) => DropdownMenuItem(value: m, child: Text(m)),
+                              (m) => DropdownMenuItem(
+                                value: m,
+                                child: Text(m, overflow: TextOverflow.ellipsis),
+                              ),
                             )
                             .toList(),
                         onChanged: (val) {

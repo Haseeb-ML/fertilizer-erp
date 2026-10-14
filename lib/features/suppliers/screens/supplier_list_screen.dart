@@ -38,6 +38,11 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
         title: const Text('Suppliers & Companies'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => setState(() {}),
+          ),
+          IconButton(
             icon: const Icon(Icons.add_business),
             tooltip: 'Add Supplier',
             onPressed: () async {
@@ -70,41 +75,56 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                 }
                 final suppliers = snapshot.data ?? [];
                 if (suppliers.isEmpty) {
-                  return EmptyStateView(
-                    icon: Icons.factory_outlined,
-                    title: 'No Suppliers Found',
-                    description:
-                        'Add fertilizer manufacturers & distributors to record purchases.',
-                    buttonLabel: 'Add First Supplier',
-                    onButtonPressed: () async {
-                      final added = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => const SupplierFormScreen(),
+                  return RefreshIndicator(
+                    onRefresh: () async => setState(() {}),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.65,
+                          child: EmptyStateView(
+                            icon: Icons.factory_outlined,
+                            title: 'No Suppliers Found',
+                            description:
+                                'Add fertilizer manufacturers & distributors to record purchases.',
+                            buttonLabel: 'Add First Supplier',
+                            onButtonPressed: () async {
+                              final added =
+                                  await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => const SupplierFormScreen(),
+                                ),
+                              );
+                              if (added == true) setState(() {});
+                            },
+                          ),
                         ),
-                      );
-                      if (added == true) setState(() {});
-                    },
+                      ],
+                    ),
                   );
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: suppliers.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final s = suppliers[index];
+                return RefreshIndicator(
+                  onRefresh: () async => setState(() {}),
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(12),
+                    itemCount: suppliers.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final s = suppliers[index];
 
-                    return Card(
-                      child: ListTile(
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  SupplierDetailScreen(supplierId: s.id!),
-                            ),
-                          );
-                          setState(() {});
-                        },
+                      return Card(
+                        child: ListTile(
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    SupplierDetailScreen(supplierId: s.id!),
+                              ),
+                            );
+                            setState(() {});
+                          },
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 8,
@@ -196,9 +216,10 @@ class _SupplierListScreenState extends ConsumerState<SupplierListScreen> {
                       ),
                     );
                   },
-                );
-              },
-            ),
+                ),
+              );
+            },
+          ),
           ),
         ],
       ),

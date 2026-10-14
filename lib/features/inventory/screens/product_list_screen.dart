@@ -93,10 +93,20 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to reactive update trigger so products list auto-updates when stock/product changes anywhere
+    ref.listen<int>(productsUpdateTriggerProvider, (_, __) {
+      _refreshProducts();
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: Text(ref.tr('inventory_title')),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: ref.tr('refresh'),
+            onPressed: _refreshProducts,
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: ref.tr('add_product'),
@@ -211,83 +221,97 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 }
                 final products = snapshot.data ?? [];
                 if (products.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.inventory_2_outlined,
-                            size: 64,
-                            color: AppColors.textMuted,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'No Products Found',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Load Kissan Feeds official catalog or add custom fertilizer items.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton.icon(
-                            onPressed: _importKissanFeedsProducts,
-                            icon: const Icon(Icons.download),
-                            label: Text(ref.tr('load_kissan_feeds')),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
+                  return RefreshIndicator(
+                    onRefresh: () async => _refreshProducts(),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.65,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 64,
+                                    color: AppColors.textMuted,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'No Products Found',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Load Kissan Feeds official catalog or add custom fertilizer items.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: AppColors.textSecondary),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  ElevatedButton.icon(
+                                    onPressed: _importKissanFeedsProducts,
+                                    icon: const Icon(Icons.download),
+                                    label: Text(ref.tr('load_kissan_feeds')),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  OutlinedButton.icon(
+                                    onPressed: () async {
+                                      final added =
+                                          await Navigator.of(context).push<bool>(
+                                        MaterialPageRoute(
+                                          builder: (_) => const ProductFormScreen(),
+                                        ),
+                                      );
+                                      if (added == true) _refreshProducts();
+                                    },
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('Add Custom Product'),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          OutlinedButton.icon(
-                            onPressed: () async {
-                              final added =
-                                  await Navigator.of(context).push<bool>(
-                                MaterialPageRoute(
-                                  builder: (_) => const ProductFormScreen(),
-                                ),
-                              );
-                              if (added == true) _refreshProducts();
-                            },
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add Custom Product'),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: products.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final p = products[index];
+                return RefreshIndicator(
+                  onRefresh: () async => _refreshProducts(),
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(12),
+                    itemCount: products.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final p = products[index];
 
-                    return Card(
-                      child: InkWell(
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ProductDetailScreen(productId: p.id!),
-                            ),
-                          );
-                          setState(() {});
-                        },
+                      return Card(
+                        child: InkWell(
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ProductDetailScreen(productId: p.id!),
+                              ),
+                            );
+                            _refreshProducts();
+                          },
                         borderRadius: BorderRadius.circular(14),
                         child: Padding(
                           padding: const EdgeInsets.all(14),
@@ -434,9 +458,10 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                       ),
                     );
                   },
-                );
-              },
-            ),
+                ),
+              );
+            },
+          ),
           ),
         ],
       ),

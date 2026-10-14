@@ -47,4 +47,5 @@ app.*.map.json
 # Temporary test screenshots
 live_phone_*.png
 live_screen_*.png
+ios_build_downloads/
 

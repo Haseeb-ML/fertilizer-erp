@@ -141,7 +141,11 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                       ),
                     ),
                     Expanded(
-                      child: ListView.separated(
+                      child: RefreshIndicator(
+                        onRefresh: () async {
+                          setState(() {});
+                        },
+                        child: ListView.separated(
                         padding: const EdgeInsets.all(12),
                         itemCount: expenses.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -232,6 +236,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                         },
                       ),
                     ),
+                  ),
                   ],
                 );
               },

@@ -153,7 +153,40 @@ class SupplierRepository {
       orderBy: 'transaction_date ASC, id ASC',
     );
 
-    return maps.map((e) => LedgerEntry.fromMap(e, isCustomer: false)).toList();
+    final entries = <LedgerEntry>[];
+    for (final map in maps) {
+      final entry = LedgerEntry.fromMap(map, isCustomer: false);
+      final itemsDetails = <String>[];
+      double totalBags = 0.0;
+
+      if (entry.transactionType == 'PURCHASE' && entry.referenceId != null) {
+        final items = await db.query(
+          DatabaseTables.purchaseItems,
+          where: 'purchase_id = ?',
+          whereArgs: [entry.referenceId],
+        );
+        for (final item in items) {
+          final qty = (item['quantity'] as num?)?.toDouble() ?? 0.0;
+          final unit = item['unit'] as String? ?? 'Bag';
+          final name = item['product_name'] as String? ?? '';
+          final rate = (item['unit_price'] as num?)?.toDouble() ?? 0.0;
+          final total = (item['total_price'] as num?)?.toDouble() ?? 0.0;
+          totalBags += qty;
+          final qtyStr = qty == qty.roundToDouble()
+              ? qty.toInt().toString()
+              : qty.toString();
+          itemsDetails.add(
+            '$qtyStr $unit × $name @ ₨${rate.toStringAsFixed(0)} = ₨${total.toStringAsFixed(0)}',
+          );
+        }
+      }
+
+      entries.add(
+        entry.copyWith(itemsDetails: itemsDetails, totalBags: totalBags),
+      );
+    }
+
+    return entries;
   }
 
   Future<double> getTotalPayables() async {

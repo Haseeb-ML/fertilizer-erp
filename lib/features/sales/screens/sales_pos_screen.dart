@@ -11,6 +11,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/search_bar_widget.dart';
 import '../../customers/screens/customer_form_screen.dart';
+import '../../dashboard/controllers/dashboard_controller.dart';
 
 class SalesPosScreen extends ConsumerStatefulWidget {
   const SalesPosScreen({super.key});
@@ -33,16 +34,38 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
   final List<SaleItem> _cart = [];
   bool _isSaving = false;
 
+  List<Customer> _customers = [];
+  bool _isLoadingCustomers = true;
+
   @override
   void initState() {
     super.initState();
     _initInvoiceNumber();
+    _loadCustomers();
   }
 
   Future<void> _initInvoiceNumber() async {
     final repo = ref.read(saleRepoProvider);
     final inv = await repo.generateNextInvoiceNumber();
     if (mounted) setState(() => _invoiceNumber = inv);
+  }
+
+  Future<void> _loadCustomers() async {
+    final list = await ref.read(customerRepoProvider).getCustomers();
+    if (mounted) {
+      setState(() {
+        _customers = list;
+        _isLoadingCustomers = false;
+        if (_selectedCustomer != null) {
+          final match = _customers.where((c) => c.id == _selectedCustomer!.id);
+          if (match.isNotEmpty) {
+            _selectedCustomer = match.first;
+          } else {
+            _selectedCustomer = null;
+          }
+        }
+      });
+    }
   }
 
   @override
@@ -87,20 +110,39 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
           }).toList();
 
           return Container(
-            height: MediaQuery.of(context).size.height * 0.75,
-            padding: const EdgeInsets.all(16),
+            height: MediaQuery.of(context).size.height * 0.80,
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Select Product for Sale',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Select Products for Sale',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (_cart.isNotEmpty)
+                          Text(
+                            '${_cart.length} product(s) in cart • Total: ${CurrencyFormatter.format(subtotal)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -111,7 +153,7 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                 const SizedBox(height: 8),
                 SearchBarWidget(
                   controller: searchCtrl,
-                  hintText: 'Search fertilizer products...',
+                  hintText: 'Search fertilizer / feed products...',
                   onChanged: (_) => setSheetState(() {}),
                 ),
                 const SizedBox(height: 12),
@@ -122,11 +164,52 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                     itemBuilder: (ctx, i) {
                       final p = filtered[i];
                       final isOutOfStock = p.currentStock <= 0;
+                      final cartIdx =
+                          _cart.indexWhere((it) => it.productId == p.id);
+                      final inCart = cartIdx != -1;
+                      final inCartQty =
+                          inCart ? _cart[cartIdx].quantity : 0.0;
 
                       return ListTile(
-                        title: Text(
-                          p.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        tileColor:
+                            inCart ? AppColors.primary.withOpacity(0.06) : null,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                p.name,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: inCart
+                                      ? AppColors.primary
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            if (inCart)
+                              Container(
+                                margin: const EdgeInsets.only(left: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'In Cart: ${inCartQty.toStringAsFixed(0)} ${p.unit}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         subtitle: Text(
                           'Available: ${p.currentStock.toStringAsFixed(0)} ${p.unit} • ${p.category}',
@@ -139,13 +222,37 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                                 : FontWeight.normal,
                           ),
                         ),
-                        trailing: Text(
-                          CurrencyFormatter.format(p.sellingPrice),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: AppColors.primary,
-                          ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              CurrencyFormatter.format(p.sellingPrice),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filled(
+                              icon: Icon(
+                                inCart ? Icons.add : Icons.add_shopping_cart,
+                                size: 16,
+                              ),
+                              tooltip: 'Add to Cart',
+                              onPressed: isOutOfStock
+                                  ? null
+                                  : () {
+                                      _addToCart(p);
+                                      setSheetState(() {});
+                                    },
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          ],
                         ),
                         onTap: () {
                           if (isOutOfStock) {
@@ -159,11 +266,36 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                             );
                             return;
                           }
-                          Navigator.of(ctx).pop();
                           _addToCart(p);
+                          setSheetState(() {});
                         },
                       );
                     },
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(
+                      _cart.isEmpty
+                          ? 'Close'
+                          : 'Done - Continue with ${_cart.length} Product${_cart.length > 1 ? 's' : ''} (${CurrencyFormatter.format(grandTotal)})',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -242,36 +374,40 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         title: Text('Edit ${item.productName}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Max available in stock: ${maxAvailable.toStringAsFixed(0)} ${item.unit}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Max available in stock: ${maxAvailable.toStringAsFixed(0)} ${item.unit}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: qtyCtrl,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: qtyCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(labelText: 'Quantity (${item.unit})'),
               ),
-              decoration: InputDecoration(labelText: 'Quantity (${item.unit})'),
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: rateCtrl,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: rateCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Rate per Unit (PKR)',
+                ),
               ),
-              decoration: const InputDecoration(
-                labelText: 'Rate per Unit (PKR)',
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -326,13 +462,19 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
 
     setState(() => _isSaving = true);
 
+    String invoiceNumber = _invoiceNumber.trim();
+    if (invoiceNumber.isEmpty) {
+      invoiceNumber = await ref.read(saleRepoProvider).generateNextInvoiceNumber();
+      _invoiceNumber = invoiceNumber;
+    }
+
     final customerName = _selectedCustomer?.name ?? 'Walk-in Customer';
     final status = balanceDue <= 0
         ? 'PAID'
         : (paidAmount > 0 ? 'PARTIAL' : 'UNPAID');
 
     final sale = Sale(
-      invoiceNumber: _invoiceNumber,
+      invoiceNumber: invoiceNumber,
       customerId: _selectedCustomer?.id,
       customerName: customerName,
       saleDate: DateFormatter.toSqlDate(_saleDate),
@@ -351,6 +493,11 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
     try {
       final repo = ref.read(saleRepoProvider);
       await repo.createSale(sale);
+
+      // Trigger reactive UI refreshes across the whole app
+      ref.read(salesUpdateTriggerProvider.notifier).state++;
+      ref.read(productsUpdateTriggerProvider.notifier).state++;
+      ref.invalidate(dashboardDataProvider);
 
       if (mounted) {
         // Show success and offer instant PDF print
@@ -375,7 +522,7 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                 onPressed: () => Navigator.of(ctx).pop(),
                 child: const Text('Done'),
               ),
-              ElevatedButton.icon(
+              OutlinedButton.icon(
                 onPressed: () async {
                   Navigator.of(ctx).pop();
                   final settings = await ref
@@ -387,7 +534,25 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                   );
                 },
                 icon: const Icon(Icons.print, size: 18),
-                label: const Text('Print / Share Invoice'),
+                label: const Text('Print'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final settings = await ref
+                      .read(settingsRepoProvider)
+                      .getSettings();
+                  await PdfService.shareSaleInvoice(
+                    sale: sale,
+                    settings: settings,
+                  );
+                },
+                icon: const Icon(Icons.share, size: 18),
+                label: const Text('Share PDF (شیئر کریں)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
               ),
             ],
           ),
@@ -411,7 +576,30 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Point of Sale (New Sale)')),
+      appBar: AppBar(
+        title: const Text('Point of Sale'),
+        actions: [
+          ElevatedButton.icon(
+            onPressed: _showProductPicker,
+            icon: const Icon(Icons.add_shopping_cart, size: 16),
+            label: const Text('+ Add Product'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -466,73 +654,128 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                   const SizedBox(height: 8),
 
                   // Customer Selector
-                  FutureBuilder<List<Customer>>(
-                    future: ref.read(customerRepoProvider).getCustomers(),
-                    builder: (context, snapshot) {
-                      final customers = snapshot.data ?? [];
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<Customer?>(
-                              value: _selectedCustomer,
-                              decoration: const InputDecoration(
-                                prefixIcon: Icon(Icons.person),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<Customer?>(
+                          value: (_selectedCustomer != null &&
+                                  _customers.any((c) => c.id == _selectedCustomer!.id))
+                              ? _customers.firstWhere((c) => c.id == _selectedCustomer!.id)
+                              : null,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(Icons.person),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                          ),
+                          hint: const Text(
+                            'Walk-in Customer (Cash)',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          items: [
+                            const DropdownMenuItem<Customer?>(
+                              value: null,
+                              child: Text(
+                                'Walk-in Customer (Cash)',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            ..._customers.map(
+                              (c) => DropdownMenuItem<Customer?>(
+                                value: c,
+                                child: Text(
+                                  '${c.name} (${CurrencyFormatter.format(c.currentBalance)})',
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              hint: const Text('Walk-in Customer (Cash)'),
-                              items: [
-                                const DropdownMenuItem<Customer?>(
-                                  value: null,
-                                  child: Text('Walk-in Customer (Cash)'),
-                                ),
-                                ...customers.map(
-                                  (c) => DropdownMenuItem<Customer?>(
-                                    value: c,
-                                    child: Text(
-                                      '${c.name} (${CurrencyFormatter.format(c.currentBalance)})',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              onChanged: (c) {
-                                setState(() {
-                                  _selectedCustomer = c;
-                                  if (c != null && _paymentMethod == 'Cash') {
-                                    // Can switch to Credit
-                                  }
-                                });
-                              },
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton.filled(
-                            onPressed: () async {
-                              final added = await Navigator.of(context)
-                                  .push<bool>(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const CustomerFormScreen(),
-                                    ),
-                                  );
-                              if (added == true) setState(() {});
-                            },
-                            icon: const Icon(Icons.person_add),
-                            tooltip: 'Add Customer',
-                            style: IconButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                          ],
+                          onChanged: (c) {
+                            setState(() {
+                              _selectedCustomer = c;
+                              if (c != null && _paymentMethod == 'Cash') {
+                                // Can switch to Credit
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
+                        onPressed: () async {
+                          final added = await Navigator.of(context)
+                              .push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const CustomerFormScreen(),
+                                ),
+                              );
+                          if (added == true) _loadCustomers();
+                        },
+                        icon: const Icon(Icons.person_add),
+                        tooltip: 'Add Customer',
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             const Divider(height: 1),
+
+            // Cart Header Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              color: const Color(0xFFF1F5F9),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.shopping_bag_outlined,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _cart.isEmpty
+                            ? 'Cart Items (0)'
+                            : 'Cart Items (${_cart.length})',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _showProductPicker,
+                    icon: const Icon(Icons.playlist_add, size: 18),
+                    label: Text(
+                      _cart.isEmpty ? 'Add Product' : 'Add Another Product',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
             // Cart Items
             Expanded(
@@ -565,59 +808,247 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.all(12),
-                      itemCount: _cart.length,
+                      itemCount: _cart.length + 1,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
+                      itemBuilder: (itemCtx, index) {
+                        if (index == _cart.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: InkWell(
+                              onTap: _showProductPicker,
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 13),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: AppColors.primary,
+                                    width: 1.2,
+                                  ),
+                                ),
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.add_circle,
+                                        color: AppColors.primary,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        '+ Add Another Product (دوسرا پراڈکٹ شامل کریں)',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
                         final item = _cart[index];
                         return Card(
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          elevation: 0.5,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: const BorderSide(color: AppColors.border),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
                               horizontal: 12,
-                              vertical: 4,
+                              vertical: 10,
                             ),
-                            title: Text(
-                              item.productName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${item.quantity.toStringAsFixed(0)} ${item.unit} x ${CurrencyFormatter.format(item.unitPrice)}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  CurrencyFormatter.format(item.totalPrice),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: AppColors.primary,
-                                  ),
+                                // Row 1: Product Name, Total Price, Actions
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        item.productName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      CurrencyFormatter.format(item.totalPrice),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.edit_outlined,
+                                        size: 18,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      constraints: const BoxConstraints(),
+                                      padding: const EdgeInsets.all(6),
+                                      onPressed: () => _editCartItem(index),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        size: 18,
+                                        color: AppColors.danger,
+                                      ),
+                                      constraints: const BoxConstraints(),
+                                      padding: const EdgeInsets.all(6),
+                                      onPressed: () => setState(() {
+                                        _cart.removeAt(index);
+                                        _autoUpdatePaidAmount();
+                                      }),
+                                    ),
+                                  ],
                                 ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit_outlined,
-                                    size: 18,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  onPressed: () => _editCartItem(index),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    size: 18,
-                                    color: AppColors.danger,
-                                  ),
-                                  onPressed: () => setState(() {
-                                    _cart.removeAt(index);
-                                    _autoUpdatePaidAmount();
-                                  }),
+                                const SizedBox(height: 8),
+                                // Row 2: Quantity Stepper on left, Unit Price on right
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: AppColors.border,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                        color: Colors.white,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          InkWell(
+                                            onTap: () {
+                                              if (item.quantity > 1) {
+                                                setState(() {
+                                                  final newQty =
+                                                      item.quantity - 1;
+                                                  _cart[index] = item.copyWith(
+                                                    quantity: newQty,
+                                                    totalPrice:
+                                                        newQty * item.unitPrice,
+                                                  );
+                                                  _autoUpdatePaidAmount();
+                                                });
+                                              } else {
+                                                setState(() {
+                                                  _cart.removeAt(index);
+                                                  _autoUpdatePaidAmount();
+                                                });
+                                              }
+                                            },
+                                            borderRadius:
+                                                const BorderRadius.horizontal(
+                                              left: Radius.circular(5),
+                                            ),
+                                            child: const Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 4,
+                                              ),
+                                              child: Icon(
+                                                Icons.remove,
+                                                size: 14,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                          Container(
+                                            color: const Color(0xFFF8FAFC),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
+                                            ),
+                                            child: Text(
+                                              '${item.quantity == item.quantity.roundToDouble() ? item.quantity.toInt() : item.quantity} ${item.unit}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+                                          ),
+                                          InkWell(
+                                            onTap: () async {
+                                              final prod = await ref
+                                                  .read(productRepoProvider)
+                                                  .getProductById(
+                                                      item.productId);
+                                              final maxStock =
+                                                  prod?.currentStock ?? 999999;
+                                              if (item.quantity + 1 >
+                                                  maxStock) {
+                                                if (!itemCtx.mounted) return;
+                                                ScaffoldMessenger.of(itemCtx)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      'Only ${maxStock.toStringAsFixed(0)} available in stock.',
+                                                    ),
+                                                    backgroundColor:
+                                                        AppColors.danger,
+                                                  ),
+                                                );
+                                                return;
+                                              }
+                                              setState(() {
+                                                final newQty =
+                                                    item.quantity + 1;
+                                                _cart[index] = item.copyWith(
+                                                  quantity: newQty,
+                                                  totalPrice:
+                                                      newQty * item.unitPrice,
+                                                );
+                                                _autoUpdatePaidAmount();
+                                              });
+                                            },
+                                            borderRadius:
+                                                const BorderRadius.horizontal(
+                                              right: Radius.circular(5),
+                                            ),
+                                            child: const Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 4,
+                                              ),
+                                              child: Icon(
+                                                Icons.add,
+                                                size: 14,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      '@ ${CurrencyFormatter.format(item.unitPrice)}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -644,12 +1075,34 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (_cart.isNotEmpty)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: _showProductPicker,
-                        icon: const Icon(Icons.add_shopping_cart, size: 16),
-                        label: const Text('Add More Products'),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _showProductPicker,
+                              icon: const Icon(
+                                Icons.add_circle_outline,
+                                size: 18,
+                              ),
+                              label: const Text(
+                                'Add More Products (مزید پراڈکٹ)',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side:
+                                    const BorderSide(color: AppColors.primary),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -664,10 +1117,9 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                           ),
                           decoration: const InputDecoration(
                             labelText: 'Discount',
-                            prefixIcon: Icon(Icons.discount_outlined),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 10,
-                              vertical: 8,
+                              vertical: 10,
                             ),
                           ),
                           onChanged: (_) =>
@@ -678,11 +1130,12 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           value: _paymentMethod,
+                          isExpanded: true,
                           decoration: const InputDecoration(
                             labelText: 'Mode',
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 10,
-                              vertical: 8,
+                              vertical: 10,
                             ),
                           ),
                           items: ['Cash', 'Credit', 'Bank Transfer', 'JazzCash']
@@ -692,6 +1145,7 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                                   child: Text(
                                     m,
                                     style: const TextStyle(fontSize: 13),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               )
@@ -720,10 +1174,9 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                           ),
                           decoration: const InputDecoration(
                             labelText: 'Amount Paid',
-                            prefixIcon: Icon(Icons.payment),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 10,
-                              vertical: 8,
+                              vertical: 10,
                             ),
                           ),
                           onChanged: (_) => setState(() {}),
@@ -735,30 +1188,41 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
 
                   // Total & Balance Row
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Grand Total: ${CurrencyFormatter.format(grandTotal)}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          if (balanceDue > 0)
-                            Text(
-                              'Balance Due: ${CurrencyFormatter.format(balanceDue)}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.danger,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Grand Total: ${CurrencyFormatter.format(grandTotal)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: AppColors.primary,
+                                ),
                               ),
                             ),
-                        ],
+                            if (balanceDue > 0)
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Balance Due: ${CurrencyFormatter.format(balanceDue)}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.danger,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       ElevatedButton.icon(
                         onPressed: _isSaving || _cart.isEmpty
                             ? null
@@ -772,15 +1236,19 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(Icons.check),
+                            : const Icon(Icons.check, size: 18),
                         label: Text(
-                          _isSaving ? 'Saving...' : 'Save & Print Sale',
+                          _isSaving ? 'Saving...' : 'Save & Print',
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
+                            horizontal: 14,
                             vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),

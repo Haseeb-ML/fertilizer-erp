@@ -39,6 +39,11 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
         title: const Text('Customers & Farmers'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => setState(() {}),
+          ),
+          IconButton(
             icon: const Icon(Icons.person_add),
             tooltip: 'Add Customer',
             onPressed: () async {
@@ -71,41 +76,56 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                 }
                 final customers = snapshot.data ?? [];
                 if (customers.isEmpty) {
-                  return EmptyStateView(
-                    icon: Icons.people_outline,
-                    title: 'No Customers Found',
-                    description:
-                        'Add your customer farmers to manage credit sales and payments.',
-                    buttonLabel: 'Add First Customer',
-                    onButtonPressed: () async {
-                      final added = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => const CustomerFormScreen(),
+                  return RefreshIndicator(
+                    onRefresh: () async => setState(() {}),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.65,
+                          child: EmptyStateView(
+                            icon: Icons.people_outline,
+                            title: 'No Customers Found',
+                            description:
+                                'Add your customer farmers to manage credit sales and payments.',
+                            buttonLabel: 'Add First Customer',
+                            onButtonPressed: () async {
+                              final added =
+                                  await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => const CustomerFormScreen(),
+                                ),
+                              );
+                              if (added == true) setState(() {});
+                            },
+                          ),
                         ),
-                      );
-                      if (added == true) setState(() {});
-                    },
+                      ],
+                    ),
                   );
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: customers.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final c = customers[index];
+                return RefreshIndicator(
+                  onRefresh: () async => setState(() {}),
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(12),
+                    itemCount: customers.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final c = customers[index];
 
-                    return Card(
-                      child: ListTile(
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  CustomerDetailScreen(customerId: c.id!),
-                            ),
-                          );
-                          setState(() {});
-                        },
+                      return Card(
+                        child: ListTile(
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    CustomerDetailScreen(customerId: c.id!),
+                              ),
+                            );
+                            setState(() {});
+                          },
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 8,
@@ -197,9 +217,10 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                       ),
                     );
                   },
-                );
-              },
-            ),
+                ),
+              );
+            },
+          ),
           ),
         ],
       ),

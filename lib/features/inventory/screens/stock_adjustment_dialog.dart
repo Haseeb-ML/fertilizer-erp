@@ -96,20 +96,23 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
           const Icon(Icons.tune, color: AppColors.primary),
           const SizedBox(width: 8),
-          Expanded(
+          const Expanded(
             child: Text(
               'Stock Adjustment',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
         ],
       ),
-      content: SingleChildScrollView(
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width,
         child: Form(
           key: _formKey,
           child: Column(
@@ -123,6 +126,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                   fontSize: 15,
                 ),
               ),
+              const SizedBox(height: 4),
               Text(
                 'Current Stock: ${widget.product.currentStock.toStringAsFixed(0)} ${widget.product.unit}',
                 style: const TextStyle(
@@ -132,53 +136,91 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
               ),
               const SizedBox(height: 16),
 
-              // Add or Deduct Toggle
-              Row(
-                children: [
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add, size: 16),
-                          SizedBox(width: 4),
-                          Text('Add Stock'),
-                        ],
+              // Add or Deduct Toggle (Responsive & Overflow-safe)
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _isAddition = true),
+                        borderRadius: BorderRadius.circular(8),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _isAddition ? AppColors.success : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_circle_outline,
+                                  size: 16,
+                                  color: _isAddition ? Colors.white : AppColors.textPrimary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Add Stock',
+                                  style: TextStyle(
+                                    color: _isAddition ? Colors.white : AppColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      selected: _isAddition,
-                      selectedColor: AppColors.successBg,
-                      labelStyle: TextStyle(
-                        color: _isAddition
-                            ? AppColors.success
-                            : AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      onSelected: (val) => setState(() => _isAddition = true),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.remove, size: 16),
-                          SizedBox(width: 4),
-                          Text('Deduct Stock'),
-                        ],
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _isAddition = false),
+                        borderRadius: BorderRadius.circular(8),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: !_isAddition ? AppColors.danger : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.remove_circle_outline,
+                                  size: 16,
+                                  color: !_isAddition ? Colors.white : AppColors.textPrimary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Deduct Stock',
+                                  style: TextStyle(
+                                    color: !_isAddition ? Colors.white : AppColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      selected: !_isAddition,
-                      selectedColor: AppColors.dangerBg,
-                      labelStyle: TextStyle(
-                        color: !_isAddition
-                            ? AppColors.danger
-                            : AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      onSelected: (val) => setState(() => _isAddition = false),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -203,6 +245,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
               // Reason Dropdown (Mandatory as per requirements)
               DropdownButtonFormField<String>(
                 value: _selectedReason,
+                isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Mandatory Reason',
                   prefixIcon: Icon(Icons.assignment_late_outlined),
@@ -211,7 +254,11 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                     .map(
                       (r) => DropdownMenuItem(
                         value: r,
-                        child: Text(r, style: const TextStyle(fontSize: 13)),
+                        child: Text(
+                          r,
+                          style: const TextStyle(fontSize: 13),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     )
                     .toList(),

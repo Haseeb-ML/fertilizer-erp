@@ -40,13 +40,71 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
   }
 
   Future<void> _exportPdf() async {
-    final settings = await ref.read(settingsRepoProvider).getSettings();
-    await PdfService.printLedgerStatement(
-      partyName: widget.supplier.name,
-      partyType: 'Supplier',
-      entries: _entries,
-      currentBalance: widget.supplier.currentBalance,
-      settings: settings,
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Supplier Statement PDF (${widget.supplier.name})',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final settings =
+                      await ref.read(settingsRepoProvider).getSettings();
+                  await PdfService.shareLedgerStatement(
+                    partyName: widget.supplier.name,
+                    partyType: 'Supplier',
+                    entries: _entries,
+                    currentBalance: widget.supplier.currentBalance,
+                    settings: settings,
+                  );
+                },
+                icon: const Icon(Icons.share),
+                label: const Text('Share PDF (واٹس ایپ پر شیئر کریں)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final settings =
+                      await ref.read(settingsRepoProvider).getSettings();
+                  await PdfService.printLedgerStatement(
+                    partyName: widget.supplier.name,
+                    partyType: 'Supplier',
+                    entries: _entries,
+                    currentBalance: widget.supplier.currentBalance,
+                    settings: settings,
+                  );
+                },
+                icon: const Icon(Icons.print),
+                label: const Text('Print / Preview Statement'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -65,7 +123,9 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
         (e) => [
           e.transactionDate,
           e.transactionType,
-          e.description,
+          e.itemsDetails.isNotEmpty
+              ? '${e.description} [${e.itemsDetails.join('; ')}]'
+              : e.description,
           e.referenceNumber ?? '',
           e.debit,
           e.credit,
@@ -162,85 +222,195 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                     description:
                         'Purchases and payments made to this supplier will appear here.',
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _entries.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final e = _entries[index];
+                : RefreshIndicator(
+                    onRefresh: _loadLedger,
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(12),
+                      itemCount: _entries.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final e = _entries[index];
 
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    e.transactionDate,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
+                        return Card(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      e.transactionDate,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    'Bal: ${CurrencyFormatter.format(e.runningBalance)}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
-                                      color: AppColors.secondary,
+                                    if (e.totalBags > 0)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.secondary
+                                              .withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.inventory_2,
+                                              size: 12,
+                                              color: AppColors.secondary,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${e.totalBags.toStringAsFixed(0)} Bags',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.secondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    Text(
+                                      'Bal: ${CurrencyFormatter.format(e.runningBalance)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                        color: AppColors.secondary,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                e.description,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  if (e.credit > 0)
-                                    Text(
-                                      'Credit (Purchased): +${CurrencyFormatter.format(e.credit)}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.warning,
-                                        fontWeight: FontWeight.w600,
+                                const SizedBox(height: 6),
+                                Text(
+                                  e.description,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                if (e.itemsDetails.isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF6F8FA),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: const Color(0xFFE2E8F0),
                                       ),
-                                    )
-                                  else
-                                    const SizedBox.shrink(),
-                                  if (e.debit > 0)
-                                    Text(
-                                      'Debit (Paid): -${CurrencyFormatter.format(e.debit)}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.success,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    )
-                                  else
-                                    const SizedBox.shrink(),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.shopping_bag_outlined,
+                                              size: 13,
+                                              color: AppColors.secondary,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Bags Detail (${e.totalBags.toStringAsFixed(0)} Total Bags):',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.secondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        ...e.itemsDetails.map(
+                                          (detail) => Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 2,
+                                            ),
+                                            child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                  '• ',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  child: Text(
+                                                    detail,
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color:
+                                                          AppColors.textPrimary,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ],
-                              ),
-                            ],
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    if (e.credit > 0)
+                                      Text(
+                                        'Credit (Purchased): +${CurrencyFormatter.format(e.credit)}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.warning,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      )
+                                    else
+                                      const SizedBox.shrink(),
+                                    if (e.debit > 0)
+                                      Text(
+                                        'Debit (Paid): -${CurrencyFormatter.format(e.debit)}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.success,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      )
+                                    else
+                                      const SizedBox.shrink(),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
           ),
         ],

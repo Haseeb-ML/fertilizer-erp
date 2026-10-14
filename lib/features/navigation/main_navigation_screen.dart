@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/localization/app_translations.dart';
+import '../../core/providers/app_providers.dart';
+import '../dashboard/controllers/dashboard_controller.dart';
 import '../dashboard/screens/dashboard_screen.dart';
 import '../inventory/screens/product_list_screen.dart';
 import '../sales/screens/sales_list_screen.dart';
@@ -38,7 +40,16 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) {
+          if (index == 1) {
+            ref.read(salesUpdateTriggerProvider.notifier).state++;
+          } else if (index == 2) {
+            ref.read(productsUpdateTriggerProvider.notifier).state++;
+          } else if (index == 0) {
+            ref.invalidate(dashboardDataProvider);
+          }
+          setState(() => _currentIndex = index);
+        },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textSecondary,

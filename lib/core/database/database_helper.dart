@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import '../data/kissan_feeds_data.dart';
+import '../repositories/customer_repository.dart';
+import '../repositories/sale_repository.dart';
 import 'database_tables.dart';
 
 class DatabaseHelper {
@@ -22,8 +25,13 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, dbName);
+    final String path;
+    if (kIsWeb) {
+      path = dbName;
+    } else {
+      final dbPath = await getDatabasesPath();
+      path = join(dbPath, dbName);
+    }
 
     final db = await openDatabase(
       path,
@@ -48,6 +56,7 @@ class DatabaseHelper {
     await seedDefaultSettings(db);
     await seedDefaultProducts(db);
     await seedDefaultSuppliers(db);
+    await syncInventoryCostLayersAndSales(db);
 
     return db;
   }
@@ -137,6 +146,45 @@ class DatabaseHelper {
       }
     } catch (_) {
       // Graceful fallback
+    }
+  }
+
+  /// Synchronizes opening stock cost layers and recalculates sales profit
+  static Future<void> syncInventoryCostLayersAndSales(
+    DatabaseExecutor db,
+  ) async {
+    try {
+      // 1. If Kisaan Dairy Gold (Pellet No. 32) still has the old dummy purchase rate of 4225.0,
+      // update it to 3000.0 as requested.
+      await db.update(
+        DatabaseTables.products,
+        {'purchase_price': 3000.0},
+        where:
+            "(sku = 'KF-32-PELLET' OR name LIKE '%Pellet No. 32%') AND purchase_price = 4225.0",
+      );
+
+      // 2. Synchronize all opening stock layers (purchase_id IS NULL) with product purchase_price
+      final products = await db.query(DatabaseTables.products);
+      for (final p in products) {
+        final pId = p['id'] as int;
+        final pPrice = (p['purchase_price'] as num?)?.toDouble() ?? 0.0;
+        if (pPrice > 0) {
+          await db.update(
+            DatabaseTables.stockCostLayers,
+            {'unit_cost': pPrice},
+            where: 'product_id = ? AND purchase_id IS NULL',
+            whereArgs: [pId],
+          );
+        }
+      }
+
+      // 3. Recalculate profit on existing sales to correct historical invoices (e.g. INV-2026-0003)
+      await SaleRepository.recalculateAllSalesProfits(db);
+
+      // 4. Reconcile all customer ledgers to ensure old sales invoices and balances are verified
+      await CustomerRepository.reconcileAllCustomerLedgers(db);
+    } catch (e) {
+      debugPrint('syncInventoryCostLayersAndSales error: $e');
     }
   }
 

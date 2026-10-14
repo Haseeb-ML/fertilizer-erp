@@ -61,3 +61,9 @@ final businessSettingsProvider = FutureProvider<BusinessSettings>((ref) async {
   final repo = ref.watch(settingsRepoProvider);
   return await repo.getSettings();
 });
+
+/// Reactive signal to notify screens when sales data has changed
+final salesUpdateTriggerProvider = StateProvider<int>((ref) => 0);
+
+/// Reactive signal to notify screens when products or stock data has changed
+final productsUpdateTriggerProvider = StateProvider<int>((ref) => 0);

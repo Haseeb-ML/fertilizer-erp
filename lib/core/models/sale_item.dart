@@ -72,4 +72,16 @@ class SaleItem {
       totalPrice: totalPrice ?? this.totalPrice,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SaleItem &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          productId == other.productId &&
+          productName == other.productName;
+
+  @override
+  int get hashCode => Object.hash(id, productId, productName);
 }

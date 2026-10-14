@@ -48,9 +48,23 @@ class FifoInventoryService {
       final layer = StockCostLayer.fromMap(map);
       final available = layer.remainingQuantity;
 
+      double unitCost = layer.unitCost;
+      if (unitCost <= 0) {
+        final productMap = await db.query(
+          DatabaseTables.products,
+          columns: ['purchase_price'],
+          where: 'id = ?',
+          whereArgs: [productId],
+        );
+        if (productMap.isNotEmpty) {
+          unitCost =
+              (productMap.first['purchase_price'] as num?)?.toDouble() ?? 0.0;
+        }
+      }
+
       if (available <= needed) {
         // Consume whole layer
-        totalCost += available * layer.unitCost;
+        totalCost += available * unitCost;
         needed -= available;
         await db.update(
           DatabaseTables.stockCostLayers,
@@ -60,7 +74,7 @@ class FifoInventoryService {
         );
       } else {
         // Consume partial layer
-        totalCost += needed * layer.unitCost;
+        totalCost += needed * unitCost;
         final newRemaining = available - needed;
         needed = 0;
         await db.update(
