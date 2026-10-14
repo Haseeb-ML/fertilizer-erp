@@ -355,92 +355,221 @@ class PdfService {
       // Fallback
     }
 
+    final formattedDate = DateTime.now().toString().substring(0, 10);
+    final isCustomer = partyType.toLowerCase().contains('customer');
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(32),
+        margin: const pw.EdgeInsets.symmetric(horizontal: 28, vertical: 26),
         header: (context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
+              // Business & Title Header
               pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  if (logoImage != null)
-                    pw.Container(
-                      width: 44,
-                      height: 44,
-                      margin: const pw.EdgeInsets.only(right: 12),
-                      child: pw.ClipRRect(
-                        horizontalRadius: 6,
-                        verticalRadius: 6,
-                        child: pw.Image(logoImage),
-                      ),
-                    ),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
-                      pw.Text(
-                        settings.businessName,
-                        style: pw.TextStyle(
-                          fontSize: 18,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.green900,
-                        ),
-                      ),
-                      pw.Text(
-                        'ACCOUNT STATEMENT: $partyName ($partyType)',
-                        style: pw.TextStyle(
-                          fontSize: 13,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.green900,
-                        ),
-                      ),
-                      if (partyAddress != null && partyAddress.isNotEmpty)
-                        pw.Text(
-                          'Address: $partyAddress',
-                          style: const pw.TextStyle(
-                            fontSize: 9,
-                            color: PdfColors.grey700,
+                      if (logoImage != null)
+                        pw.Container(
+                          width: 44,
+                          height: 44,
+                          margin: const pw.EdgeInsets.only(right: 10),
+                          child: pw.ClipRRect(
+                            horizontalRadius: 6,
+                            verticalRadius: 6,
+                            child: pw.Image(logoImage),
                           ),
                         ),
-                      if (partyPhone != null && partyPhone.isNotEmpty)
-                        pw.Text(
-                          'Phone: $partyPhone',
-                          style: const pw.TextStyle(
-                            fontSize: 9,
-                            color: PdfColors.grey700,
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            settings.businessName,
+                            style: pw.TextStyle(
+                              fontSize: 16,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.green900,
+                            ),
+                          ),
+                          if (settings.ownerName.isNotEmpty)
+                            pw.Text(
+                              'Proprietor: ${settings.ownerName}',
+                              style: const pw.TextStyle(
+                                fontSize: 8.5,
+                                color: PdfColors.grey700,
+                              ),
+                            ),
+                          if (settings.phone.isNotEmpty ||
+                              settings.address.isNotEmpty)
+                            pw.Text(
+                              [
+                                if (settings.phone.isNotEmpty)
+                                  'Tel: ${settings.phone}',
+                                if (settings.address.isNotEmpty)
+                                  settings.address,
+                              ].join(' | '),
+                              style: const pw.TextStyle(
+                                fontSize: 8,
+                                color: PdfColors.grey700,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: pw.BoxDecoration(
+                          color: PdfColors.green800,
+                          borderRadius: pw.BorderRadius.circular(4),
+                        ),
+                        child: pw.Text(
+                          '$partyType STATEMENT'.toUpperCase(),
+                          style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 10,
                           ),
                         ),
+                      ),
+                      pw.SizedBox(height: 3),
+                      pw.Text(
+                        'Date: $formattedDate',
+                        style: const pw.TextStyle(fontSize: 8.5),
+                      ),
+                      pw.Text(
+                        'Page ${context.pageNumber} of ${context.pagesCount}',
+                        style: const pw.TextStyle(
+                          fontSize: 8,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
                     ],
                   ),
                 ],
               ),
               pw.SizedBox(height: 8),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'Current Outstanding Balance: ${CurrencyFormatter.formatPdf(currentBalance)}',
-                    style: pw.TextStyle(
-                      fontWeight: pw.FontWeight.bold,
-                      fontSize: 11,
-                      color: currentBalance > 0
-                          ? PdfColors.red800
-                          : PdfColors.green800,
+
+              // Party Details & Balance Card
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.grey100,
+                  borderRadius: pw.BorderRadius.circular(5),
+                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Row(
+                            children: [
+                              pw.Text(
+                                '$partyType: ',
+                                style: const pw.TextStyle(
+                                  fontSize: 9,
+                                  color: PdfColors.grey700,
+                                ),
+                              ),
+                              pw.Text(
+                                partyName,
+                                style: pw.TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: pw.FontWeight.bold,
+                                  color: PdfColors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                          pw.SizedBox(height: 3),
+                          pw.Text(
+                            'Phone: ${partyPhone != null && partyPhone.isNotEmpty ? partyPhone : 'Not Provided'} | Address: ${partyAddress != null && partyAddress.isNotEmpty ? partyAddress : 'Not Provided'}',
+                            style: const pw.TextStyle(
+                              fontSize: 8.5,
+                              color: PdfColors.grey800,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  pw.Text(
-                    'Page ${context.pageNumber} of ${context.pagesCount}',
-                    style: const pw.TextStyle(
-                      fontSize: 9,
-                      color: PdfColors.grey600,
+                    pw.Container(
+                      padding: const pw.EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: pw.BoxDecoration(
+                        color: currentBalance > 0
+                            ? (isCustomer ? PdfColors.red50 : PdfColors.amber50)
+                            : PdfColors.green50,
+                        borderRadius: pw.BorderRadius.circular(4),
+                        border: pw.Border.all(
+                          color: currentBalance > 0
+                              ? (isCustomer
+                                  ? PdfColors.red400
+                                  : PdfColors.amber700)
+                              : PdfColors.green400,
+                          width: 0.8,
+                        ),
+                      ),
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.end,
+                        children: [
+                          pw.Text(
+                            isCustomer
+                                ? (currentBalance > 0
+                                    ? 'Receivable (Balance Due)'
+                                    : 'Account Cleared')
+                                : (currentBalance > 0
+                                    ? 'Payable (Balance Due)'
+                                    : 'Account Cleared'),
+                            style: pw.TextStyle(
+                              fontSize: 7.5,
+                              color: currentBalance > 0
+                                  ? (isCustomer
+                                      ? PdfColors.red900
+                                      : PdfColors.brown900)
+                                  : PdfColors.green900,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                          pw.SizedBox(height: 1),
+                          pw.Text(
+                            CurrencyFormatter.formatPdf(currentBalance),
+                            style: pw.TextStyle(
+                              fontSize: 12,
+                              fontWeight: pw.FontWeight.bold,
+                              color: currentBalance > 0
+                                  ? (isCustomer
+                                      ? PdfColors.red800
+                                      : PdfColors.brown800)
+                                  : PdfColors.green800,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              pw.Divider(color: PdfColors.grey400, thickness: 0.5),
-              pw.SizedBox(height: 6),
+              pw.SizedBox(height: 8),
             ],
           );
         },
@@ -450,55 +579,73 @@ class PdfService {
               color: PdfColors.grey300,
               width: 0.5,
             ),
+            columnWidths: {
+              0: const pw.FixedColumnWidth(68), // Date e.g. 2026-10-14
+              1: const pw.FlexColumnWidth(3.8), // Description & Items Detail
+              2: const pw.FixedColumnWidth(66), // Debit (Rs.)
+              3: const pw.FixedColumnWidth(66), // Credit (Rs.)
+              4: const pw.FixedColumnWidth(72), // Balance (Rs.)
+            },
             children: [
               pw.TableRow(
                 decoration: const pw.BoxDecoration(
                   color: PdfColors.grey200,
                 ),
                 children: [
-                  _th('Date'),
-                  _th('Description'),
-                  _th('Debit (PKR)'),
-                  _th('Credit (PKR)'),
-                  _th('Balance (PKR)'),
+                  _th('Date', fontSize: 8.5),
+                  _th('Description & Items Detail',
+                      align: pw.TextAlign.left, fontSize: 8.5),
+                  _th('Debit (Rs.)', align: pw.TextAlign.right, fontSize: 8.5),
+                  _th('Credit (Rs.)', align: pw.TextAlign.right, fontSize: 8.5),
+                  _th('Balance (Rs.)',
+                      align: pw.TextAlign.right, fontSize: 8.5),
                 ],
               ),
               ...entries.map(
-                (e) => pw.TableRow(
-                  children: [
-                    _td(e.transactionDate),
-                    _td(
-                      e.itemsDetails.isNotEmpty
-                          ? '${e.description}\n${e.itemsDetails.map((d) => "• $d").join("\n")}'
-                          : e.description,
-                    ),
-                    _td(
-                      e.debit > 0
-                          ? CurrencyFormatter.format(
-                              e.debit,
-                              showSymbol: false,
-                            )
-                          : '-',
-                      align: pw.TextAlign.right,
-                    ),
-                    _td(
-                      e.credit > 0
-                          ? CurrencyFormatter.format(
-                              e.credit,
-                              showSymbol: false,
-                            )
-                          : '-',
-                      align: pw.TextAlign.right,
-                    ),
-                    _td(
-                      CurrencyFormatter.format(
-                        e.runningBalance,
-                        showSymbol: false,
+                (e) {
+                  final desc = _cleanPdfText(e.description);
+                  final items = e.itemsDetails
+                      .map((d) => '- ${_cleanPdfText(d)}')
+                      .join('\n');
+                  final fullDesc = items.isNotEmpty ? '$desc\n$items' : desc;
+
+                  return pw.TableRow(
+                    children: [
+                      _td(e.transactionDate,
+                          align: pw.TextAlign.center, fontSize: 8),
+                      _td(fullDesc, fontSize: 8),
+                      _td(
+                        e.debit > 0
+                            ? CurrencyFormatter.format(
+                                e.debit,
+                                showSymbol: false,
+                              )
+                            : '-',
+                        align: pw.TextAlign.right,
+                        fontSize: 8,
                       ),
-                      align: pw.TextAlign.right,
-                    ),
-                  ],
-                ),
+                      _td(
+                        e.credit > 0
+                            ? CurrencyFormatter.format(
+                                e.credit,
+                                showSymbol: false,
+                              )
+                            : '-',
+                        align: pw.TextAlign.right,
+                        fontSize: 8,
+                      ),
+                      _td(
+                        CurrencyFormatter.format(
+                          e.runningBalance,
+                          showSymbol: false,
+                        ),
+                        align: pw.TextAlign.right,
+                        fontSize: 8,
+                        isBold: true,
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -998,23 +1145,49 @@ class PdfService {
     );
   }
 
-  static pw.Widget _th(String text) {
+  /// Sanitizes text to remove non-Latin-1 characters (such as ₨, ×, •, — and Urdu script) that cause missing glyph box artifacts in standard PDF Helvetica
+  static String _cleanPdfText(String text) {
+    return text
+        .replaceAll('₨', 'Rs. ')
+        .replaceAll('×', 'x')
+        .replaceAll('•', '-')
+        .replaceAll('—', '-')
+        .replaceAll('–', '-')
+        .replaceAll(RegExp(r'[\u0600-\u06FF]'), '')
+        .replaceAll('()', '')
+        .replaceAll('( )', '')
+        .trim();
+  }
+
+  static pw.Widget _th(
+    String text, {
+    pw.TextAlign align = pw.TextAlign.center,
+    double fontSize = 9,
+  }) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 4),
       child: pw.Text(
-        text,
-        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-        textAlign: pw.TextAlign.center,
+        _cleanPdfText(text),
+        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: fontSize),
+        textAlign: align,
       ),
     );
   }
 
-  static pw.Widget _td(String text, {pw.TextAlign align = pw.TextAlign.left}) {
+  static pw.Widget _td(
+    String text, {
+    pw.TextAlign align = pw.TextAlign.left,
+    double fontSize = 9,
+    bool isBold = false,
+  }) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+      padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       child: pw.Text(
-        text,
-        style: const pw.TextStyle(fontSize: 9),
+        _cleanPdfText(text),
+        style: pw.TextStyle(
+          fontSize: fontSize,
+          fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
         textAlign: align,
       ),
     );
@@ -1738,7 +1911,7 @@ class PdfService {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text(
-                reportTitle,
+                _cleanPdfText(reportTitle),
                 style: pw.TextStyle(
                   fontSize: 13,
                   fontWeight: pw.FontWeight.bold,

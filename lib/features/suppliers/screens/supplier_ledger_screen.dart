@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/models/supplier.dart';
 import '../../../core/models/ledger_entry.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/services/csv_service.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state_view.dart';
@@ -52,7 +53,7 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Supplier Statement PDF (${widget.supplier.name})',
+                'Supplier Statement / سپلائر کھاتہ (${widget.supplier.name})',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -75,7 +76,7 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                   );
                 },
                 icon: const Icon(Icons.share),
-                label: const Text('Share PDF (واٹس ایپ پر شیئر کریں)'),
+                label: const Text('Share PDF (واٹس ایپ پر PDF شیئر کریں)'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF25D366),
                   foregroundColor: Colors.white,
@@ -99,8 +100,22 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                   );
                 },
                 icon: const Icon(Icons.print),
-                label: const Text('Print / Preview Statement'),
+                label: const Text('Print / Preview Statement (پی ڈی ایف دیکھیں)'),
                 style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  await _exportExcel();
+                },
+                icon: const Icon(Icons.table_chart),
+                label: const Text('Export Excel Sheet (مکمل سپلائر تفصیلات کے ساتھ ایکسل شیٹ)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1B5E20),
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -111,12 +126,105 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
     );
   }
 
+  Future<void> _exportExcel() async {
+    final settings = await ref.read(settingsRepoProvider).getSettings();
+    final totalDebit = _entries.fold<double>(0.0, (sum, e) => sum + e.debit);
+    final totalCredit = _entries.fold<double>(0.0, (sum, e) => sum + e.credit);
+
+    final rows = <List<dynamic>>[
+      // 1. Business Profile Header
+      [settings.businessName, '', '', '', '', '', '', ''],
+      if (settings.ownerName.isNotEmpty)
+        ['Proprietor: ${settings.ownerName}', '', '', '', '', '', '', ''],
+      if (settings.address.isNotEmpty || settings.phone.isNotEmpty)
+        [
+          [
+            if (settings.phone.isNotEmpty) 'Phone: ${settings.phone}',
+            if (settings.address.isNotEmpty) 'Address: ${settings.address}',
+          ].join(' | '),
+          '', '', '', '', '', '', ''
+        ],
+      ['', '', '', '', '', '', '', ''],
+
+      // 2. Document Title
+      ['SUPPLIER ACCOUNT STATEMENT (سپلائر کھاتہ لیجر)', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', ''],
+
+      // 3. Supplier Details Block (Full Profile)
+      ['SUPPLIER DETAILS / سپلائر کی تفصیلات', '', '', '', 'STATEMENT INFO / معلومات', '', '', ''],
+      ['Supplier Name:', widget.supplier.name, '', '', 'Statement Date:', DateTime.now().toString().substring(0, 10), '', ''],
+      ['Phone Number:', widget.supplier.phone.isNotEmpty ? widget.supplier.phone : 'Not Provided', '', '', 'Account Type:', 'Supplier (سپلائر)', '', ''],
+      ['Company / Address:', widget.supplier.companyOrAddress.isNotEmpty ? widget.supplier.companyOrAddress : 'Not Provided', '', '', 'Total Transactions:', _entries.length.toString(), '', ''],
+      [
+        'Current Outstanding Balance:',
+        'Rs. ${CurrencyFormatter.format(widget.supplier.currentBalance, showSymbol: false)}',
+        '',
+        '',
+        'Balance Status:',
+        widget.supplier.currentBalance > 0 ? 'PAYABLE TO SUPPLIER (واجب الاداء)' : 'CLEARED / ZERO',
+        '',
+        '',
+      ],
+      ['', '', '', '', '', '', '', ''],
+
+      // 4. Ledger Table Header
+      [
+        'Date',
+        'Transaction Type',
+        'Bill / Ref #',
+        'Description',
+        'Items Detail',
+        'Debit (PKR)',
+        'Credit (PKR)',
+        'Running Balance (PKR)',
+      ],
+
+      // 5. Ledger Entries
+      ..._entries.map((e) {
+        final itemsStr = e.itemsDetails.join(' ; ');
+        return [
+          e.transactionDate,
+          e.transactionType,
+          e.referenceNumber ?? '-',
+          e.description,
+          itemsStr,
+          e.debit > 0 ? e.debit : 0.0,
+          e.credit > 0 ? e.credit : 0.0,
+          e.runningBalance,
+        ];
+      }),
+
+      // 6. Summary Totals Row
+      ['', '', '', '', '', '', '', ''],
+      [
+        'TOTAL / کل میزان',
+        '',
+        '',
+        'Total Records: ${_entries.length}',
+        '',
+        totalDebit,
+        totalCredit,
+        widget.supplier.currentBalance,
+      ],
+    ];
+
+    await CsvService.exportAndShareCsv(
+      fileName: 'Supplier_Ledger_${widget.supplier.name.replaceAll(' ', '_')}.csv',
+      rows: rows,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('${widget.supplier.name} - کھاتہ / Ledger'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.table_chart),
+            tooltip: 'ایکسل شیٹ (Excel Sheet)',
+            onPressed: _entries.isEmpty ? null : _exportExcel,
+          ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             tooltip: 'PDF کھاتہ کھولیں / شیئر کریں',
