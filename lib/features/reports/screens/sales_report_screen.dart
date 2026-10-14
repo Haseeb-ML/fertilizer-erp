@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/report_models.dart';
 import '../../../core/providers/app_providers.dart';
-import '../../../core/services/csv_service.dart';
+import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 
@@ -18,47 +18,88 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
   DateTime _fromDate = DateTime(DateTime.now().year, DateTime.now().month, 1);
   DateTime _toDate = DateTime.now();
 
-  Future<void> _exportCsv(
+  Future<void> _showPdfOptions(
     SalesSummaryReport summary,
     List<ProductSalesReport> products,
   ) async {
-    final rows = <List<dynamic>>[
-      [
-        'Sales & Revenue Report',
-        'From: ${DateFormatter.formatDate(_fromDate)}',
-        'To: ${DateFormatter.formatDate(_toDate)}',
-      ],
-      ['Total Sales (PKR)', summary.totalSales],
-      ['Total Discounts (PKR)', summary.totalDiscount],
-      ['Net Sales (PKR)', summary.netSales],
-      ['Cash Collected (PKR)', summary.totalPaid],
-      ['Receivables Balance (PKR)', summary.totalBalanceDue],
-      ['Gross Profit (PKR)', summary.grossProfit],
-      [],
-      ['Product Wise Sales Breakdown'],
-      [
-        'Product Name',
-        'Category',
-        'Quantity Sold',
-        'Revenue (PKR)',
-        'Cost (PKR)',
-        'Profit (PKR)',
-      ],
-      ...products.map(
-        (p) => [
-          p.productName,
-          p.category,
-          p.totalQuantity,
-          p.totalRevenue,
-          p.totalCost,
-          p.profit,
-        ],
-      ),
-    ];
+    final fromStr = DateFormatter.formatDate(_fromDate);
+    final toStr = DateFormatter.formatDate(_toDate);
 
-    await CsvService.exportAndShareCsv(
-      fileName: 'Sales_Report.csv',
-      rows: rows,
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Sales & Revenue PDF Report (سیلز رپورٹ)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Period: $fromStr to $toStr',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final settings =
+                      await ref.read(settingsRepoProvider).getSettings();
+                  await PdfService.shareSalesReport(
+                    summary: summary,
+                    products: products,
+                    settings: settings,
+                    fromDate: fromStr,
+                    toDate: toStr,
+                  );
+                },
+                icon: const Icon(Icons.share),
+                label: const Text('Share PDF (واٹس ایپ پر شیئر کریں)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final settings =
+                      await ref.read(settingsRepoProvider).getSettings();
+                  await PdfService.printSalesReport(
+                    summary: summary,
+                    products: products,
+                    settings: settings,
+                    fromDate: fromStr,
+                    toDate: toStr,
+                  );
+                },
+                icon: const Icon(Icons.print),
+                label: const Text(
+                  'Print / Preview PDF (پی ڈی ایف کھولیں / پرنٹ کریں)',
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -138,11 +179,11 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                     const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(
-                        Icons.download,
+                        Icons.picture_as_pdf,
                         color: AppColors.primary,
                       ),
-                      tooltip: 'Export CSV',
-                      onPressed: () => _exportCsv(summary, products),
+                      tooltip: 'PDF رپورٹ کھولیں / شیئر کریں',
+                      onPressed: () => _showPdfOptions(summary, products),
                     ),
                   ],
                 ),

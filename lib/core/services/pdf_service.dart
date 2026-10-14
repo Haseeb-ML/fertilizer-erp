@@ -7,6 +7,7 @@ import '../models/sale.dart';
 import '../models/business_settings.dart';
 import '../models/ledger_entry.dart';
 import '../models/report_models.dart';
+import '../models/product.dart';
 import '../utils/currency_formatter.dart';
 
 class PdfService {
@@ -338,6 +339,8 @@ class PdfService {
   static Future<pw.Document> buildLedgerStatementDocument({
     required String partyName,
     required String partyType,
+    String? partyPhone,
+    String? partyAddress,
     required List<LedgerEntry> entries,
     required double currentBalance,
     required BusinessSettings settings,
@@ -353,10 +356,10 @@ class PdfService {
     }
 
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
-        build: (context) {
+        header: (context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
@@ -382,6 +385,7 @@ class PdfService {
                         style: pw.TextStyle(
                           fontSize: 18,
                           fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.green900,
                         ),
                       ),
                       pw.Text(
@@ -392,79 +396,113 @@ class PdfService {
                           color: PdfColors.green900,
                         ),
                       ),
+                      if (partyAddress != null && partyAddress.isNotEmpty)
+                        pw.Text(
+                          'Address: $partyAddress',
+                          style: const pw.TextStyle(
+                            fontSize: 9,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                      if (partyPhone != null && partyPhone.isNotEmpty)
+                        pw.Text(
+                          'Phone: $partyPhone',
+                          style: const pw.TextStyle(
+                            fontSize: 9,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
                     ],
                   ),
                 ],
               ),
               pw.SizedBox(height: 8),
-              pw.Text(
-                'Current Outstanding Balance: ${CurrencyFormatter.formatPdf(currentBalance)}',
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-              pw.SizedBox(height: 12),
-              pw.Table(
-                border: pw.TableBorder.all(
-                  color: PdfColors.grey300,
-                  width: 0.5,
-                ),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.TableRow(
-                    decoration: const pw.BoxDecoration(
-                      color: PdfColors.grey200,
+                  pw.Text(
+                    'Current Outstanding Balance: ${CurrencyFormatter.formatPdf(currentBalance)}',
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 11,
+                      color: currentBalance > 0
+                          ? PdfColors.red800
+                          : PdfColors.green800,
                     ),
-                    children: [
-                      _th('Date'),
-                      _th('Description'),
-                      _th('Debit (PKR)'),
-                      _th('Credit (PKR)'),
-                      _th('Balance (PKR)'),
-                    ],
                   ),
-                  ...entries.map(
-                    (e) => pw.TableRow(
-                      children: [
-                        _td(e.transactionDate),
-                        _td(
-                          e.itemsDetails.isNotEmpty
-                              ? '${e.description}\n${e.itemsDetails.map((d) => "• $d").join("\n")}'
-                              : e.description,
-                        ),
-                        _td(
-                          e.debit > 0
-                              ? CurrencyFormatter.format(
-                                  e.debit,
-                                  showSymbol: false,
-                                )
-                              : '-',
-                          align: pw.TextAlign.right,
-                        ),
-                        _td(
-                          e.credit > 0
-                              ? CurrencyFormatter.format(
-                                  e.credit,
-                                  showSymbol: false,
-                                )
-                              : '-',
-                          align: pw.TextAlign.right,
-                        ),
-                        _td(
-                          CurrencyFormatter.format(
-                            e.runningBalance,
-                            showSymbol: false,
-                          ),
-                          align: pw.TextAlign.right,
-                        ),
-                      ],
+                  pw.Text(
+                    'Page ${context.pageNumber} of ${context.pagesCount}',
+                    style: const pw.TextStyle(
+                      fontSize: 9,
+                      color: PdfColors.grey600,
                     ),
                   ),
                 ],
               ),
+              pw.Divider(color: PdfColors.grey400, thickness: 0.5),
+              pw.SizedBox(height: 6),
             ],
           );
         },
+        build: (context) => [
+          pw.Table(
+            border: pw.TableBorder.all(
+              color: PdfColors.grey300,
+              width: 0.5,
+            ),
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(
+                  color: PdfColors.grey200,
+                ),
+                children: [
+                  _th('Date'),
+                  _th('Description'),
+                  _th('Debit (PKR)'),
+                  _th('Credit (PKR)'),
+                  _th('Balance (PKR)'),
+                ],
+              ),
+              ...entries.map(
+                (e) => pw.TableRow(
+                  children: [
+                    _td(e.transactionDate),
+                    _td(
+                      e.itemsDetails.isNotEmpty
+                          ? '${e.description}\n${e.itemsDetails.map((d) => "• $d").join("\n")}'
+                          : e.description,
+                    ),
+                    _td(
+                      e.debit > 0
+                          ? CurrencyFormatter.format(
+                              e.debit,
+                              showSymbol: false,
+                            )
+                          : '-',
+                      align: pw.TextAlign.right,
+                    ),
+                    _td(
+                      e.credit > 0
+                          ? CurrencyFormatter.format(
+                              e.credit,
+                              showSymbol: false,
+                            )
+                          : '-',
+                      align: pw.TextAlign.right,
+                    ),
+                    _td(
+                      CurrencyFormatter.format(
+                        e.runningBalance,
+                        showSymbol: false,
+                      ),
+                      align: pw.TextAlign.right,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
 
@@ -475,6 +513,8 @@ class PdfService {
   static Future<void> printLedgerStatement({
     required String partyName,
     required String partyType,
+    String? partyPhone,
+    String? partyAddress,
     required List<LedgerEntry> entries,
     required double currentBalance,
     required BusinessSettings settings,
@@ -482,6 +522,8 @@ class PdfService {
     final pdf = await buildLedgerStatementDocument(
       partyName: partyName,
       partyType: partyType,
+      partyPhone: partyPhone,
+      partyAddress: partyAddress,
       entries: entries,
       currentBalance: currentBalance,
       settings: settings,
@@ -496,6 +538,8 @@ class PdfService {
   static Future<void> shareLedgerStatement({
     required String partyName,
     required String partyType,
+    String? partyPhone,
+    String? partyAddress,
     required List<LedgerEntry> entries,
     required double currentBalance,
     required BusinessSettings settings,
@@ -503,6 +547,8 @@ class PdfService {
     final pdf = await buildLedgerStatementDocument(
       partyName: partyName,
       partyType: partyType,
+      partyPhone: partyPhone,
+      partyAddress: partyAddress,
       entries: entries,
       currentBalance: currentBalance,
       settings: settings,
@@ -1004,5 +1050,792 @@ class PdfService {
         ],
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SALES & REVENUE REPORT PDF
+  // ---------------------------------------------------------------------------
+
+  /// Builds PDF for Sales & Revenue Report
+  static Future<pw.Document> buildSalesReportDocument({
+    required SalesSummaryReport summary,
+    required List<ProductSalesReport> products,
+    required BusinessSettings settings,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final pdf = pw.Document();
+
+    pw.MemoryImage? logoImage;
+    try {
+      final imageBytes = await rootBundle.load('assets/images/app_logo.png');
+      logoImage = pw.MemoryImage(imageBytes.buffer.asUint8List());
+    } catch (_) {}
+
+    final dateRange = (fromDate != null &&
+            fromDate.isNotEmpty &&
+            toDate != null &&
+            toDate.isNotEmpty)
+        ? '$fromDate to $toDate'
+        : (fromDate != null && fromDate.isNotEmpty
+            ? 'From $fromDate'
+            : 'All Time');
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        header: (context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    children: [
+                      if (logoImage != null)
+                        pw.Container(
+                          width: 44,
+                          height: 44,
+                          margin: const pw.EdgeInsets.only(right: 12),
+                          child: pw.ClipRRect(
+                            horizontalRadius: 6,
+                            verticalRadius: 6,
+                            child: pw.Image(logoImage),
+                          ),
+                        ),
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            settings.businessName,
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.green900,
+                            ),
+                          ),
+                          if (settings.address.isNotEmpty)
+                            pw.Text(
+                              settings.address,
+                              style: const pw.TextStyle(fontSize: 9),
+                            ),
+                          if (settings.phone.isNotEmpty)
+                            pw.Text(
+                              'Tel: ${settings.phone}',
+                              style: const pw.TextStyle(fontSize: 9),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: pw.BoxDecoration(
+                          color: PdfColors.green800,
+                          borderRadius: pw.BorderRadius.circular(4),
+                        ),
+                        child: pw.Text(
+                          'SALES REPORT',
+                          style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        'Period: $dateRange',
+                        style: const pw.TextStyle(fontSize: 9),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 4),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'Page ${context.pageNumber} of ${context.pagesCount}',
+                    style: const pw.TextStyle(
+                      fontSize: 9,
+                      color: PdfColors.grey600,
+                    ),
+                  ),
+                ],
+              ),
+              pw.Divider(color: PdfColors.grey400, thickness: 0.5),
+              pw.SizedBox(height: 6),
+            ],
+          );
+        },
+        build: (context) => [
+          // Summary Metrics Grid
+          pw.Container(
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: pw.BorderRadius.circular(6),
+              border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+            ),
+            child: pw.Column(
+              children: [
+                _totalRow(
+                  'Gross Sales Revenue:',
+                  CurrencyFormatter.formatPdf(summary.totalSales),
+                ),
+                _totalRow(
+                  'Discounts Given:',
+                  CurrencyFormatter.formatPdf(summary.totalDiscount),
+                  color: PdfColors.red800,
+                ),
+                _totalRow(
+                  'Net Sales Revenue:',
+                  CurrencyFormatter.formatPdf(summary.netSales),
+                  isBold: true,
+                ),
+                _totalRow(
+                  'Cash Collected:',
+                  CurrencyFormatter.formatPdf(summary.totalPaid),
+                  color: PdfColors.green800,
+                ),
+                _totalRow(
+                  'Receivables Due:',
+                  CurrencyFormatter.formatPdf(summary.totalBalanceDue),
+                  color: PdfColors.red800,
+                ),
+                _totalRow(
+                  'Total Invoices Count:',
+                  '${summary.invoiceCount} invoices',
+                ),
+                _totalRow(
+                  'Gross Profit:',
+                  CurrencyFormatter.formatPdf(summary.grossProfit),
+                  isBold: true,
+                  color: PdfColors.green900,
+                  fontSize: 11,
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 14),
+          pw.Text(
+            'Product-Wise Sales Breakdown',
+            style: pw.TextStyle(
+              fontSize: 12,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.green900,
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                children: [
+                  _th('Product Name'),
+                  _th('Category'),
+                  _th('Qty Sold'),
+                  _th('Revenue (PKR)'),
+                  _th('Cost (PKR)'),
+                  _th('Profit (PKR)'),
+                ],
+              ),
+              ...products.map(
+                (p) => pw.TableRow(
+                  children: [
+                    _td(p.productName),
+                    _td(p.category),
+                    _td(
+                      p.totalQuantity.toStringAsFixed(1),
+                      align: pw.TextAlign.right,
+                    ),
+                    _td(
+                      CurrencyFormatter.format(
+                        p.totalRevenue,
+                        showSymbol: false,
+                      ),
+                      align: pw.TextAlign.right,
+                    ),
+                    _td(
+                      CurrencyFormatter.format(
+                        p.totalCost,
+                        showSymbol: false,
+                      ),
+                      align: pw.TextAlign.right,
+                    ),
+                    _td(
+                      CurrencyFormatter.format(
+                        p.profit,
+                        showSymbol: false,
+                      ),
+                      align: pw.TextAlign.right,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return pdf;
+  }
+
+  static Future<void> printSalesReport({
+    required SalesSummaryReport summary,
+    required List<ProductSalesReport> products,
+    required BusinessSettings settings,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final pdf = await buildSalesReportDocument(
+      summary: summary,
+      products: products,
+      settings: settings,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Sales_Report.pdf',
+    );
+  }
+
+  static Future<void> shareSalesReport({
+    required SalesSummaryReport summary,
+    required List<ProductSalesReport> products,
+    required BusinessSettings settings,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final pdf = await buildSalesReportDocument(
+      summary: summary,
+      products: products,
+      settings: settings,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
+    final bytes = await pdf.save();
+    try {
+      await Printing.sharePdf(bytes: bytes, filename: 'Sales_Report.pdf');
+    } catch (_) {
+      final xFile = XFile.fromData(
+        bytes,
+        name: 'Sales_Report.pdf',
+        mimeType: 'application/pdf',
+      );
+      await Share.shareXFiles([xFile], text: 'Sales & Revenue Report');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // INVENTORY VALUATION REPORT PDF
+  // ---------------------------------------------------------------------------
+
+  /// Builds PDF for Inventory Valuation Report
+  static Future<pw.Document> buildInventoryReportDocument({
+    required InventoryValuationReport valuation,
+    required List<Product> products,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = pw.Document();
+
+    pw.MemoryImage? logoImage;
+    try {
+      final imageBytes = await rootBundle.load('assets/images/app_logo.png');
+      logoImage = pw.MemoryImage(imageBytes.buffer.asUint8List());
+    } catch (_) {}
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        header: (context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    children: [
+                      if (logoImage != null)
+                        pw.Container(
+                          width: 44,
+                          height: 44,
+                          margin: const pw.EdgeInsets.only(right: 12),
+                          child: pw.ClipRRect(
+                            horizontalRadius: 6,
+                            verticalRadius: 6,
+                            child: pw.Image(logoImage),
+                          ),
+                        ),
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            settings.businessName,
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.green900,
+                            ),
+                          ),
+                          if (settings.address.isNotEmpty)
+                            pw.Text(
+                              settings.address,
+                              style: const pw.TextStyle(fontSize: 9),
+                            ),
+                          if (settings.phone.isNotEmpty)
+                            pw.Text(
+                              'Tel: ${settings.phone}',
+                              style: const pw.TextStyle(fontSize: 9),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: pw.BoxDecoration(
+                          color: PdfColors.green800,
+                          borderRadius: pw.BorderRadius.circular(4),
+                        ),
+                        child: pw.Text(
+                          'INVENTORY REPORT',
+                          style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        'Date: ${DateTime.now().toString().substring(0, 10)}',
+                        style: const pw.TextStyle(fontSize: 9),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 4),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'Page ${context.pageNumber} of ${context.pagesCount}',
+                    style: const pw.TextStyle(
+                      fontSize: 9,
+                      color: PdfColors.grey600,
+                    ),
+                  ),
+                ],
+              ),
+              pw.Divider(color: PdfColors.grey400, thickness: 0.5),
+              pw.SizedBox(height: 6),
+            ],
+          );
+        },
+        build: (context) => [
+          pw.Container(
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: pw.BorderRadius.circular(6),
+              border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+            ),
+            child: pw.Column(
+              children: [
+                _totalRow(
+                  'Total Active Products:',
+                  '${valuation.totalProducts} items',
+                ),
+                _totalRow(
+                  'Total Stock Quantity:',
+                  '${valuation.totalStockQuantity.toStringAsFixed(1)} units',
+                ),
+                _totalRow(
+                  'Total Cost Valuation:',
+                  CurrencyFormatter.formatPdf(valuation.totalCostValue),
+                ),
+                _totalRow(
+                  'Total Retail Valuation:',
+                  CurrencyFormatter.formatPdf(valuation.totalRetailValue),
+                ),
+                _totalRow(
+                  'Potential Gross Profit:',
+                  CurrencyFormatter.formatPdf(valuation.potentialProfit),
+                  isBold: true,
+                  color: PdfColors.green900,
+                  fontSize: 11,
+                ),
+                if (valuation.lowStockCount > 0)
+                  _totalRow(
+                    'Low Stock Alert Items:',
+                    '${valuation.lowStockCount} items need re-order',
+                    color: PdfColors.red800,
+                  ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 14),
+          pw.Text(
+            'Product Stock & Valuation Breakdown',
+            style: pw.TextStyle(
+              fontSize: 12,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.green900,
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                children: [
+                  _th('Product Name'),
+                  _th('Category'),
+                  _th('Stock'),
+                  _th('Unit'),
+                  _th('Cost (PKR)'),
+                  _th('Sale (PKR)'),
+                  _th('Valuation (PKR)'),
+                  _th('Status'),
+                ],
+              ),
+              ...products.map(
+                (p) => pw.TableRow(
+                  children: [
+                    _td(p.name),
+                    _td(p.category),
+                    _td(
+                      p.currentStock.toStringAsFixed(1),
+                      align: pw.TextAlign.right,
+                    ),
+                    _td(p.unit, align: pw.TextAlign.center),
+                    _td(
+                      CurrencyFormatter.format(
+                        p.purchasePrice,
+                        showSymbol: false,
+                      ),
+                      align: pw.TextAlign.right,
+                    ),
+                    _td(
+                      CurrencyFormatter.format(
+                        p.sellingPrice,
+                        showSymbol: false,
+                      ),
+                      align: pw.TextAlign.right,
+                    ),
+                    _td(
+                      CurrencyFormatter.format(
+                        p.inventoryValuation,
+                        showSymbol: false,
+                      ),
+                      align: pw.TextAlign.right,
+                    ),
+                    _td(
+                      p.isLowStock ? 'LOW STOCK' : 'OK',
+                      align: pw.TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return pdf;
+  }
+
+  static Future<void> printInventoryReport({
+    required InventoryValuationReport valuation,
+    required List<Product> products,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildInventoryReportDocument(
+      valuation: valuation,
+      products: products,
+      settings: settings,
+    );
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Inventory_Report.pdf',
+    );
+  }
+
+  static Future<void> shareInventoryReport({
+    required InventoryValuationReport valuation,
+    required List<Product> products,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildInventoryReportDocument(
+      valuation: valuation,
+      products: products,
+      settings: settings,
+    );
+    final bytes = await pdf.save();
+    try {
+      await Printing.sharePdf(bytes: bytes, filename: 'Inventory_Report.pdf');
+    } catch (_) {
+      final xFile = XFile.fromData(
+        bytes,
+        name: 'Inventory_Report.pdf',
+        mimeType: 'application/pdf',
+      );
+      await Share.shareXFiles([xFile], text: 'Inventory Valuation Report');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // PARTY BALANCE REPORT (CUSTOMER RECEIVABLES & SUPPLIER PAYABLES) PDF
+  // ---------------------------------------------------------------------------
+
+  /// Builds PDF for Customer Receivables or Supplier Payables Report
+  static Future<pw.Document> buildPartyBalanceReportDocument({
+    required String reportTitle,
+    required String partyType,
+    required List<PartyBalanceReport> list,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = pw.Document();
+
+    pw.MemoryImage? logoImage;
+    try {
+      final imageBytes = await rootBundle.load('assets/images/app_logo.png');
+      logoImage = pw.MemoryImage(imageBytes.buffer.asUint8List());
+    } catch (_) {}
+
+    final totalBalance = list.fold<double>(
+      0.0,
+      (acc, item) => acc + item.balance,
+    );
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        header: (context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    children: [
+                      if (logoImage != null)
+                        pw.Container(
+                          width: 44,
+                          height: 44,
+                          margin: const pw.EdgeInsets.only(right: 12),
+                          child: pw.ClipRRect(
+                            horizontalRadius: 6,
+                            verticalRadius: 6,
+                            child: pw.Image(logoImage),
+                          ),
+                        ),
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            settings.businessName,
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.green900,
+                            ),
+                          ),
+                          if (settings.address.isNotEmpty)
+                            pw.Text(
+                              settings.address,
+                              style: const pw.TextStyle(fontSize: 9),
+                            ),
+                          if (settings.phone.isNotEmpty)
+                            pw.Text(
+                              'Tel: ${settings.phone}',
+                              style: const pw.TextStyle(fontSize: 9),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: pw.BoxDecoration(
+                          color: PdfColors.green800,
+                          borderRadius: pw.BorderRadius.circular(4),
+                        ),
+                        child: pw.Text(
+                          partyType.toUpperCase(),
+                          style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontWeight: pw.FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        'Date: ${DateTime.now().toString().substring(0, 10)}',
+                        style: const pw.TextStyle(fontSize: 9),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 4),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'Page ${context.pageNumber} of ${context.pagesCount}',
+                    style: const pw.TextStyle(
+                      fontSize: 9,
+                      color: PdfColors.grey600,
+                    ),
+                  ),
+                ],
+              ),
+              pw.Divider(color: PdfColors.grey400, thickness: 0.5),
+              pw.SizedBox(height: 6),
+            ],
+          );
+        },
+        build: (context) => [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                reportTitle,
+                style: pw.TextStyle(
+                  fontSize: 13,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.green900,
+                ),
+              ),
+              pw.Text(
+                'Total: ${CurrencyFormatter.formatPdf(totalBalance)}',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.red800,
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 10),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                children: [
+                  _th('$partyType Name'),
+                  _th('Phone'),
+                  _th('Address / Village'),
+                  _th('Balance (PKR)'),
+                ],
+              ),
+              ...list.map(
+                (p) => pw.TableRow(
+                  children: [
+                    _td(p.name),
+                    _td(p.phone.isNotEmpty ? p.phone : '-'),
+                    _td(p.address.isNotEmpty ? p.address : '-'),
+                    _td(
+                      CurrencyFormatter.format(
+                        p.balance,
+                        showSymbol: false,
+                      ),
+                      align: pw.TextAlign.right,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return pdf;
+  }
+
+  static Future<void> printPartyBalanceReport({
+    required String reportTitle,
+    required String partyType,
+    required List<PartyBalanceReport> list,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildPartyBalanceReportDocument(
+      reportTitle: reportTitle,
+      partyType: partyType,
+      list: list,
+      settings: settings,
+    );
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: '${partyType}_Balance_Report.pdf',
+    );
+  }
+
+  static Future<void> sharePartyBalanceReport({
+    required String reportTitle,
+    required String partyType,
+    required List<PartyBalanceReport> list,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildPartyBalanceReportDocument(
+      reportTitle: reportTitle,
+      partyType: partyType,
+      list: list,
+      settings: settings,
+    );
+    final bytes = await pdf.save();
+    try {
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: '${partyType}_Balance_Report.pdf',
+      );
+    } catch (_) {
+      final xFile = XFile.fromData(
+        bytes,
+        name: '${partyType}_Balance_Report.pdf',
+        mimeType: 'application/pdf',
+      );
+      await Share.shareXFiles([xFile], text: reportTitle);
+    }
   }
 }

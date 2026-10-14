@@ -6,7 +6,6 @@ import '../../../core/models/customer.dart';
 import '../../../core/models/ledger_entry.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/repositories/customer_repository.dart';
-import '../../../core/services/csv_service.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state_view.dart';
@@ -78,6 +77,8 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                   await PdfService.shareLedgerStatement(
                     partyName: _customer.name,
                     partyType: 'Customer',
+                    partyPhone: _customer.phone,
+                    partyAddress: _customer.villageOrAddress,
                     entries: _entries,
                     currentBalance: _customer.currentBalance,
                     settings: settings,
@@ -100,6 +101,8 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                   await PdfService.printLedgerStatement(
                     partyName: _customer.name,
                     partyType: 'Customer',
+                    partyPhone: _customer.phone,
+                    partyAddress: _customer.villageOrAddress,
                     entries: _entries,
                     currentBalance: _customer.currentBalance,
                     settings: settings,
@@ -118,39 +121,6 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
     );
   }
 
-  Future<void> _exportCsv() async {
-    final rows = <List<dynamic>>[
-      [
-        'Date',
-        'Type',
-        'Invoice / Ref',
-        'Description',
-        'Items Detail',
-        'Debit (PKR)',
-        'Credit (PKR)',
-        'Previous Balance (PKR)',
-        'Running Balance (PKR)',
-      ],
-      ..._entries.map(
-        (e) => [
-          e.transactionDate,
-          e.transactionType,
-          e.referenceNumber ?? '',
-          e.description,
-          e.itemsDetails.join('; '),
-          e.debit,
-          e.credit,
-          e.previousBalance,
-          e.runningBalance,
-        ],
-      ),
-    ];
-    await CsvService.exportAndShareCsv(
-      fileName:
-          'Customer_Ledger_${_customer.name.replaceAll(' ', '_')}.csv',
-      rows: rows,
-    );
-  }
 
   Widget _buildTypeBadge(LedgerEntry e) {
     Color bg;
@@ -244,7 +214,7 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${_customer.name} Ledger'),
+        title: Text('${_customer.name} - کھاتہ / Ledger'),
         actions: [
           IconButton(
             icon: const Icon(Icons.sync),
@@ -263,75 +233,142 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            tooltip: 'Export Statement PDF',
+            tooltip: 'PDF کھاتہ کھولیں / شیئر کریں',
             onPressed: _entries.isEmpty ? null : _exportPdf,
-          ),
-          IconButton(
-            icon: const Icon(Icons.download),
-            tooltip: 'Export CSV',
-            onPressed: _entries.isEmpty ? null : _exportCsv,
           ),
         ],
       ),
       body: Column(
         children: [
-          // Header Balance Card
+          // Customer Profile Banner (Name, Address, Phone & Balance)
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _customer.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      if (_customer.phone.isNotEmpty)
-                        Text(
-                          'Phone: ${_customer.phone}',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                          ),
-                        ),
-                      if (_customer.villageOrAddress.isNotEmpty)
-                        Text(
-                          'Address: ${_customer.villageOrAddress}',
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 11,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Outstanding Balance',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: AppColors.primary.withOpacity(0.12),
+                      child: const Icon(
+                        Icons.person,
+                        color: AppColors.primary,
+                        size: 26,
                       ),
                     ),
-                    Text(
-                      CurrencyFormatter.format(_customer.currentBalance),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _customer.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 17,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 2),
+                                child: Icon(
+                                  Icons.location_on,
+                                  size: 14,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  _customer.villageOrAddress.trim().isNotEmpty
+                                      ? _customer.villageOrAddress.trim()
+                                      : 'پتہ درج نہیں (No Address)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: _customer.villageOrAddress
+                                            .trim()
+                                            .isNotEmpty
+                                        ? AppColors.textSecondary
+                                        : AppColors.textMuted,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_customer.phone.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.phone,
+                                  size: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _customer.phone,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
                         color: _customer.currentBalance > 0
-                            ? AppColors.danger
-                            : AppColors.success,
+                            ? AppColors.dangerBg
+                            : AppColors.successBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _customer.currentBalance > 0
+                              ? AppColors.danger.withOpacity(0.3)
+                              : AppColors.success.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _customer.currentBalance > 0
+                                ? 'واجب الادا بقایا'
+                                : 'اکاؤنٹ کلیئر',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: _customer.currentBalance > 0
+                                  ? AppColors.danger
+                                  : AppColors.success,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            CurrencyFormatter.format(_customer.currentBalance),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: _customer.currentBalance > 0
+                                  ? AppColors.danger
+                                  : AppColors.success,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

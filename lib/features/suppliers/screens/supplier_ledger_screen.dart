@@ -4,7 +4,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/models/supplier.dart';
 import '../../../core/models/ledger_entry.dart';
 import '../../../core/providers/app_providers.dart';
-import '../../../core/services/csv_service.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state_view.dart';
@@ -68,6 +67,8 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                   await PdfService.shareLedgerStatement(
                     partyName: widget.supplier.name,
                     partyType: 'Supplier',
+                    partyPhone: widget.supplier.phone,
+                    partyAddress: widget.supplier.companyOrAddress,
                     entries: _entries,
                     currentBalance: widget.supplier.currentBalance,
                     settings: settings,
@@ -90,6 +91,8 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                   await PdfService.printLedgerStatement(
                     partyName: widget.supplier.name,
                     partyType: 'Supplier',
+                    partyPhone: widget.supplier.phone,
+                    partyAddress: widget.supplier.companyOrAddress,
                     entries: _entries,
                     currentBalance: widget.supplier.currentBalance,
                     settings: settings,
@@ -108,53 +111,16 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
     );
   }
 
-  Future<void> _exportCsv() async {
-    final rows = <List<dynamic>>[
-      [
-        'Date',
-        'Type',
-        'Description',
-        'Ref',
-        'Debit (Paid PKR)',
-        'Credit (Billed PKR)',
-        'Running Balance (PKR)',
-      ],
-      ..._entries.map(
-        (e) => [
-          e.transactionDate,
-          e.transactionType,
-          e.itemsDetails.isNotEmpty
-              ? '${e.description} [${e.itemsDetails.join('; ')}]'
-              : e.description,
-          e.referenceNumber ?? '',
-          e.debit,
-          e.credit,
-          e.runningBalance,
-        ],
-      ),
-    ];
-    await CsvService.exportAndShareCsv(
-      fileName:
-          'Supplier_Ledger_${widget.supplier.name.replaceAll(' ', '_')}.csv',
-      rows: rows,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.supplier.name} Ledger'),
+        title: Text('${widget.supplier.name} - کھاتہ / Ledger'),
         actions: [
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            tooltip: 'Export Statement PDF',
+            tooltip: 'PDF کھاتہ کھولیں / شیئر کریں',
             onPressed: _entries.isEmpty ? null : _exportPdf,
-          ),
-          IconButton(
-            icon: const Icon(Icons.download),
-            tooltip: 'Export CSV',
-            onPressed: _entries.isEmpty ? null : _exportCsv,
           ),
         ],
       ),
@@ -162,51 +128,111 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
         children: [
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.supplier.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    if (widget.supplier.phone.isNotEmpty)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        'Phone: ${widget.supplier.phone}',
+                        widget.supplier.name,
                         style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                  ],
+                      if (widget.supplier.companyOrAddress.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.business,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                widget.supplier.companyOrAddress,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (widget.supplier.phone.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.phone,
+                              size: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              widget.supplier.phone,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'Total Payable Balance',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: widget.supplier.currentBalance > 0
+                        ? AppColors.warningBg
+                        : AppColors.successBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: widget.supplier.currentBalance > 0
+                          ? AppColors.warning.withOpacity(0.3)
+                          : AppColors.success.withOpacity(0.3),
                     ),
-                    Text(
-                      CurrencyFormatter.format(widget.supplier.currentBalance),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: widget.supplier.currentBalance > 0
-                            ? AppColors.warning
-                            : AppColors.success,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        widget.supplier.currentBalance > 0
+                            ? 'قابل ادا بقایا'
+                            : 'اکاؤنٹ کلیئر',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: widget.supplier.currentBalance > 0
+                              ? AppColors.warning
+                              : AppColors.success,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        CurrencyFormatter.format(widget.supplier.currentBalance),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: widget.supplier.currentBalance > 0
+                              ? AppColors.warning
+                              : AppColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

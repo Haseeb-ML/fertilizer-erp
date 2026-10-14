@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/report_models.dart';
 import '../../../core/providers/app_providers.dart';
-import '../../../core/services/csv_service.dart';
+import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../suppliers/screens/supplier_detail_screen.dart';
@@ -11,18 +11,86 @@ import '../../suppliers/screens/supplier_detail_screen.dart';
 class SupplierPayableScreen extends ConsumerWidget {
   const SupplierPayableScreen({super.key});
 
-  Future<void> _exportCsv(List<PartyBalanceReport> list) async {
-    final rows = <List<dynamic>>[
-      [
-        'Supplier Payables Report',
-        'Generated: ${DateTime.now().toString().substring(0, 10)}',
-      ],
-      ['Supplier / Company Name', 'Phone', 'Address', 'Payable Balance (PKR)'],
-      ...list.map((s) => [s.name, s.phone, s.address, s.balance]),
-    ];
-    await CsvService.exportAndShareCsv(
-      fileName: 'Supplier_Payables_Report.csv',
-      rows: rows,
+  Future<void> _showPdfOptions(
+    BuildContext context,
+    WidgetRef ref,
+    List<PartyBalanceReport> list,
+  ) async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Supplier Payables PDF Report (سپلائر ادائیگیاں رپورٹ)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Total ${list.length} Suppliers with Outstanding Payables',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final settings =
+                      await ref.read(settingsRepoProvider).getSettings();
+                  await PdfService.sharePartyBalanceReport(
+                    reportTitle:
+                        'Supplier Payables Report (سپلائر ادائیگیاں رپورٹ)',
+                    partyType: 'Supplier',
+                    list: list,
+                    settings: settings,
+                  );
+                },
+                icon: const Icon(Icons.share),
+                label: const Text('Share PDF (واٹس ایپ پر شیئر کریں)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final settings =
+                      await ref.read(settingsRepoProvider).getSettings();
+                  await PdfService.printPartyBalanceReport(
+                    reportTitle:
+                        'Supplier Payables Report (سپلائر ادائیگیاں رپورٹ)',
+                    partyType: 'Supplier',
+                    list: list,
+                    settings: settings,
+                  );
+                },
+                icon: const Icon(Icons.print),
+                label: const Text(
+                  'Print / Preview PDF (پی ڈی ایف کھولیں / پرنٹ کریں)',
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -84,11 +152,11 @@ class SupplierPayableScreen extends ConsumerWidget {
                     ),
                     IconButton(
                       icon: const Icon(
-                        Icons.download,
+                        Icons.picture_as_pdf,
                         color: AppColors.warning,
                       ),
-                      tooltip: 'Export CSV',
-                      onPressed: () => _exportCsv(list),
+                      tooltip: 'PDF رپورٹ کھولیں / شیئر کریں',
+                      onPressed: () => _showPdfOptions(context, ref, list),
                     ),
                   ],
                 ),

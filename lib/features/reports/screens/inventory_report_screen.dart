@@ -4,7 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/report_models.dart';
 import '../../../core/providers/app_providers.dart';
-import '../../../core/services/csv_service.dart';
+import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/kpi_card.dart';
 
@@ -17,51 +17,81 @@ class InventoryReportScreen extends ConsumerStatefulWidget {
 }
 
 class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
-  Future<void> _exportCsv(
-    InventoryValuationReport valuation,
+  Future<void> _showPdfOptions(
+    InventoryValuationReport val,
     List<Product> products,
   ) async {
-    final rows = <List<dynamic>>[
-      [
-        'Inventory & Valuation Report',
-        'Generated: ${DateTime.now().toString().substring(0, 10)}',
-      ],
-      ['Total Products Count', valuation.totalProducts],
-      ['Total Stock Quantity', valuation.totalStockQuantity],
-      ['Total Cost Valuation (PKR)', valuation.totalCostValue],
-      ['Total Retail Valuation (PKR)', valuation.totalRetailValue],
-      ['Potential Profit (PKR)', valuation.potentialProfit],
-      [],
-      ['Product Breakdown'],
-      [
-        'Product Name',
-        'Category',
-        'SKU',
-        'Current Stock',
-        'Unit',
-        'Cost Rate (PKR)',
-        'Selling Rate (PKR)',
-        'Total Valuation (PKR)',
-        'Status',
-      ],
-      ...products.map(
-        (p) => [
-          p.name,
-          p.category,
-          p.sku,
-          p.currentStock,
-          p.unit,
-          p.purchasePrice,
-          p.sellingPrice,
-          p.inventoryValuation,
-          p.isLowStock ? 'LOW STOCK' : 'OK',
-        ],
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-    ];
-
-    await CsvService.exportAndShareCsv(
-      fileName: 'Inventory_Valuation_Report.csv',
-      rows: rows,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Inventory & Valuation PDF Report (انوینٹری رپورٹ)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Total ${val.totalProducts} Products in Stock',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final settings =
+                      await ref.read(settingsRepoProvider).getSettings();
+                  await PdfService.shareInventoryReport(
+                    valuation: val,
+                    products: products,
+                    settings: settings,
+                  );
+                },
+                icon: const Icon(Icons.share),
+                label: const Text('Share PDF (واٹس ایپ پر شیئر کریں)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final settings =
+                      await ref.read(settingsRepoProvider).getSettings();
+                  await PdfService.printInventoryReport(
+                    valuation: val,
+                    products: products,
+                    settings: settings,
+                  );
+                },
+                icon: const Icon(Icons.print),
+                label: const Text(
+                  'Print / Preview PDF (پی ڈی ایف کھولیں / پرنٹ کریں)',
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -109,11 +139,11 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
                     ),
                     IconButton(
                       icon: const Icon(
-                        Icons.download,
+                        Icons.picture_as_pdf,
                         color: AppColors.primary,
                       ),
-                      tooltip: 'Export CSV',
-                      onPressed: () => _exportCsv(val, products),
+                      tooltip: 'PDF رپورٹ کھولیں / شیئر کریں',
+                      onPressed: () => _showPdfOptions(val, products),
                     ),
                   ],
                 ),

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/report_models.dart';
 import '../../../core/providers/app_providers.dart';
-import '../../../core/services/csv_service.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -108,67 +107,6 @@ class _ProfitLossReportScreenState
     }
   }
 
-  Future<void> _exportCsv(ProfitLossReport report) async {
-    final periodDesc = _preset == DateFilterPreset.allTime
-        ? 'All Time (تمام ریکارڈ)'
-        : 'From: ${_fromDate != null ? DateFormatter.formatDate(_fromDate!) : "Start"} To: ${_toDate != null ? DateFormatter.formatDate(_toDate!) : "End"}';
-
-    final rows = <List<dynamic>>[
-      ['PROFIT & LOSS STATEMENT (نفع و نقصان گوشوارہ)'],
-      ['Period', periodDesc],
-      [],
-      ['1. FINANCIAL SUMMARY (مالیاتی خلاصہ)'],
-      ['Gross Sales Revenue (PKR)', report.totalRevenue],
-      ['Less: Sales Returns (PKR)', report.totalReturns],
-      ['Net Sales Revenue (PKR)', report.netRevenue],
-      [
-        'Less: Cost of Goods Sold (Dynamic FIFO COGS) (PKR)',
-        report.costOfGoodsSold
-      ],
-      ['Gross Profit (PKR)', report.grossProfit],
-      ['Gross Margin (%)', '${report.grossMarginPercent.toStringAsFixed(1)}%'],
-      ['Less: Operational Expenses (PKR)', report.totalExpenses],
-      ['Estimated Net Profit (PKR)', report.netProfit],
-      ['Net Margin (%)', '${report.netMarginPercent.toStringAsFixed(1)}%'],
-      ['Total Invoices Count', report.totalInvoices],
-      [],
-      ['2. PRODUCT-WISE PROFIT BREAKDOWN (مصنوعات کا منافع)'],
-      [
-        '#',
-        'Product Name',
-        'Category',
-        'Quantity Sold',
-        'Revenue (PKR)',
-        'Cost (PKR)',
-        'Gross Profit (PKR)',
-        'Margin (%)'
-      ],
-      ...report.productBreakdown.asMap().entries.map((e) => [
-            e.key + 1,
-            e.value.productName,
-            e.value.category,
-            e.value.quantitySold,
-            e.value.totalRevenue,
-            e.value.totalCost,
-            e.value.grossProfit,
-            '${e.value.marginPercent.toStringAsFixed(1)}%',
-          ]),
-      [],
-      ['3. OPERATING EXPENSES BREAKDOWN (اخراجات کی تفصیل)'],
-      ['#', 'Category', 'Amount (PKR)', 'Percentage (%)'],
-      ...report.expenseBreakdown.asMap().entries.map((e) => [
-            e.key + 1,
-            e.value.category,
-            e.value.amount,
-            '${e.value.percentage.toStringAsFixed(1)}%',
-          ]),
-    ];
-
-    await CsvService.exportAndShareCsv(
-      fileName: 'Profit_and_Loss_Statement.csv',
-      rows: rows,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -340,13 +278,6 @@ class _ProfitLossReportScreenState
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      IconButton(
-                        icon: const Icon(Icons.download,
-                            color: AppColors.primary, size: 20),
-                        tooltip: 'Export CSV',
-                        onPressed: () => _exportCsv(report),
                       ),
                     ],
                   ),
