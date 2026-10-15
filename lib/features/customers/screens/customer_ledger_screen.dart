@@ -51,9 +51,6 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
   }
 
   Future<void> _exportPdf() async {
-    final hasPhone = _customer.phone.trim().isNotEmpty;
-    final isPakValid = PdfService.isValidPakistaniMobile(_customer.phone);
-
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -73,96 +70,8 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                   fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 14),
-
-              // Phone warning banner if invalid prefix like 0358...
-              if (hasPhone && !isPakValid) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8E1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFFFB300)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.info_outline,
-                              color: Color(0xFFE65100), size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'فون نمبر (${_customer.phone}) درست پاکستانی موبائل کوڈ نہیں ہے',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: Color(0xFFE65100),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'پاکستان میں موبائل نیٹ ورکس 0300 تا 0349 یا 0355 ہیں (0358 پاکستان میں موجود نہیں ہے)۔ واٹس ایپ پر کلک کرنے سے رابطہ منتخب کرنے کی لسٹ کھل جائے گی، یا نیچے بٹن سے نمبر ابھی درست کر لیں۔',
-                        style: TextStyle(fontSize: 12, color: Colors.black87, height: 1.3),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          Navigator.of(ctx).pop();
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => CustomerFormScreen(customer: _customer),
-                            ),
-                          );
-                          _loadLedger();
-                        },
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('گاہک کا فون نمبر درست کریں (Edit Number)'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFB71C1C),
-                          side: const BorderSide(color: Color(0xFFFFB300)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // Option 1: Direct to customer's phone (when valid)
-              if (isPakValid) ...[
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    Navigator.of(ctx).pop();
-                    final settings =
-                        await ref.read(settingsRepoProvider).getSettings();
-                    await PdfService.shareLedgerStatement(
-                      partyName: _customer.name,
-                      partyType: 'Customer',
-                      partyPhone: _customer.phone,
-                      partyAddress: _customer.villageOrAddress,
-                      entries: _entries,
-                      currentBalance: _customer.currentBalance,
-                      settings: settings,
-                    );
-                  },
-                  icon: const Icon(Icons.send_rounded),
-                  label: Text('WhatsApp: گاہک کے نمبر پر بھیجیں (${_customer.phone})'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF25D366),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-
-              // Option 2: Open WhatsApp directly WITHOUT number (Pick any contact / group)
+              const SizedBox(height: 16),
+              // WhatsApp Share Button (Opens WhatsApp directly to select contact/chat)
               ElevatedButton.icon(
                 onPressed: () async {
                   Navigator.of(ctx).pop();
@@ -171,7 +80,7 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                   await PdfService.shareLedgerStatement(
                     partyName: _customer.name,
                     partyType: 'Customer',
-                    partyPhone: null, // No phone -> opens WhatsApp contact picker directly!
+                    partyPhone: null, // Directly opens WhatsApp to select contact / chat without phone errors
                     partyAddress: _customer.villageOrAddress,
                     entries: _entries,
                     currentBalance: _customer.currentBalance,
@@ -179,13 +88,9 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                   );
                 },
                 icon: const Icon(Icons.chat),
-                label: Text(
-                  isPakValid
-                      ? 'WhatsApp: بغیر نمبر کے کھولیں (کانٹیکٹ خود منتخب کریں)'
-                      : 'WhatsApp پر کھاتہ شیئر کریں (بغیر نمبر کے - کانٹیکٹ خود چنیں)',
-                ),
+                label: const Text('WhatsApp پر کھاتہ شیئر کریں (WhatsApp Chat & PDF)'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isPakValid ? const Color(0xFF128C7E) : const Color(0xFF25D366),
+                  backgroundColor: const Color(0xFF25D366),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
