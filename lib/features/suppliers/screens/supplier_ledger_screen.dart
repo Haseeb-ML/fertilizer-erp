@@ -75,8 +75,8 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                     settings: settings,
                   );
                 },
-                icon: const Icon(Icons.share),
-                label: const Text('Share PDF (واٹس ایپ پر PDF شیئر کریں)'),
+                icon: const Icon(Icons.chat),
+                label: const Text('WhatsApp پر کھاتہ شیئر کریں (WhatsApp Chat & PDF)'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF25D366),
                   foregroundColor: Colors.white,
@@ -99,8 +99,8 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                     settings: settings,
                   );
                 },
-                icon: const Icon(Icons.print),
-                label: const Text('Print / Preview Statement (پی ڈی ایف دیکھیں)'),
+                icon: const Icon(Icons.picture_as_pdf),
+                label: const Text('PDF ڈاؤن لوڈ / پرنٹ کریں (Download & Print PDF)'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),

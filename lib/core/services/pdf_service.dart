@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/sale.dart';
 import '../models/business_settings.dart';
 import '../models/ledger_entry.dart';
@@ -310,29 +313,138 @@ class PdfService {
     );
   }
 
-  /// Directly opens native share sheet (WhatsApp, Email, Drive, etc.) with the PDF invoice
+  /// Safely shares PDF file or falls back to browser download/preview if native share unsupported
+  static Future<void> _safeShareOrDownloadPdf({
+    required Uint8List bytes,
+    required String filename,
+    String? shareText,
+  }) async {
+    bool shared = false;
+    try {
+      shared = await Printing.sharePdf(
+        bytes: bytes,
+        filename: filename,
+      );
+    } catch (_) {
+      shared = false;
+    }
+
+    if (!shared) {
+      try {
+        final xFile = XFile.fromData(
+          bytes,
+          name: filename,
+          mimeType: 'application/pdf',
+        );
+        await Share.shareXFiles(
+          [xFile],
+          text: shareText ?? filename,
+        );
+        shared = true;
+      } catch (_) {
+        shared = false;
+      }
+    }
+
+    // On Web or if sharing was not supported (e.g. desktop PC browser), open PDF preview/download spooler
+    if (!shared || kIsWeb) {
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => bytes,
+        name: filename,
+      );
+    }
+  }
+
+  /// Cleans phone number to international WhatsApp format (e.g. 03001234567 -> 923001234567)
+  static String cleanPhoneNumber(String? raw) {
+    if (raw == null) return '';
+    String clean = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (clean.startsWith('0092')) {
+      clean = clean.substring(2);
+    } else if (clean.startsWith('03')) {
+      clean = '92${clean.substring(1)}';
+    } else if (clean.startsWith('3') && clean.length == 10) {
+      clean = '92$clean';
+    }
+    return clean;
+  }
+
+  /// Directly launches WhatsApp with pre-filled message (WhatsApp App on mobile, or WhatsApp Web on desktop)
+  static Future<bool> launchWhatsApp({
+    String? phone,
+    required String message,
+  }) async {
+    final cleanPhone = cleanPhoneNumber(phone);
+    final encoded = Uri.encodeComponent(message);
+    final urlString = cleanPhone.isNotEmpty
+        ? 'https://wa.me/$cleanPhone?text=$encoded'
+        : 'https://api.whatsapp.com/send?text=$encoded';
+
+    final uri = Uri.parse(urlString);
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      try {
+        return await launchUrl(uri);
+      } catch (_) {
+        return false;
+      }
+    }
+  }
+
+  /// Opens WhatsApp with formatted Sales Invoice breakdown
+  static Future<void> shareSaleInvoiceWhatsApp({
+    required Sale sale,
+    required BusinessSettings settings,
+    String? customerPhone,
+  }) async {
+    final itemsSummary = sale.items
+        .map((i) =>
+            '• ${i.productName} (${i.quantity.toStringAsFixed(0)} ${i.unit}) = Rs. ${CurrencyFormatter.format(i.totalPrice, showSymbol: false)}')
+        .join('\n');
+
+    final message = '''
+*${settings.businessName}*
+${settings.ownerName.isNotEmpty ? "پروپرائیٹر: ${settings.ownerName}\n" : ""}${settings.phone.isNotEmpty ? "رابطہ: ${settings.phone}\n" : ""}━━━━━━━━━━━━━━━━━━━━
+🧾 *سیلز انوائس #${sale.invoiceNumber}*
+👤 *کسٹمر:* ${sale.customerName}
+${customerPhone != null && customerPhone.isNotEmpty ? "📱 *فون:* $customerPhone\n" : ""}📅 *تاریخ:* ${sale.saleDate.substring(0, 10)}
+💳 *ادائیگی کا طریقہ:* ${sale.paymentMethod}
+━━━━━━━━━━━━━━━━━━━━
+*آئٹمز کی تفصیل (Items):*
+$itemsSummary
+━━━━━━━━━━━━━━━━━━━━
+💵 *کل رقم (Grand Total):* Rs. ${CurrencyFormatter.format(sale.grandTotal, showSymbol: false)}
+✅ *وصول شدہ رقم (Paid):* Rs. ${CurrencyFormatter.format(sale.paidAmount, showSymbol: false)}
+${sale.balanceDue > 0 ? "🔴 *بقایا جات (Balance Due):* Rs. ${CurrencyFormatter.format(sale.balanceDue, showSymbol: false)}" : "🟢 *کھاتہ کلیئر (Fully Paid)*"}
+
+شکریہ برائے خریداری!
+'''.trim();
+
+    await launchWhatsApp(phone: customerPhone, message: message);
+  }
+
+  /// Directly opens WhatsApp and native share/download with the PDF invoice
   static Future<void> shareSaleInvoice({
     required Sale sale,
     required BusinessSettings settings,
+    String? customerPhone,
   }) async {
+    // 1. Launch WhatsApp with the customer's chat & invoice message
+    await shareSaleInvoiceWhatsApp(
+      sale: sale,
+      settings: settings,
+      customerPhone: customerPhone,
+    );
+
+    // 2. Also generate and share or download the PDF document
     final pdf = await buildSaleInvoiceDocument(sale: sale, settings: settings);
     final bytes = await pdf.save();
-    try {
-      await Printing.sharePdf(
-        bytes: bytes,
-        filename: 'Invoice_${sale.invoiceNumber}.pdf',
-      );
-    } catch (_) {
-      final xFile = XFile.fromData(
-        bytes,
-        name: 'Invoice_${sale.invoiceNumber}.pdf',
-        mimeType: 'application/pdf',
-      );
-      await Share.shareXFiles(
-        [xFile],
-        text: 'Sales Invoice ${sale.invoiceNumber} - ${sale.customerName}',
-      );
-    }
+    await _safeShareOrDownloadPdf(
+      bytes: bytes,
+      filename: 'Invoice_${sale.invoiceNumber}.pdf',
+      shareText: 'Sales Invoice ${sale.invoiceNumber} - ${sale.customerName}',
+    );
   }
 
   /// Builds the pw.Document for Customer or Supplier Statement PDF
@@ -681,7 +793,51 @@ class PdfService {
     );
   }
 
-  /// Directly opens native share sheet (WhatsApp, Email, Drive, etc.) with the PDF statement
+  /// Opens WhatsApp with formatted customer/supplier ledger statement
+  static Future<void> shareLedgerWhatsApp({
+    required String partyName,
+    required String partyType,
+    String? partyPhone,
+    required double currentBalance,
+    required List<LedgerEntry> entries,
+    required BusinessSettings settings,
+  }) async {
+    final isCustomer = partyType.toLowerCase().contains('customer');
+    final balanceFormatted =
+        CurrencyFormatter.format(currentBalance, showSymbol: false);
+    final statusText = currentBalance > 0
+        ? (isCustomer
+            ? 'واجب الاداء بقایا (Receivable)'
+            : 'واجب الاداء رقم (Payable)')
+        : 'کھاتہ کلیئر (Account Cleared)';
+
+    final recent = entries.reversed.take(5).toList();
+    final lines = <String>[];
+    for (final e in recent) {
+      final amt = e.debit > 0
+          ? 'بنام / Debit: Rs. ${CurrencyFormatter.format(e.debit, showSymbol: false)}'
+          : 'جمع / Credit: Rs. ${CurrencyFormatter.format(e.credit, showSymbol: false)}';
+      lines.add('• ${e.transactionDate} | ${e.description} | $amt');
+    }
+
+    final message = '''
+*${settings.businessName}*
+${settings.ownerName.isNotEmpty ? "پروپرائیٹر: ${settings.ownerName}\n" : ""}${settings.phone.isNotEmpty ? "رابطہ: ${settings.phone}\n" : ""}━━━━━━━━━━━━━━━━━━━━
+📄 *کھاتہ سٹیٹمنٹ (${isCustomer ? "کسٹمر" : "سپلائر"} / $partyType)*
+👤 *نام:* $partyName
+${partyPhone != null && partyPhone.isNotEmpty ? "📱 *فون:* $partyPhone\n" : ""}📅 *تاریخ:* ${DateTime.now().toString().substring(0, 10)}
+💰 *موجودہ بقایا بیلنس:* Rs. $balanceFormatted ($statusText)
+━━━━━━━━━━━━━━━━━━━━
+*حالیہ ٹرانزیکشنز (Recent Transactions):*
+${lines.isEmpty ? "کوئی ٹرانزیکشن موجود نہیں" : lines.join('\n')}
+
+شکریہ برائے تعاون!
+'''.trim();
+
+    await launchWhatsApp(phone: partyPhone, message: message);
+  }
+
+  /// Directly opens WhatsApp and native share/download with the PDF statement
   static Future<void> shareLedgerStatement({
     required String partyName,
     required String partyType,
@@ -691,6 +847,17 @@ class PdfService {
     required double currentBalance,
     required BusinessSettings settings,
   }) async {
+    // 1. Launch WhatsApp with the customer's / supplier's chat & formatted statement
+    await shareLedgerWhatsApp(
+      partyName: partyName,
+      partyType: partyType,
+      partyPhone: partyPhone,
+      currentBalance: currentBalance,
+      entries: entries,
+      settings: settings,
+    );
+
+    // 2. Also generate and share or download the PDF document
     final pdf = await buildLedgerStatementDocument(
       partyName: partyName,
       partyType: partyType,
@@ -701,22 +868,11 @@ class PdfService {
       settings: settings,
     );
     final bytes = await pdf.save();
-    try {
-      await Printing.sharePdf(
-        bytes: bytes,
-        filename: '${partyName}_Statement.pdf',
-      );
-    } catch (_) {
-      final xFile = XFile.fromData(
-        bytes,
-        name: '${partyName}_Statement.pdf',
-        mimeType: 'application/pdf',
-      );
-      await Share.shareXFiles(
-        [xFile],
-        text: '$partyType Statement - $partyName',
-      );
-    }
+    await _safeShareOrDownloadPdf(
+      bytes: bytes,
+      filename: '${partyName}_Statement.pdf',
+      shareText: '$partyType Statement - $partyName',
+    );
   }
 
   /// Builds the pw.Document for Profit & Loss Statement PDF
@@ -1095,22 +1251,11 @@ class PdfService {
       toDate: toDate,
     );
     final bytes = await pdf.save();
-    try {
-      await Printing.sharePdf(
-        bytes: bytes,
-        filename: 'Profit_and_Loss_Statement.pdf',
-      );
-    } catch (_) {
-      final xFile = XFile.fromData(
-        bytes,
-        name: 'Profit_and_Loss_Statement.pdf',
-        mimeType: 'application/pdf',
-      );
-      await Share.shareXFiles(
-        [xFile],
-        text: 'Profit & Loss Statement - ${settings.businessName}',
-      );
-    }
+    await _safeShareOrDownloadPdf(
+      bytes: bytes,
+      filename: 'Profit_and_Loss_Statement.pdf',
+      shareText: 'Profit & Loss Statement - ${settings.businessName}',
+    );
   }
 
   static pw.Widget _metricBox(String label, String value, PdfColor color) {
@@ -1502,16 +1647,11 @@ class PdfService {
       toDate: toDate,
     );
     final bytes = await pdf.save();
-    try {
-      await Printing.sharePdf(bytes: bytes, filename: 'Sales_Report.pdf');
-    } catch (_) {
-      final xFile = XFile.fromData(
-        bytes,
-        name: 'Sales_Report.pdf',
-        mimeType: 'application/pdf',
-      );
-      await Share.shareXFiles([xFile], text: 'Sales & Revenue Report');
-    }
+    await _safeShareOrDownloadPdf(
+      bytes: bytes,
+      filename: 'Sales_Report.pdf',
+      shareText: 'Sales & Revenue Report',
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1772,16 +1912,11 @@ class PdfService {
       settings: settings,
     );
     final bytes = await pdf.save();
-    try {
-      await Printing.sharePdf(bytes: bytes, filename: 'Inventory_Report.pdf');
-    } catch (_) {
-      final xFile = XFile.fromData(
-        bytes,
-        name: 'Inventory_Report.pdf',
-        mimeType: 'application/pdf',
-      );
-      await Share.shareXFiles([xFile], text: 'Inventory Valuation Report');
-    }
+    await _safeShareOrDownloadPdf(
+      bytes: bytes,
+      filename: 'Inventory_Report.pdf',
+      shareText: 'Inventory Valuation Report',
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1997,18 +2132,10 @@ class PdfService {
       settings: settings,
     );
     final bytes = await pdf.save();
-    try {
-      await Printing.sharePdf(
-        bytes: bytes,
-        filename: '${partyType}_Balance_Report.pdf',
-      );
-    } catch (_) {
-      final xFile = XFile.fromData(
-        bytes,
-        name: '${partyType}_Balance_Report.pdf',
-        mimeType: 'application/pdf',
-      );
-      await Share.shareXFiles([xFile], text: reportTitle);
-    }
+    await _safeShareOrDownloadPdf(
+      bytes: bytes,
+      filename: '${partyType}_Balance_Report.pdf',
+      shareText: reportTitle,
+    );
   }
 }
