@@ -369,23 +369,37 @@ class PdfService {
     return clean;
   }
 
-  /// Directly launches WhatsApp with pre-filled message (WhatsApp App on mobile, or WhatsApp Web on desktop)
+  /// Directly launches WhatsApp with pre-filled message (WhatsApp App on mobile/iOS Safari PWA, or WhatsApp Web on desktop)
   static Future<bool> launchWhatsApp({
     String? phone,
     required String message,
   }) async {
     final cleanPhone = cleanPhoneNumber(phone);
     final encoded = Uri.encodeComponent(message);
-    final urlString = cleanPhone.isNotEmpty
+
+    // 1. Direct App Scheme (Ensures flawless transition in iOS Safari PWA standalone mode & mobile app)
+    final nativeScheme = cleanPhone.isNotEmpty
+        ? 'whatsapp://send?phone=$cleanPhone&text=$encoded'
+        : 'whatsapp://send?text=$encoded';
+    final nativeUri = Uri.parse(nativeScheme);
+
+    // 2. Universal Web Link (Fallback for desktop web / WhatsApp Web)
+    final webUrl = cleanPhone.isNotEmpty
         ? 'https://wa.me/$cleanPhone?text=$encoded'
         : 'https://api.whatsapp.com/send?text=$encoded';
+    final webUri = Uri.parse(webUrl);
 
-    final uri = Uri.parse(urlString);
     try {
-      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (await canLaunchUrl(nativeUri)) {
+        return await launchUrl(nativeUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
+
+    try {
+      return await launchUrl(webUri, mode: LaunchMode.externalApplication);
     } catch (_) {
       try {
-        return await launchUrl(uri);
+        return await launchUrl(webUri);
       } catch (_) {
         return false;
       }
