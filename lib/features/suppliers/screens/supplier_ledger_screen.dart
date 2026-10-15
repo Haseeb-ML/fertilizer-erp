@@ -67,7 +67,7 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
               ),
               const SizedBox(height: 16),
 
-              // WhatsApp Share Button (Opens WhatsApp directly to select contact/chat)
+              // 1. WhatsApp Share Button (Shares actual PDF File directly to WhatsApp)
               ElevatedButton.icon(
                 onPressed: () async {
                   Navigator.of(ctx).pop();
@@ -76,18 +76,43 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                   await PdfService.shareLedgerStatement(
                     partyName: _supplier.name,
                     partyType: 'Supplier',
-                    partyPhone: null, // Directly opens WhatsApp to select contact / chat without phone errors
+                    partyPhone: _supplier.phone,
                     partyAddress: _supplier.companyOrAddress,
                     entries: _entries,
                     currentBalance: _supplier.currentBalance,
                     settings: settings,
                   );
                 },
-                icon: const Icon(Icons.chat),
-                label: const Text('WhatsApp پر کھاتہ شیئر کریں (WhatsApp Chat & PDF)'),
+                icon: const Icon(Icons.picture_as_pdf),
+                label: const Text('WhatsApp پر PDF کھاتہ شیئر کریں (PDF Document)'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF25D366),
                   foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // 2. WhatsApp Text Summary (Formatted Urdu/English text)
+              OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final settings =
+                      await ref.read(settingsRepoProvider).getSettings();
+                  await PdfService.shareLedgerWhatsApp(
+                    partyName: _supplier.name,
+                    partyType: 'Supplier',
+                    partyPhone: null, // Opens WhatsApp contact picker directly
+                    currentBalance: _supplier.currentBalance,
+                    entries: _entries,
+                    settings: settings,
+                  );
+                },
+                icon: const Icon(Icons.chat_outlined),
+                label: const Text('WhatsApp پر ٹیکسٹ سمری بھیجیں (Text Message)'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF128C7E),
+                  side: const BorderSide(color: Color(0xFF128C7E)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),

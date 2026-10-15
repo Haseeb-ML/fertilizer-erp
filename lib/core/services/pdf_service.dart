@@ -320,38 +320,48 @@ class PdfService {
     String? shareText,
   }) async {
     bool shared = false;
+
+    // 1. Primary: Use Share.shareXFiles with the PDF file
+    // On Android/iOS/PWA, this triggers the OS Native Share Sheet with WhatsApp, Gmail, etc.
+    // When the user taps WhatsApp, WhatsApp opens with the actual PDF document attached!
     try {
-      shared = await Printing.sharePdf(
-        bytes: bytes,
-        filename: filename,
+      final xFile = XFile.fromData(
+        bytes,
+        name: filename,
+        mimeType: 'application/pdf',
       );
+      final result = await Share.shareXFiles(
+        [xFile],
+        subject: shareText ?? filename,
+        text: shareText ?? filename,
+      );
+      shared = result.status != ShareResultStatus.dismissed;
     } catch (_) {
       shared = false;
     }
 
+    // 2. Secondary fallback: Printing.sharePdf
     if (!shared) {
       try {
-        final xFile = XFile.fromData(
-          bytes,
-          name: filename,
-          mimeType: 'application/pdf',
+        shared = await Printing.sharePdf(
+          bytes: bytes,
+          filename: filename,
+          subject: shareText ?? filename,
         );
-        await Share.shareXFiles(
-          [xFile],
-          text: shareText ?? filename,
-        );
-        shared = true;
       } catch (_) {
         shared = false;
       }
     }
 
-    // On Web or if sharing was not supported (e.g. desktop PC browser), open PDF preview/download spooler
-    if (!shared || kIsWeb) {
-      await Printing.layoutPdf(
-        onLayout: (PdfPageFormat format) async => bytes,
-        name: filename,
-      );
+    // 3. Fallback: If device/browser does not support native file sharing (e.g. Desktop PC without share sheet),
+    // open the PDF layout / download spooler
+    if (!shared) {
+      try {
+        await Printing.layoutPdf(
+          onLayout: (PdfPageFormat format) async => bytes,
+          name: filename,
+        );
+      } catch (_) {}
     }
   }
 
@@ -452,20 +462,12 @@ ${sale.balanceDue > 0 ? "🔴 *بقایا جات (Balance Due):* Rs. ${CurrencyF
     await launchWhatsApp(phone: customerPhone, message: message);
   }
 
-  /// Directly opens WhatsApp and native share/download with the PDF invoice
+  /// Shares the PDF invoice document directly via system share sheet (WhatsApp etc.)
   static Future<void> shareSaleInvoice({
     required Sale sale,
     required BusinessSettings settings,
     String? customerPhone,
   }) async {
-    // 1. Launch WhatsApp with the customer's chat & invoice message
-    await shareSaleInvoiceWhatsApp(
-      sale: sale,
-      settings: settings,
-      customerPhone: customerPhone,
-    );
-
-    // 2. Also generate and share or download the PDF document
     final pdf = await buildSaleInvoiceDocument(sale: sale, settings: settings);
     final bytes = await pdf.save();
     await _safeShareOrDownloadPdf(
@@ -865,7 +867,7 @@ ${lines.isEmpty ? "کوئی ٹرانزیکشن موجود نہیں" : lines.join
     await launchWhatsApp(phone: partyPhone, message: message);
   }
 
-  /// Directly opens WhatsApp and native share/download with the PDF statement
+  /// Shares the PDF statement document directly via system share sheet (WhatsApp etc.)
   static Future<void> shareLedgerStatement({
     required String partyName,
     required String partyType,
@@ -875,17 +877,6 @@ ${lines.isEmpty ? "کوئی ٹرانزیکشن موجود نہیں" : lines.join
     required double currentBalance,
     required BusinessSettings settings,
   }) async {
-    // 1. Launch WhatsApp with the customer's / supplier's chat & formatted statement
-    await shareLedgerWhatsApp(
-      partyName: partyName,
-      partyType: partyType,
-      partyPhone: partyPhone,
-      currentBalance: currentBalance,
-      entries: entries,
-      settings: settings,
-    );
-
-    // 2. Also generate and share or download the PDF document
     final pdf = await buildLedgerStatementDocument(
       partyName: partyName,
       partyType: partyType,
@@ -896,9 +887,15 @@ ${lines.isEmpty ? "کوئی ٹرانزیکشن موجود نہیں" : lines.join
       settings: settings,
     );
     final bytes = await pdf.save();
+    final cleanName = partyName
+        .replaceAll(RegExp(r'[^\w\s\-]'), '')
+        .trim()
+        .replaceAll(' ', '_');
+    final filename =
+        '${cleanName.isNotEmpty ? cleanName : "Statement"}_Ledger.pdf';
     await _safeShareOrDownloadPdf(
       bytes: bytes,
-      filename: '${partyName}_Statement.pdf',
+      filename: filename,
       shareText: '$partyType Statement - $partyName',
     );
   }
