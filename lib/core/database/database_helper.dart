@@ -73,7 +73,7 @@ class DatabaseHelper {
         'id': 1,
         'business_name': 'Sheikh Uzair & Co - Fertilizer & Feeds',
         'owner_name': 'Sheikh Uzair',
-        'phone': '0300-1234567',
+        'phone': '+92 3498460039',
         'address': 'Grain Market / Fertilizer & Feed Hub',
         'city': 'Punjab, Pakistan',
         'ntn_strn': '1234567-8',
@@ -85,6 +85,12 @@ class DatabaseHelper {
         'initial_cash_balance': 0.0,
         'updated_at': now,
       });
+    } else {
+      await db.rawUpdate('''
+        UPDATE ${DatabaseTables.businessSettings}
+        SET phone = '+92 3498460039'
+        WHERE phone = '0300-1234567' OR phone = '' OR phone IS NULL
+      ''');
     }
   }
 
@@ -183,6 +189,13 @@ class DatabaseHelper {
 
       // 4. Reconcile all customer ledgers to ensure old sales invoices and balances are verified
       await CustomerRepository.reconcileAllCustomerLedgers(db);
+
+      // 5. Update default business phone number to user's real number (+92 3498460039)
+      await db.rawUpdate('''
+        UPDATE ${DatabaseTables.businessSettings}
+        SET phone = '+92 3498460039'
+        WHERE phone = '0300-1234567' OR phone = '' OR phone IS NULL
+      ''');
     } catch (e) {
       debugPrint('syncInventoryCostLayersAndSales error: $e');
     }

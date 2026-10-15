@@ -20,7 +20,7 @@ class SettingsRepository {
         id: 1,
         businessName: 'Sheikh Uzair & Co - Fertilizer',
         ownerName: 'Sheikh Uzair',
-        phone: '0300-1234567',
+        phone: '+92 3498460039',
         address: 'Grain Market / Fertilizer Hub',
         city: 'Punjab, Pakistan',
         ntnStrn: '1234567-8',
@@ -29,7 +29,13 @@ class SettingsRepository {
       await db.insert(DatabaseTables.businessSettings, defaultSettings.toMap());
       return defaultSettings;
     }
-    return BusinessSettings.fromMap(maps.first);
+    final existing = BusinessSettings.fromMap(maps.first);
+    if (existing.phone == '0300-1234567' || existing.phone.trim().isEmpty) {
+      final updated = existing.copyWith(phone: '+92 3498460039');
+      await updateSettings(updated);
+      return updated;
+    }
+    return existing;
   }
 
   Future<void> updateSettings(BusinessSettings settings) async {
