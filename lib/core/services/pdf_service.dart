@@ -369,22 +369,36 @@ class PdfService {
     return clean;
   }
 
+  /// Checks if a phone number matches standard Pakistani mobile format (0300-0349, 0355)
+  static bool isValidPakistaniMobile(String? phone) {
+    if (phone == null || phone.trim().isEmpty) return false;
+    final clean = cleanPhoneNumber(phone);
+    if (clean.length != 12 || !clean.startsWith('923')) return false;
+    final prefix = int.tryParse(clean.substring(2, 5));
+    if (prefix == null) return false;
+    return (prefix >= 300 && prefix <= 349) || prefix == 355;
+  }
+
   /// Directly launches WhatsApp with pre-filled message (WhatsApp App on mobile/iOS Safari PWA, or WhatsApp Web on desktop)
   static Future<bool> launchWhatsApp({
     String? phone,
     required String message,
   }) async {
     final cleanPhone = cleanPhoneNumber(phone);
+    final hasValidTarget =
+        cleanPhone.isNotEmpty && isValidPakistaniMobile(cleanPhone);
     final encoded = Uri.encodeComponent(message);
 
     // 1. Direct App Scheme (Ensures flawless transition in iOS Safari PWA standalone mode & mobile app)
-    final nativeScheme = cleanPhone.isNotEmpty
+    // If the phone number is invalid (like 0358...), we omit the phone parameter so WhatsApp opens
+    // the contact selector smoothly instead of showing "+92 ... is not a valid phone number" error!
+    final nativeScheme = hasValidTarget
         ? 'whatsapp://send?phone=$cleanPhone&text=$encoded'
         : 'whatsapp://send?text=$encoded';
     final nativeUri = Uri.parse(nativeScheme);
 
     // 2. Universal Web Link (Fallback for desktop web / WhatsApp Web)
-    final webUrl = cleanPhone.isNotEmpty
+    final webUrl = hasValidTarget
         ? 'https://wa.me/$cleanPhone?text=$encoded'
         : 'https://api.whatsapp.com/send?text=$encoded';
     final webUri = Uri.parse(webUrl);

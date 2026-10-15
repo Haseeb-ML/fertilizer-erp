@@ -8,6 +8,7 @@ import '../../../core/services/csv_service.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state_view.dart';
+import 'supplier_form_screen.dart';
 
 class SupplierLedgerScreen extends ConsumerStatefulWidget {
   final Supplier supplier;
@@ -20,26 +21,34 @@ class SupplierLedgerScreen extends ConsumerStatefulWidget {
 }
 
 class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
+  late Supplier _supplier;
   List<LedgerEntry> _entries = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _supplier = widget.supplier;
     _loadLedger();
   }
 
   Future<void> _loadLedger() async {
     setState(() => _isLoading = true);
     final repo = ref.read(supplierRepoProvider);
+    final updated = await repo.getSupplierById(widget.supplier.id!);
     final list = await repo.getSupplierLedger(widget.supplier.id!);
+    if (!mounted) return;
     setState(() {
+      if (updated != null) _supplier = updated;
       _entries = list;
       _isLoading = false;
     });
   }
 
   Future<void> _exportPdf() async {
+    final hasPhone = _supplier.phone.trim().isNotEmpty;
+    final isPakValid = PdfService.isValidPakistaniMobile(_supplier.phone);
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -53,30 +62,94 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Supplier Statement / سپلائر کھاتہ (${widget.supplier.name})',
+                'Supplier Statement / سپلائر کھاتہ (${_supplier.name})',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
+
+              // Phone warning banner if invalid prefix like 0358...
+              if (hasPhone && !isPakValid) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8E1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFFB300)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline,
+                              color: Color(0xFFE65100), size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'فون نمبر (${_supplier.phone}) درست پاکستانی موبائل کوڈ نہیں ہے',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Color(0xFFE65100),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'پاکستان میں موبائل نیٹ ورکس 0300 تا 0349 یا 0355 ہیں (0358 پاکستان میں موجود نہیں ہے)۔ واٹس ایپ پر کلک کرنے سے رابطہ منتخب کرنے کی لسٹ کھل جائے گی، یا نیچے بٹن سے نمبر ابھی درست کر لیں۔',
+                        style: TextStyle(fontSize: 12, color: Colors.black87, height: 1.3),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          Navigator.of(ctx).pop();
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SupplierFormScreen(supplier: _supplier),
+                            ),
+                          );
+                          _loadLedger();
+                        },
+                        icon: const Icon(Icons.edit, size: 16),
+                        label: const Text('سپلائر کا فون نمبر درست کریں (Edit Number)'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFB71C1C),
+                          side: const BorderSide(color: Color(0xFFFFB300)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
               ElevatedButton.icon(
                 onPressed: () async {
                   Navigator.of(ctx).pop();
                   final settings =
                       await ref.read(settingsRepoProvider).getSettings();
                   await PdfService.shareLedgerStatement(
-                    partyName: widget.supplier.name,
+                    partyName: _supplier.name,
                     partyType: 'Supplier',
-                    partyPhone: widget.supplier.phone,
-                    partyAddress: widget.supplier.companyOrAddress,
+                    partyPhone: _supplier.phone,
+                    partyAddress: _supplier.companyOrAddress,
                     entries: _entries,
-                    currentBalance: widget.supplier.currentBalance,
+                    currentBalance: _supplier.currentBalance,
                     settings: settings,
                   );
                 },
                 icon: const Icon(Icons.chat),
-                label: const Text('WhatsApp پر کھاتہ شیئر کریں (WhatsApp Chat & PDF)'),
+                label: Text(
+                  isPakValid
+                      ? 'WhatsApp پر کھاتہ شیئر کریں (${_supplier.phone})'
+                      : 'WhatsApp پر کھاتہ شیئر کریں (WhatsApp Chat & PDF)',
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF25D366),
                   foregroundColor: Colors.white,
@@ -90,12 +163,12 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                   final settings =
                       await ref.read(settingsRepoProvider).getSettings();
                   await PdfService.printLedgerStatement(
-                    partyName: widget.supplier.name,
+                    partyName: _supplier.name,
                     partyType: 'Supplier',
-                    partyPhone: widget.supplier.phone,
-                    partyAddress: widget.supplier.companyOrAddress,
+                    partyPhone: _supplier.phone,
+                    partyAddress: _supplier.companyOrAddress,
                     entries: _entries,
-                    currentBalance: widget.supplier.currentBalance,
+                    currentBalance: _supplier.currentBalance,
                     settings: settings,
                   );
                 },
@@ -152,16 +225,16 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
 
       // 3. Supplier Details Block (Full Profile)
       ['SUPPLIER DETAILS / سپلائر کی تفصیلات', '', '', '', 'STATEMENT INFO / معلومات', '', '', ''],
-      ['Supplier Name:', widget.supplier.name, '', '', 'Statement Date:', DateTime.now().toString().substring(0, 10), '', ''],
-      ['Phone Number:', widget.supplier.phone.isNotEmpty ? widget.supplier.phone : 'Not Provided', '', '', 'Account Type:', 'Supplier (سپلائر)', '', ''],
-      ['Company / Address:', widget.supplier.companyOrAddress.isNotEmpty ? widget.supplier.companyOrAddress : 'Not Provided', '', '', 'Total Transactions:', _entries.length.toString(), '', ''],
+      ['Supplier Name:', _supplier.name, '', '', 'Statement Date:', DateTime.now().toString().substring(0, 10), '', ''],
+      ['Phone Number:', _supplier.phone.isNotEmpty ? _supplier.phone : 'Not Provided', '', '', 'Account Type:', 'Supplier (سپلائر)', '', ''],
+      ['Company / Address:', _supplier.companyOrAddress.isNotEmpty ? _supplier.companyOrAddress : 'Not Provided', '', '', 'Total Transactions:', _entries.length.toString(), '', ''],
       [
         'Current Outstanding Balance:',
-        'Rs. ${CurrencyFormatter.format(widget.supplier.currentBalance, showSymbol: false)}',
+        'Rs. ${CurrencyFormatter.format(_supplier.currentBalance, showSymbol: false)}',
         '',
         '',
         'Balance Status:',
-        widget.supplier.currentBalance > 0 ? 'PAYABLE TO SUPPLIER (واجب الاداء)' : 'CLEARED / ZERO',
+        _supplier.currentBalance > 0 ? 'PAYABLE TO SUPPLIER (واجب الاداء)' : 'CLEARED / ZERO',
         '',
         '',
       ],
@@ -204,12 +277,12 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
         '',
         totalDebit,
         totalCredit,
-        widget.supplier.currentBalance,
+        _supplier.currentBalance,
       ],
     ];
 
     await CsvService.exportAndShareCsv(
-      fileName: 'Supplier_Ledger_${widget.supplier.name.replaceAll(' ', '_')}.csv',
+      fileName: 'Supplier_Ledger_${_supplier.name.replaceAll(' ', '_')}.csv',
       rows: rows,
     );
   }
@@ -218,8 +291,21 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.supplier.name} - کھاتہ / Ledger'),
+        title: Text('${_supplier.name} - کھاتہ / Ledger'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'سپلائر ایڈٹ کریں (Edit Supplier)',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SupplierFormScreen(supplier: _supplier),
+                ),
+              );
+              _loadLedger();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.table_chart),
             tooltip: 'ایکسل شیٹ (Excel Sheet)',
@@ -245,14 +331,14 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.supplier.name,
+                        _supplier.name,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 17,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      if (widget.supplier.companyOrAddress.isNotEmpty) ...[
+                      if (_supplier.companyOrAddress.isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Row(
                           children: [
@@ -264,7 +350,7 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                widget.supplier.companyOrAddress,
+                                _supplier.companyOrAddress,
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textSecondary,
@@ -274,7 +360,7 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                           ],
                         ),
                       ],
-                      if (widget.supplier.phone.isNotEmpty) ...[
+                      if (_supplier.phone.isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Row(
                           children: [
@@ -285,12 +371,50 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              widget.supplier.phone,
+                              _supplier.phone,
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondary,
                               ),
                             ),
+                            if (!PdfService.isValidPakistaniMobile(_supplier.phone)) ...[
+                              const SizedBox(width: 8),
+                              InkWell(
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => SupplierFormScreen(supplier: _supplier),
+                                    ),
+                                  );
+                                  _loadLedger();
+                                },
+                                borderRadius: BorderRadius.circular(4),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF3E0),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: const Color(0xFFFFB74D)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.edit, size: 11, color: Color(0xFFE65100)),
+                                      SizedBox(width: 3),
+                                      Text(
+                                        'نمبر درست کریں',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFFE65100),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -303,12 +427,12 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: widget.supplier.currentBalance > 0
+                    color: _supplier.currentBalance > 0
                         ? AppColors.warningBg
                         : AppColors.successBg,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: widget.supplier.currentBalance > 0
+                      color: _supplier.currentBalance > 0
                           ? AppColors.warning.withOpacity(0.3)
                           : AppColors.success.withOpacity(0.3),
                     ),
@@ -317,7 +441,7 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        widget.supplier.currentBalance > 0
+                        _supplier.currentBalance > 0
                             ? 'قابل ادا بقایا'
                             : 'اکاؤنٹ کلیئر',
                         style: TextStyle(

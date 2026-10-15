@@ -135,6 +135,20 @@ void main() {
       expect(Validators.nonNegativeNumber('-5'), isNotNull);
       expect(Validators.nonNegativeNumber('0'), isNull);
       expect(Validators.nonNegativeNumber('100'), isNull);
+
+      // Phone number validations
+      expect(Validators.phoneNumber(null), isNull);
+      expect(Validators.phoneNumber(''), isNull);
+      expect(Validators.phoneNumber('123'), isNotNull);
+      // Valid Pakistani prefixes (0300-0349, 0355)
+      expect(Validators.phoneNumber('03001234567'), isNull);
+      expect(Validators.phoneNumber('03451234567'), isNull);
+      expect(Validators.phoneNumber('+92 312 3456789'), isNull);
+      expect(Validators.phoneNumber('03551234567'), isNull);
+      // Invalid Pakistani prefixes like 0358
+      expect(Validators.phoneNumber('0358 5649289'), isNotNull);
+      expect(Validators.phoneNumber('+92 358 5649289'), isNotNull);
+      expect(Validators.phoneNumber('03991234567'), isNotNull);
     });
   });
 }
