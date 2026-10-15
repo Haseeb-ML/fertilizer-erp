@@ -333,7 +333,6 @@ class PdfService {
       final result = await Share.shareXFiles(
         [xFile],
         subject: shareText ?? filename,
-        text: shareText ?? filename,
       );
       shared = result.status != ShareResultStatus.dismissed;
     } catch (_) {

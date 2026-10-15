@@ -65,7 +65,28 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                   fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF86EFAC), width: 0.5),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: Color(0xFF166534)),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'آئی فون پر واٹس ایپ اگر الرٹ دے تو "Try again" دبائیں یا واٹس ایپ ایپ اوپن کریں۔',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF166534)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
 
               // 1. WhatsApp Share Button (Shares actual PDF File directly to WhatsApp)
               ElevatedButton.icon(
