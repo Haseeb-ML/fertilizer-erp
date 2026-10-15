@@ -129,6 +129,35 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                 const SizedBox(height: 12),
               ],
 
+              // Option 1: Direct to supplier's phone (when valid)
+              if (isPakValid) ...[
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    final settings =
+                        await ref.read(settingsRepoProvider).getSettings();
+                    await PdfService.shareLedgerStatement(
+                      partyName: _supplier.name,
+                      partyType: 'Supplier',
+                      partyPhone: _supplier.phone,
+                      partyAddress: _supplier.companyOrAddress,
+                      entries: _entries,
+                      currentBalance: _supplier.currentBalance,
+                      settings: settings,
+                    );
+                  },
+                  icon: const Icon(Icons.send_rounded),
+                  label: Text('WhatsApp: سپلائر کے نمبر پر بھیجیں (${_supplier.phone})'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+
+              // Option 2: Open WhatsApp directly WITHOUT number (Pick any contact / group)
               ElevatedButton.icon(
                 onPressed: () async {
                   Navigator.of(ctx).pop();
@@ -137,7 +166,7 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                   await PdfService.shareLedgerStatement(
                     partyName: _supplier.name,
                     partyType: 'Supplier',
-                    partyPhone: _supplier.phone,
+                    partyPhone: null, // No phone -> opens WhatsApp contact picker directly!
                     partyAddress: _supplier.companyOrAddress,
                     entries: _entries,
                     currentBalance: _supplier.currentBalance,
@@ -147,11 +176,11 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                 icon: const Icon(Icons.chat),
                 label: Text(
                   isPakValid
-                      ? 'WhatsApp پر کھاتہ شیئر کریں (${_supplier.phone})'
-                      : 'WhatsApp پر کھاتہ شیئر کریں (WhatsApp Chat & PDF)',
+                      ? 'WhatsApp: بغیر نمبر کے کھولیں (کانٹیکٹ خود منتخب کریں)'
+                      : 'WhatsApp پر کھاتہ شیئر کریں (بغیر نمبر کے - کانٹیکٹ خود چنیں)',
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF25D366),
+                  backgroundColor: isPakValid ? const Color(0xFF128C7E) : const Color(0xFF25D366),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
