@@ -236,6 +236,33 @@ class DashboardScreen extends ConsumerWidget {
                                   },
                                 ),
                                 QuickActionButton(
+                                  icon: Icons.warehouse,
+                                  label: ref.tr('action_storage'),
+                                  color: const Color(0xFF00796B),
+                                  onTap: () async {
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const StorageListScreen(),
+                                      ),
+                                    );
+                                    ref.invalidate(dashboardDataProvider);
+                                  },
+                                ),
+                                QuickActionButton(
+                                  icon: Icons.swap_horiz,
+                                  label: ref.tr('action_transfer_stock'),
+                                  color: const Color(0xFF5D4037),
+                                  onTap: () async {
+                                    final res = await Navigator.of(context).push<bool>(
+                                      MaterialPageRoute(
+                                        builder: (_) => const StockTransferScreen(),
+                                      ),
+                                    );
+                                    if (res == true)
+                                      ref.invalidate(dashboardDataProvider);
+                                  },
+                                ),
+                                QuickActionButton(
                                   icon: Icons.shopping_bag_outlined,
                                   label: ref.tr('action_purchase'),
                                   color: AppColors.secondary,
@@ -327,33 +354,6 @@ class DashboardScreen extends ConsumerWidget {
                                                 const ExpenseFormScreen(),
                                           ),
                                         );
-                                    if (res == true)
-                                      ref.invalidate(dashboardDataProvider);
-                                  },
-                                ),
-                                QuickActionButton(
-                                  icon: Icons.warehouse,
-                                  label: ref.tr('action_storage'),
-                                  color: const Color(0xFF00796B),
-                                  onTap: () async {
-                                    await Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => const StorageListScreen(),
-                                      ),
-                                    );
-                                    ref.invalidate(dashboardDataProvider);
-                                  },
-                                ),
-                                QuickActionButton(
-                                  icon: Icons.swap_horiz,
-                                  label: ref.tr('action_transfer_stock'),
-                                  color: const Color(0xFF5D4037),
-                                  onTap: () async {
-                                    final res = await Navigator.of(context).push<bool>(
-                                      MaterialPageRoute(
-                                        builder: (_) => const StockTransferScreen(),
-                                      ),
-                                    );
                                     if (res == true)
                                       ref.invalidate(dashboardDataProvider);
                                   },
