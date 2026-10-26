@@ -28,6 +28,8 @@ import '../../payments/screens/make_payment_screen.dart';
 import '../../expenses/screens/expense_form_screen.dart';
 import '../../expenses/screens/expense_list_screen.dart';
 import '../../expenses/screens/cashbook_screen.dart';
+import '../../storage/screens/storage_list_screen.dart';
+import '../../storage/screens/stock_transfer_screen.dart';
 import '../controllers/dashboard_controller.dart';
 import '../widgets/quick_action_button.dart';
 
@@ -329,6 +331,33 @@ class DashboardScreen extends ConsumerWidget {
                                       ref.invalidate(dashboardDataProvider);
                                   },
                                 ),
+                                QuickActionButton(
+                                  icon: Icons.warehouse,
+                                  label: ref.tr('action_storage'),
+                                  color: const Color(0xFF00796B),
+                                  onTap: () async {
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const StorageListScreen(),
+                                      ),
+                                    );
+                                    ref.invalidate(dashboardDataProvider);
+                                  },
+                                ),
+                                QuickActionButton(
+                                  icon: Icons.swap_horiz,
+                                  label: ref.tr('action_transfer_stock'),
+                                  color: const Color(0xFF5D4037),
+                                  onTap: () async {
+                                    final res = await Navigator.of(context).push<bool>(
+                                      MaterialPageRoute(
+                                        builder: (_) => const StockTransferScreen(),
+                                      ),
+                                    );
+                                    if (res == true)
+                                      ref.invalidate(dashboardDataProvider);
+                                  },
+                                ),
                               ],
                             ),
                           ),
@@ -482,6 +511,21 @@ class DashboardScreen extends ConsumerWidget {
                           ref.invalidate(dashboardDataProvider);
                         },
                       ),
+                      KpiCard(
+                        title: ref.tr('mod_storage'),
+                        value: '${data.totalStorages} Godowns',
+                        subtitle: '${data.totalStockQuantity.toStringAsFixed(0)} Bags stored',
+                        icon: Icons.warehouse_outlined,
+                        iconColor: const Color(0xFF00796B),
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const StorageListScreen(),
+                            ),
+                          );
+                          ref.invalidate(dashboardDataProvider);
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -577,6 +621,103 @@ class DashboardScreen extends ConsumerWidget {
                                     ),
                                   ),
                                 ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Storage & Godown Stock Breakdown
+                  if (data.storageBagsBreakdown.isNotEmpty) ...[
+                    Card(
+                      elevation: 1.5,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.warehouse,
+                                      color: Color(0xFF00796B),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      ref.tr('mod_storage'),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Color(0xFF00796B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                TextButton.icon(
+                                  icon: const Icon(Icons.arrow_forward, size: 16),
+                                  label: Text(ref.tr('view_all')),
+                                  onPressed: () async {
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const StorageListScreen(),
+                                      ),
+                                    );
+                                    ref.invalidate(dashboardDataProvider);
+                                  },
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 12),
+                            ...data.storageBagsBreakdown.entries.map((entry) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.store_mall_directory_outlined,
+                                          size: 16,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          entry.key,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF00796B).withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '${entry.value.toStringAsFixed(0)} Bags',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: Color(0xFF00796B),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
                           ],
                         ),
                       ),

@@ -60,9 +60,13 @@ class AppTranslations {
       'action_pay_supplier': 'Pay Supplier',
       'action_add_expense': 'Add Expense',
       'action_adjust_stock': 'Stock Adjust',
+      'action_storage': 'Storage / Godown',
+      'action_transfer_stock': 'Transfer Stock',
 
       // More Menu Modules
       'modules_header': 'ERP Business Modules',
+      'mod_storage': 'Warehouses & Godowns (گودام)',
+      'mod_storage_sub': 'Track stock across godowns, shops and internal stock transfers',
       'mod_purchases': 'Purchase Management',
       'mod_purchases_sub': 'Record stock purchases, company bills & purchase returns',
       'mod_customers': 'Customers & Farmers',
@@ -255,9 +259,13 @@ class AppTranslations {
       'action_pay_supplier': 'کمپنی کو ادائیگی',
       'action_add_expense': 'خرچہ درج کریں',
       'action_adjust_stock': 'اسٹاک درستگی',
+      'action_storage': 'گودام و منتقلی',
+      'action_transfer_stock': 'مال منتقلی',
 
       // More Menu Modules
       'modules_header': 'کاروباری ماڈیولز (ای آر پی)',
+      'mod_storage': 'گودام اور ویئرہاؤس مینجمنٹ',
+      'mod_storage_sub': 'شاپ، گوداموں کا اسٹاک ریکارڈ اور آپس میں مال کی منتقلی',
       'mod_purchases': 'کھاد خریداری اور بلز',
       'mod_purchases_sub': 'نئی خریداری، کمپنی بلز اور واپسی کا مکمل ریکارڈ',
       'mod_customers': 'گاہک اور زمیندار',

@@ -15,6 +15,9 @@ class DatabaseTables {
   static const String customerLedger = 'customer_ledger';
   static const String supplierLedger = 'supplier_ledger';
   static const String returns = 'returns';
+  static const String storages = 'storages';
+  static const String storageStocks = 'storage_stocks';
+  static const String stockTransfers = 'stock_transfers';
 
   // Schema creation queries
   static const List<String> createTableQueries = [
@@ -256,6 +259,46 @@ class DatabaseTables {
       created_at TEXT NOT NULL
     );
     ''',
+    '''
+    CREATE TABLE IF NOT EXISTS $storages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      code TEXT,
+      location TEXT,
+      incharge_name TEXT,
+      contact_number TEXT,
+      capacity_bags INTEGER DEFAULT 0,
+      is_default INTEGER DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS $storageStocks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      storage_id INTEGER NOT NULL REFERENCES $storages(id) ON DELETE CASCADE,
+      product_id INTEGER NOT NULL REFERENCES $products(id) ON DELETE CASCADE,
+      quantity REAL NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL,
+      UNIQUE(storage_id, product_id)
+    );
+    ''',
+    '''
+    CREATE TABLE IF NOT EXISTS $stockTransfers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      transfer_number TEXT UNIQUE NOT NULL,
+      from_storage_id INTEGER NOT NULL REFERENCES $storages(id),
+      to_storage_id INTEGER NOT NULL REFERENCES $storages(id),
+      product_id INTEGER NOT NULL REFERENCES $products(id),
+      quantity REAL NOT NULL,
+      transfer_date TEXT NOT NULL,
+      vehicle_number TEXT,
+      driver_name TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL
+    );
+    ''',
   ];
 
   // Index queries for high-performance searches and filtering
@@ -273,5 +316,8 @@ class DatabaseTables {
     'CREATE INDEX IF NOT EXISTS idx_cust_ledger_cust ON $customerLedger(customer_id);',
     'CREATE INDEX IF NOT EXISTS idx_supp_ledger_supp ON $supplierLedger(supplier_id);',
     'CREATE INDEX IF NOT EXISTS idx_stock_cost_prod ON $stockCostLayers(product_id);',
+    'CREATE INDEX IF NOT EXISTS idx_storage_stocks_storage ON $storageStocks(storage_id);',
+    'CREATE INDEX IF NOT EXISTS idx_storage_stocks_prod ON $storageStocks(product_id);',
+    'CREATE INDEX IF NOT EXISTS idx_stock_transfers_date ON $stockTransfers(transfer_date);',
   ];
 }

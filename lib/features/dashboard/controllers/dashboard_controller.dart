@@ -14,6 +14,8 @@ class DashboardData {
   final double supplierPayables;
   final double totalStockQuantity;
   final double inventoryValuation;
+  final int totalStorages;
+  final Map<String, double> storageBagsBreakdown;
   final List<Product> lowStockProducts;
   final List<Sale> recentSales;
   final List<Purchase> recentPurchases;
@@ -28,6 +30,8 @@ class DashboardData {
     required this.supplierPayables,
     required this.totalStockQuantity,
     required this.inventoryValuation,
+    this.totalStorages = 0,
+    this.storageBagsBreakdown = const {},
     required this.lowStockProducts,
     required this.recentSales,
     required this.recentPurchases,
@@ -111,6 +115,18 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
   final totalStockQty = await productRepo.getTotalStockQuantity();
   final inventoryValuation = await productRepo.getInventoryValuation();
 
+  // 4b. Storages
+  final storageRepo = ref.watch(storageRepoProvider);
+  final storages = await storageRepo.getStorages(onlyActive: true);
+  final totalStorages = storages.length;
+  final Map<String, double> storageBreakdown = {};
+  for (final s in storages) {
+    if (s.id != null) {
+      final qty = await storageRepo.getTotalStorageQuantity(s.id!);
+      storageBreakdown[s.name] = qty;
+    }
+  }
+
   // 5. Low stock alerts
   final lowStockProducts = await productRepo.getProducts(
     onlyActive: true,
@@ -133,6 +149,8 @@ final dashboardDataProvider = FutureProvider.autoDispose<DashboardData>((
     supplierPayables: supplierPayables,
     totalStockQuantity: totalStockQty,
     inventoryValuation: inventoryValuation,
+    totalStorages: totalStorages,
+    storageBagsBreakdown: storageBreakdown,
     lowStockProducts: lowStockProducts,
     recentSales: recentSales,
     recentPurchases: recentPurchases,

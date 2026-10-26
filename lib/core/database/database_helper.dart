@@ -56,6 +56,7 @@ class DatabaseHelper {
     await seedDefaultSettings(db);
     await seedDefaultProducts(db);
     await seedDefaultSuppliers(db);
+    await ensureStorageTables(db);
     await syncInventoryCostLayersAndSales(db);
 
     return db;
@@ -152,6 +153,126 @@ class DatabaseHelper {
       }
     } catch (_) {
       // Graceful fallback
+    }
+  }
+
+  static Future<void> ensureStorageTables(DatabaseExecutor db) async {
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS ${DatabaseTables.storages} (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          code TEXT,
+          location TEXT,
+          incharge_name TEXT,
+          contact_number TEXT,
+          capacity_bags INTEGER DEFAULT 0,
+          is_default INTEGER DEFAULT 0,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS ${DatabaseTables.storageStocks} (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          storage_id INTEGER NOT NULL REFERENCES ${DatabaseTables.storages}(id) ON DELETE CASCADE,
+          product_id INTEGER NOT NULL REFERENCES ${DatabaseTables.products}(id) ON DELETE CASCADE,
+          quantity REAL NOT NULL DEFAULT 0,
+          updated_at TEXT NOT NULL,
+          UNIQUE(storage_id, product_id)
+        );
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS ${DatabaseTables.stockTransfers} (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          transfer_number TEXT UNIQUE NOT NULL,
+          from_storage_id INTEGER NOT NULL REFERENCES ${DatabaseTables.storages}(id),
+          to_storage_id INTEGER NOT NULL REFERENCES ${DatabaseTables.storages}(id),
+          product_id INTEGER NOT NULL REFERENCES ${DatabaseTables.products}(id),
+          quantity REAL NOT NULL,
+          transfer_date TEXT NOT NULL,
+          vehicle_number TEXT,
+          driver_name TEXT,
+          notes TEXT,
+          created_at TEXT NOT NULL
+        );
+      ''');
+
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_storage_stocks_storage ON ${DatabaseTables.storageStocks}(storage_id);');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_storage_stocks_prod ON ${DatabaseTables.storageStocks}(product_id);');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_stock_transfers_date ON ${DatabaseTables.stockTransfers}(transfer_date);');
+
+      await seedDefaultStorages(db);
+    } catch (e) {
+      debugPrint('ensureStorageTables error: $e');
+    }
+  }
+
+  static Future<void> seedDefaultStorages(DatabaseExecutor db) async {
+    try {
+      final now = DateTime.now().toIso8601String();
+      final count = Sqflite.firstIntValue(
+        await db.rawQuery('SELECT COUNT(*) FROM ${DatabaseTables.storages}'),
+      );
+
+      if (count == 0) {
+        final defaultStorageId = await db.insert(DatabaseTables.storages, {
+          'name': 'Main Shop Floor (شاپ)',
+          'code': 'SHP-01',
+          'location': 'Grain Market, Main Road',
+          'incharge_name': 'Sheikh Uzair',
+          'contact_number': '+92 3498460039',
+          'capacity_bags': 3000,
+          'is_default': 1,
+          'is_active': 1,
+          'created_at': now,
+          'updated_at': now,
+        });
+
+        await db.insert(DatabaseTables.storages, {
+          'name': 'Main Godown (مرکزی گودام)',
+          'code': 'GDN-01',
+          'location': 'Bypass Road, Industrial Area',
+          'incharge_name': 'Haji Muhammad',
+          'contact_number': '+92 300 7654321',
+          'capacity_bags': 12000,
+          'is_default': 0,
+          'is_active': 1,
+          'created_at': now,
+          'updated_at': now,
+        });
+
+        await db.insert(DatabaseTables.storages, {
+          'name': 'Adda Godown (اڈا گودام)',
+          'code': 'GDN-02',
+          'location': 'Near Railway Goods Yard',
+          'incharge_name': 'Tariq Mehmood',
+          'contact_number': '+92 321 4567890',
+          'capacity_bags': 6000,
+          'is_default': 0,
+          'is_active': 1,
+          'created_at': now,
+          'updated_at': now,
+        });
+
+        // Initialize default storage stock with current product stock
+        final products = await db.query(DatabaseTables.products);
+        for (final p in products) {
+          final pId = p['id'] as int;
+          final stockQty = (p['current_stock'] as num?)?.toDouble() ?? 0.0;
+          await db.insert(DatabaseTables.storageStocks, {
+            'storage_id': defaultStorageId,
+            'product_id': pId,
+            'quantity': stockQty,
+            'updated_at': now,
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('seedDefaultStorages error: $e');
     }
   }
 

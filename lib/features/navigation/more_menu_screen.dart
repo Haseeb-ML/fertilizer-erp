@@ -11,6 +11,7 @@ import '../payments/screens/payment_list_screen.dart';
 import '../expenses/screens/expense_list_screen.dart';
 import '../expenses/screens/cashbook_screen.dart';
 import '../reports/screens/reports_hub_screen.dart';
+import '../storage/screens/storage_list_screen.dart';
 import '../settings/screens/settings_screen.dart';
 import '../settings/screens/backup_restore_screen.dart';
 
@@ -177,6 +178,16 @@ class MoreMenuScreen extends ConsumerWidget {
               ),
               onTap: () => showLanguageSelectionDialog(context, ref),
             ),
+          ),
+          const SizedBox(height: 10),
+
+          _menuTile(
+            context,
+            icon: Icons.warehouse,
+            color: const Color(0xFF00796B),
+            title: ref.tr('mod_storage'),
+            subtitle: ref.tr('mod_storage_sub'),
+            destination: const StorageListScreen(),
           ),
           const SizedBox(height: 10),
 
