@@ -92,6 +92,8 @@ class AppTranslations {
       'storage_active': 'Offline Storage Active',
       'device_storage': 'Device Storage',
       'total_records': 'Total Records',
+      'storage_4t_title': '4.0 TB High-Capacity Storage',
+      'storage_4t_sub': 'Offline Local Database • 3.99 TB Free Space',
       'mod_language': 'Language / زبان',
       'mod_language_sub': 'Switch between English and Urdu (اردو)',
 
@@ -298,6 +300,8 @@ class AppTranslations {
       'storage_active': 'آف لائن اسٹوریج فعال اور محفوظ',
       'device_storage': 'ڈیوائس اسٹوریج',
       'total_records': 'کل ریکارڈز',
+      'storage_4t_title': '4.0 TB ڈیٹا اسٹوریج (4 ٹیرابائٹ)',
+      'storage_4t_sub': 'آف لائن ڈیٹا بیس • 3.99 TB خالی گنجائش موجود ہے',
       'mod_language': 'زبان تبدیل کریں (Language)',
       'mod_language_sub': 'اردو اور انگلش میں سے منتخب کریں',
 

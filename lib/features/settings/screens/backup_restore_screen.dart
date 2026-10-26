@@ -11,6 +11,7 @@ import '../../../core/localization/app_translations.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/services/backup_service.dart';
 import '../../../core/widgets/confirmation_dialog.dart';
+import '../widgets/storage_graph_card.dart';
 
 class BackupRestoreScreen extends ConsumerStatefulWidget {
   const BackupRestoreScreen({super.key});
@@ -345,6 +346,10 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // 4.0 TB High-Capacity Storage Visual Graph & Meter
+            StorageGraphCard(stats: _stats, isDetailed: true),
+            const SizedBox(height: 16),
+
             // Hero Status Card: 100% Offline Device Storage
             Container(
               padding: const EdgeInsets.all(18),

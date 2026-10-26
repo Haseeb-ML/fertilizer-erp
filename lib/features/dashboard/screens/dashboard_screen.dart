@@ -29,6 +29,7 @@ import '../../expenses/screens/expense_form_screen.dart';
 import '../../expenses/screens/expense_list_screen.dart';
 import '../../expenses/screens/cashbook_screen.dart';
 import '../../settings/screens/backup_restore_screen.dart';
+import '../../settings/widgets/storage_graph_card.dart';
 import '../controllers/dashboard_controller.dart';
 import '../widgets/quick_action_button.dart';
 
@@ -614,7 +615,18 @@ class DashboardScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                   ],
 
-
+                  // 4.0 TB Dedicated Offline Storage Graph Card
+                  StorageGraphCard(
+                    onManageTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const BackupRestoreScreen(),
+                        ),
+                      );
+                      ref.invalidate(dashboardDataProvider);
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
                   // Recent Transactions Section
                   Text(
