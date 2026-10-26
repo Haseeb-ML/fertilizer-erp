@@ -346,7 +346,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 4.0 TB High-Capacity Storage Visual Graph & Meter
+            // 6.0 TB High-Capacity Storage Visual Graph & Meter
             StorageGraphCard(stats: _stats, isDetailed: true),
             const SizedBox(height: 16),
 

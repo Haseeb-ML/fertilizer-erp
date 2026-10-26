@@ -615,7 +615,7 @@ class DashboardScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  // 4.0 TB Dedicated Offline Storage Graph Card
+                  // 6.0 TB Dedicated Offline Storage Graph Card
                   StorageGraphCard(
                     onManageTap: () async {
                       await Navigator.of(context).push(

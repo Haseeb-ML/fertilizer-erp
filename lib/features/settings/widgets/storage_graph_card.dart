@@ -26,7 +26,7 @@ class StorageGraphCard extends ConsumerWidget {
     final backupCount = (stats?[DatabaseTables.stockMovements] ?? 24) +
         (stats?[DatabaseTables.payments] ?? 14);
 
-    // Calculate simulated realistic storage footprint in MB against 4.0 TB
+    // Calculate simulated realistic storage footprint in MB against 6.0 TB
     final salesMb = (salesCount * 1.8 + 420.0).clamp(50.0, 1500.0);
     final ledgerMb = (ledgerCount * 1.4 + 280.0).clamp(40.0, 1000.0);
     final productsMb = (productsCount * 2.2 + 190.0).clamp(30.0, 800.0);
@@ -34,8 +34,8 @@ class StorageGraphCard extends ConsumerWidget {
 
     final totalUsedMb = salesMb + ledgerMb + productsMb + backupsMb;
     final totalUsedGb = totalUsedMb / 1024.0;
-    const totalCapacityTb = 4.0;
-    const totalCapacityGb = totalCapacityTb * 1024.0; // 4096 GB
+    const totalCapacityTb = 6.0;
+    const totalCapacityGb = totalCapacityTb * 1024.0; // 6144 GB
     final freeCapacityGb = totalCapacityGb - totalUsedGb;
     final freeCapacityTb = freeCapacityGb / 1024.0;
     final usedPercentage = (totalUsedGb / totalCapacityGb) * 100.0;
@@ -150,7 +150,7 @@ class StorageGraphCard extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Text(
-                            '4.0 TB',
+                            '6.0 TB',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
@@ -181,7 +181,7 @@ class StorageGraphCard extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'Total Capacity: 4 TB',
+                            'Total Capacity: 6 TB',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
@@ -240,7 +240,7 @@ class StorageGraphCard extends ConsumerWidget {
                                 child: Container(color: const Color(0xFF7B1FA2)),
                               ),
                               Flexible(
-                                flex: 400, // Visual representation of remaining 4TB space
+                                flex: 600, // Visual representation of remaining 6TB space
                                 child: Container(color: const Color(0xFFE0E0E0)),
                               ),
                             ],
