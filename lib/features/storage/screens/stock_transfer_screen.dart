@@ -270,54 +270,95 @@ class _StockTransferScreenState extends ConsumerState<StockTransferScreen> {
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              value: _fromStorageId,
-                              decoration: const InputDecoration(
-                                labelText: 'From (کس گودام سے)',
-                                prefixIcon: Icon(Icons.upload, color: AppColors.danger),
-                              ),
-                              items: _storages.map((s) {
-                                return DropdownMenuItem<int>(
-                                  value: s.id,
-                                  child: Text(s.name, overflow: TextOverflow.ellipsis),
-                                );
-                              }).toList(),
-                              onChanged: (newId) {
-                                if (newId != null) {
-                                  setState(() => _fromStorageId = newId);
-                                  _loadSourceStocks(newId);
-                                }
-                              },
+                      // From Storage Dropdown
+                      DropdownButtonFormField<int>(
+                        value: _fromStorageId,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: 'From Storage (کس گودام سے مال نکلے گا) *',
+                          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+                          prefixIcon: const Icon(Icons.outbox, color: AppColors.danger),
+                          filled: true,
+                          fillColor: AppColors.danger.withOpacity(0.04),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                        items: _storages.map((s) {
+                          return DropdownMenuItem<int>(
+                            value: s.id,
+                            child: Text(
+                              s.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              overflow: TextOverflow.ellipsis,
                             ),
+                          );
+                        }).toList(),
+                        onChanged: (newId) {
+                          if (newId != null) {
+                            setState(() => _fromStorageId = newId);
+                            _loadSourceStocks(newId);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Connecting Arrow
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Icon(Icons.arrow_forward, color: AppColors.primary, size: 28),
+                          child: const Icon(
+                            Icons.arrow_downward,
+                            color: AppColors.primary,
+                            size: 20,
                           ),
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              value: _toStorageId,
-                              decoration: const InputDecoration(
-                                labelText: 'To (کس گودام میں)',
-                                prefixIcon: Icon(Icons.download, color: AppColors.success),
-                              ),
-                              items: _storages.map((s) {
-                                return DropdownMenuItem<int>(
-                                  value: s.id,
-                                  child: Text(s.name, overflow: TextOverflow.ellipsis),
-                                );
-                              }).toList(),
-                              onChanged: (newId) {
-                                if (newId != null) {
-                                  setState(() => _toStorageId = newId);
-                                }
-                              },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // To Storage Dropdown
+                      DropdownButtonFormField<int>(
+                        value: _toStorageId,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: 'To Storage (کس گودام میں مال پہنچے گا) *',
+                          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+                          prefixIcon: const Icon(Icons.move_to_inbox, color: AppColors.success),
+                          filled: true,
+                          fillColor: AppColors.success.withOpacity(0.04),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                        items: _storages.map((s) {
+                          return DropdownMenuItem<int>(
+                            value: s.id,
+                            child: Text(
+                              s.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                          );
+                        }).toList(),
+                        onChanged: (newId) {
+                          if (newId != null) {
+                            setState(() => _toStorageId = newId);
+                          }
+                        },
                       ),
                     ],
                   ),

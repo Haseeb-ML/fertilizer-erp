@@ -93,15 +93,35 @@ class _StorageListScreenState extends ConsumerState<StorageListScreen> {
             },
           ),
           IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            tooltip: 'Add Godown / Storage',
+            onPressed: () async {
+              final res = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(builder: (_) => const StorageFormScreen()),
+              );
+              if (res == true) _loadStorages();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadStorages,
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
-        label: const Text('Add Godown / Storage'),
-        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.add, color: Colors.white, size: 22),
+        label: const Text(
+          'Add Godown / Storage',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            letterSpacing: 0.3,
+          ),
+        ),
+        backgroundColor: const Color(0xFF0F3B2E),
+        foregroundColor: Colors.white,
+        elevation: 6,
         onPressed: () async {
           final res = await Navigator.of(context).push<bool>(
             MaterialPageRoute(builder: (_) => const StorageFormScreen()),
@@ -218,11 +238,36 @@ class _StorageListScreenState extends ConsumerState<StorageListScreen> {
                           Row(
                             children: [
                               Expanded(
-                                child: OutlinedButton.icon(
-                                  icon: const Icon(Icons.swap_horiz, size: 18, color: Colors.white),
+                                flex: 4,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.add, size: 16, color: Colors.white),
                                   label: const Text(
-                                    'Transfer Stock',
-                                    style: TextStyle(color: Colors.white, fontSize: 12),
+                                    '+ Add Godown',
+                                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF2D6A4F),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: () async {
+                                    final res = await Navigator.of(context).push<bool>(
+                                      MaterialPageRoute(builder: (_) => const StorageFormScreen()),
+                                    );
+                                    if (res == true) _loadStorages();
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                flex: 4,
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.swap_horiz, size: 16, color: Colors.white),
+                                  label: const Text(
+                                    'Transfer',
+                                    style: TextStyle(color: Colors.white, fontSize: 11),
                                   ),
                                   style: OutlinedButton.styleFrom(
                                     side: const BorderSide(color: Colors.white38),
@@ -237,13 +282,14 @@ class _StorageListScreenState extends ConsumerState<StorageListScreen> {
                                   },
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Expanded(
+                                flex: 3,
                                 child: OutlinedButton.icon(
-                                  icon: const Icon(Icons.history, size: 18, color: Colors.white),
+                                  icon: const Icon(Icons.history, size: 16, color: Colors.white),
                                   label: const Text(
-                                    'Transfer History',
-                                    style: TextStyle(color: Colors.white, fontSize: 12),
+                                    'History',
+                                    style: TextStyle(color: Colors.white, fontSize: 11),
                                   ),
                                   style: OutlinedButton.styleFrom(
                                     side: const BorderSide(color: Colors.white38),
@@ -476,7 +522,7 @@ class _StorageListScreenState extends ConsumerState<StorageListScreen> {
                       ),
                     );
                   }).toList(),
-                  const SizedBox(height: 70), // Spacing for FAB
+                  const SizedBox(height: 95), // Spacing for FAB
                 ],
               ),
             ),
