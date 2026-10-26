@@ -77,6 +77,73 @@ class _StorageDetailScreenState extends ConsumerState<StorageDetailScreen> {
     });
   }
 
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Storage (گودام ختم کریں)'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete "${_storage.name}"?\n(کیا آپ واقعی اس گودام کو ڈیلیٹ کرنا چاہتے ہیں؟)'),
+            if (_totalBags > 0) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.warningBg,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.warning),
+                ),
+                child: Text(
+                  'Warning: This storage currently has ${_totalBags.toStringAsFixed(0)} bags in stock. Deleting it will remove this storage.',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF856404), fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel / منسوخ'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete / ڈیلیٹ کریں'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && _storage.id != null) {
+      final repo = ref.read(storageRepoProvider);
+      await repo.deleteStorage(_storage.id!);
+      ref.read(storagesUpdateTriggerProvider.notifier).state++;
+      ref.read(productsUpdateTriggerProvider.notifier).state++;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Storage "${_storage.name}" deleted / گودام حذف ہو گیا'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(storagesUpdateTriggerProvider, (_, __) => _loadStorageData());
@@ -111,6 +178,11 @@ class _StorageDetailScreenState extends ConsumerState<StorageDetailScreen> {
                 ),
               );
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Delete Storage (گودام ختم کریں)',
+            onPressed: _confirmDelete,
           ),
         ],
       ),

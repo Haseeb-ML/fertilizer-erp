@@ -114,6 +114,55 @@ class _StorageFormScreenState extends ConsumerState<StorageFormScreen> {
     }
   }
 
+  Future<void> _deleteStorage() async {
+    final s = widget.storage;
+    if (s == null || s.id == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Storage (گودام ختم کریں)'),
+          ],
+        ),
+        content: Text('Are you sure you want to delete "${s.name}"?\n(کیا آپ واقعی اس گودام کو ڈیلیٹ کرنا چاہتے ہیں؟)'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel / منسوخ'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete / ڈیلیٹ کریں'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final repo = ref.read(storageRepoProvider);
+      await repo.deleteStorage(s.id!);
+      ref.read(storagesUpdateTriggerProvider.notifier).state++;
+      ref.read(productsUpdateTriggerProvider.notifier).state++;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Storage "${s.name}" deleted / گودام حذف ہو گیا'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = isEdit ? 'Edit Storage (گودام میں ترمیم)' : 'Add Godown / Storage (نیا گودام)';
@@ -122,6 +171,12 @@ class _StorageFormScreenState extends ConsumerState<StorageFormScreen> {
       appBar: AppBar(
         title: Text(title),
         actions: [
+          if (isEdit)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete Storage (گودام ختم کریں)',
+              onPressed: _deleteStorage,
+            ),
           IconButton(
             icon: const Icon(Icons.check),
             tooltip: ref.tr('save'),

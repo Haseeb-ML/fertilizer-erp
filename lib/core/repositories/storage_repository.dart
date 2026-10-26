@@ -108,30 +108,56 @@ class StorageRepository {
     });
   }
 
-  /// Delete a storage (if no non-zero stocks or soft delete)
+  /// Delete a storage and associated stock entries cleanly
   Future<int> deleteStorage(int id) async {
     final db = await _db;
-    // Check if any product has non-zero stock in this storage
-    final totalStock = Sqflite.firstIntValue(
-      await db.rawQuery(
-        'SELECT SUM(quantity) FROM ${DatabaseTables.storageStocks} WHERE storage_id = ?',
-        [id],
-      ),
-    );
-    if (totalStock != null && totalStock > 0) {
-      // Soft-delete to prevent data loss
-      return await db.update(
+    return await db.transaction((txn) async {
+      // 1. Delete associated storage stock entries
+      await txn.delete(
+        DatabaseTables.storageStocks,
+        where: 'storage_id = ?',
+        whereArgs: [id],
+      );
+
+      // 2. Delete associated stock transfers for this storage
+      await txn.delete(
+        DatabaseTables.stockTransfers,
+        where: 'from_storage_id = ? OR to_storage_id = ?',
+        whereArgs: [id, id],
+      );
+
+      // 3. Delete the storage record
+      final rows = await txn.delete(
         DatabaseTables.storages,
-        {'is_active': 0},
         where: 'id = ?',
         whereArgs: [id],
       );
-    }
-    return await db.delete(
-      DatabaseTables.storages,
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+
+      // 4. Ensure at least one storage remains default if other storages exist
+      final defaultCount = Sqflite.firstIntValue(
+        await txn.rawQuery(
+          'SELECT COUNT(*) FROM ${DatabaseTables.storages} WHERE is_default = 1',
+        ),
+      ) ?? 0;
+
+      if (defaultCount == 0) {
+        final remaining = await txn.query(
+          DatabaseTables.storages,
+          orderBy: 'id ASC',
+          limit: 1,
+        );
+        if (remaining.isNotEmpty) {
+          await txn.update(
+            DatabaseTables.storages,
+            {'is_default': 1},
+            where: 'id = ?',
+            whereArgs: [remaining.first['id']],
+          );
+        }
+      }
+
+      return rows;
+    });
   }
 
   /// Get product stocks inside a specific storage with product metadata

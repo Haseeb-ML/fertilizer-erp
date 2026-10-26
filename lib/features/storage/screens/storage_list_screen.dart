@@ -62,6 +62,84 @@ class _StorageListScreenState extends ConsumerState<StorageListScreen> {
     });
   }
 
+  Future<void> _confirmDeleteStorage(Storage storage, double bags) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Storage (گودام ختم کریں)'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete "${storage.name}"?\n(کیا آپ واقعی اس گودام کو ڈیلیٹ کرنا چاہتے ہیں؟)',
+              style: const TextStyle(fontSize: 14),
+            ),
+            if (bags > 0) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.warningBg,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.warning),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: AppColors.warning, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This storage currently has ${bags.toStringAsFixed(0)} bags in stock. Deleting it will remove this storage.',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF856404), fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(ref.tr('cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete / ڈیلیٹ کریں'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && storage.id != null) {
+      final repo = ref.read(storageRepoProvider);
+      await repo.deleteStorage(storage.id!);
+      ref.read(storagesUpdateTriggerProvider.notifier).state++;
+      ref.read(productsUpdateTriggerProvider.notifier).state++;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Storage "${storage.name}" deleted / گودام حذف کر دیا گیا'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+        _loadStorages();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(storagesUpdateTriggerProvider, (_, __) => _loadStorages());
@@ -413,17 +491,27 @@ class _StorageListScreenState extends ConsumerState<StorageListScreen> {
                                       ],
                                     ),
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_outlined, size: 20),
-                                    tooltip: 'Edit',
-                                    onPressed: () async {
-                                      final res = await Navigator.of(context).push<bool>(
-                                        MaterialPageRoute(
-                                          builder: (_) => StorageFormScreen(storage: s),
-                                        ),
-                                      );
-                                      if (res == true) _loadStorages();
-                                    },
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit_outlined, size: 20),
+                                        tooltip: 'Edit Storage (ترمیم)',
+                                        onPressed: () async {
+                                          final res = await Navigator.of(context).push<bool>(
+                                            MaterialPageRoute(
+                                              builder: (_) => StorageFormScreen(storage: s),
+                                            ),
+                                          );
+                                          if (res == true) _loadStorages();
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.danger),
+                                        tooltip: 'Delete Storage (گودام ختم کریں)',
+                                        onPressed: () => _confirmDeleteStorage(s, bags),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
