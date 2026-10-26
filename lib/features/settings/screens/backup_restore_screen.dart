@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/database/database_tables.dart';
 import '../../../core/localization/app_translations.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/services/backup_service.dart';
@@ -22,6 +23,31 @@ class BackupRestoreScreen extends ConsumerStatefulWidget {
 class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
   bool _isProcessing = false;
   String? _lastBackupMessage;
+  Map<String, int>? _stats;
+  bool _loadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final dbHelper = ref.read(databaseHelperProvider);
+      final stats = await BackupService.getStorageStats(dbHelper: dbHelper);
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _loadingStats = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _loadingStats = false);
+      }
+    }
+  }
 
   Future<void> _clearDatabase() async {
     // 1. Initial warning dialog
@@ -299,15 +325,215 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final totalRecords = _stats != null
+        ? _stats!.values.fold<int>(0, (a, b) => a + b)
+        : 0;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Database Backup & Restore')),
+      appBar: AppBar(
+        title: Text(ref.tr('data_storage')),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Storage Stats',
+            onPressed: _loadStats,
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Export Card
+            // Hero Status Card: 100% Offline Device Storage
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF004D40), Color(0xFF00796B)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF004D40).withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.storage_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Offline Device Storage (لوکل ڈیٹا بیس)',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              ref.tr('data_storage_desc'),
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 12,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.verified, color: Colors.greenAccent, size: 16),
+                            SizedBox(width: 6),
+                            Text(
+                              'Status: 100% Offline & Private',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          _loadingStats ? 'Loading...' : '$totalRecords Records',
+                          style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Live Database Storage Stats Grid
             Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Stored Business Data (محفوظ شدہ ریکارڈز)',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        if (_loadingStats)
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                      ],
+                    ),
+                    const Divider(height: 16),
+                    Row(
+                      children: [
+                        _buildStatTile(
+                          icon: Icons.point_of_sale,
+                          color: AppColors.primary,
+                          label: 'Sales Invoices',
+                          count: _stats?[DatabaseTables.sales] ?? 0,
+                        ),
+                        _buildStatTile(
+                          icon: Icons.shopping_bag_outlined,
+                          color: AppColors.secondary,
+                          label: 'Purchases',
+                          count: _stats?[DatabaseTables.purchases] ?? 0,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        _buildStatTile(
+                          icon: Icons.people_outline,
+                          color: const Color(0xFF0288D1),
+                          label: 'Customers',
+                          count: _stats?[DatabaseTables.customers] ?? 0,
+                        ),
+                        _buildStatTile(
+                          icon: Icons.inventory_2_outlined,
+                          color: const Color(0xFF00796B),
+                          label: 'Products',
+                          count: _stats?[DatabaseTables.products] ?? 0,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        _buildStatTile(
+                          icon: Icons.receipt_long,
+                          color: AppColors.danger,
+                          label: 'Expenses',
+                          count: _stats?[DatabaseTables.expenses] ?? 0,
+                        ),
+                        _buildStatTile(
+                          icon: Icons.payments_outlined,
+                          color: AppColors.success,
+                          label: 'Payments & Ledger',
+                          count: (_stats?[DatabaseTables.payments] ?? 0) +
+                              (_stats?[DatabaseTables.customerLedger] ?? 0),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Export / Save Backup Card
+            Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -318,12 +544,13 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryLight.withOpacity(0.15),
+                            color: AppColors.primary.withOpacity(0.12),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
-                            Icons.cloud_upload,
+                            Icons.download_rounded,
                             color: AppColors.primary,
+                            size: 24,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -332,17 +559,18 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Export Full Backup',
+                                'Save All Data / Export Backup (ڈیٹا محفوظ کریں)',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 15,
                                 ),
                               ),
+                              SizedBox(height: 2),
                               Text(
-                                'Save all sales, inventory, ledgers, and payments locally',
+                                'Export complete JSON file to device storage, WhatsApp, or Google Drive',
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
-                                  fontSize: 12,
+                                  fontSize: 11,
                                 ),
                               ),
                             ],
@@ -350,14 +578,21 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     ElevatedButton.icon(
                       onPressed: _isProcessing ? null : _exportBackup,
-                      icon: const Icon(Icons.backup),
-                      label: const Text('Generate & Export Backup'),
+                      icon: const Icon(Icons.save_alt_rounded),
+                      label: const Text(
+                        'Save / Export Data File Now (ڈیٹا فائل محفوظ کریں)',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        minimumSize: const Size.fromHeight(45),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(46),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                     if (_lastBackupMessage != null) ...[
@@ -375,10 +610,12 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // Restore Card
             Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -395,6 +632,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                           child: const Icon(
                             Icons.settings_backup_restore,
                             color: AppColors.warning,
+                            size: 24,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -403,17 +641,18 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Restore From Backup',
+                                'Restore from Backup File (ڈیٹا بحال کریں)',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 15,
                                 ),
                               ),
+                              SizedBox(height: 2),
                               Text(
-                                'Select a backup JSON file to restore your business records',
+                                'Load previously saved JSON backup file into this device',
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
-                                  fontSize: 12,
+                                  fontSize: 11,
                                 ),
                               ),
                             ],
@@ -421,27 +660,33 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     OutlinedButton.icon(
                       onPressed: _isProcessing ? null : _restoreBackup,
                       icon: const Icon(Icons.file_open),
-                      label: const Text('Select File to Restore'),
+                      label: const Text(
+                        'Select Backup File to Restore (فائل منتخب کریں)',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.warning,
                         side: const BorderSide(color: AppColors.warning),
-                        minimumSize: const Size.fromHeight(45),
+                        minimumSize: const Size.fromHeight(46),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // Danger Zone: Reset / Delete All Database Data
+            // Danger Zone: Reset / Clear Database
             Card(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 side: BorderSide(
                   color: AppColors.danger.withOpacity(0.4),
                   width: 1,
@@ -463,6 +708,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                           child: const Icon(
                             Icons.delete_forever,
                             color: AppColors.danger,
+                            size: 24,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -474,7 +720,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                 ref.tr('clear_database'),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   color: AppColors.danger,
                                 ),
                               ),
@@ -482,7 +728,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                                 ref.tr('clear_database_sub'),
                                 style: const TextStyle(
                                   color: AppColors.textSecondary,
-                                  fontSize: 12,
+                                  fontSize: 11,
                                 ),
                               ),
                             ],
@@ -490,7 +736,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     ElevatedButton.icon(
                       onPressed: _isProcessing ? null : _clearDatabase,
                       icon: const Icon(Icons.delete_sweep, color: Colors.white),
@@ -503,14 +749,17 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.danger,
-                        minimumSize: const Size.fromHeight(45),
+                        minimumSize: const Size.fromHeight(46),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // Security note
             Container(
@@ -526,12 +775,62 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      '100% Offline & Private: Backups are stored strictly on your device or shared directly by you without cloud servers.',
+                      '100% Offline & Private: No cloud servers are involved. Your financial and customer records stay exclusively on this device unless you choose to export and share a backup.',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textPrimary,
+                        height: 1.3,
                       ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatTile({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required int count,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.15)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$count',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: color,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

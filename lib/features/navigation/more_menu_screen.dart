@@ -11,7 +11,6 @@ import '../payments/screens/payment_list_screen.dart';
 import '../expenses/screens/expense_list_screen.dart';
 import '../expenses/screens/cashbook_screen.dart';
 import '../reports/screens/reports_hub_screen.dart';
-import '../storage/screens/storage_list_screen.dart';
 import '../settings/screens/settings_screen.dart';
 import '../settings/screens/backup_restore_screen.dart';
 
@@ -181,15 +180,7 @@ class MoreMenuScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
 
-          _menuTile(
-            context,
-            icon: Icons.warehouse,
-            color: const Color(0xFF00796B),
-            title: ref.tr('mod_storage'),
-            subtitle: ref.tr('mod_storage_sub'),
-            destination: const StorageListScreen(),
-          ),
-          const SizedBox(height: 10),
+
 
           _menuTile(
             context,
@@ -273,10 +264,10 @@ class MoreMenuScreen extends ConsumerWidget {
 
           _menuTile(
             context,
-            icon: Icons.backup,
-            color: const Color(0xFF00897B),
-            title: ref.tr('mod_backup'),
-            subtitle: ref.tr('mod_backup_sub'),
+            icon: Icons.storage_rounded,
+            color: const Color(0xFF00796B),
+            title: ref.tr('data_storage'),
+            subtitle: ref.tr('data_storage_sub'),
             destination: const BackupRestoreScreen(),
           ),
         ],

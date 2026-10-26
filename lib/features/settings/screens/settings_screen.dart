@@ -472,19 +472,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Backup & Restore Navigation Card
+                // Data Storage & Backup Navigation Card
                 Card(
                   child: ListTile(
                     leading: const CircleAvatar(
-                      backgroundColor: AppColors.infoBg,
-                      child: Icon(Icons.backup, color: AppColors.info),
+                      backgroundColor: Color(0xFFE0F2F1),
+                      child: Icon(Icons.storage_rounded, color: Color(0xFF00796B)),
                     ),
-                    title: const Text(
-                      'Database Backup & Restore',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    title: Text(
+                      ref.tr('data_storage'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: const Text(
-                      'Export JSON backups or restore previous data',
+                    subtitle: Text(
+                      ref.tr('data_storage_sub'),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {

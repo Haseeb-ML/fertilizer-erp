@@ -258,5 +258,21 @@ class BackupService {
 
     return totalDeleted;
   }
+
+  /// Returns live statistics and counts for all stored tables on local storage
+  static Future<Map<String, int>> getStorageStats({DatabaseHelper? dbHelper}) async {
+    final helper = dbHelper ?? DatabaseHelper.instance;
+    final db = await helper.database;
+    final counts = <String, int>{};
+    for (final table in _tablesInOrder) {
+      try {
+        final res = await db.rawQuery('SELECT COUNT(*) as count FROM $table');
+        counts[table] = (res.first['count'] as int?) ?? 0;
+      } catch (_) {
+        counts[table] = 0;
+      }
+    }
+    return counts;
+  }
 }
 
