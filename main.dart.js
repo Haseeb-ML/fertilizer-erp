@@ -385,7 +385,7 @@ blW(a){var s,r,q=a.graphemeLayoutBounds,p=B.n.h8(q,t.i)
 q=p.a
 s=J.ai(q)
 r=p.$ti.y[1]
-return new A.t7(new A.K(r.a(s.h(q,0)),r.a(s.h(q,1)),r.a(s.h(q,2)),r.a(s.h(q,3))),new A.cu(J.b0(a.graphemeClusterTextRange.start),J.b0(a.graphemeClusterTextRange.end)),B.ws[J.b0(a.dir.value)])},
+return new A.t7(new A.K(r.a(s.h(q,0)),r.a(s.h(q,1)),r.a(s.h(q,2)),r.a(s.h(q,3))),new A.cu(J.b0(a.graphemeClusterTextRange.start),J.b0(a.graphemeClusterTextRange.end)),B.wr[J.b0(a.dir.value)])},
 bBI(a){var s,r,q,p,o=a.unresolvedCodepoints()
 o=t.Ly.b(o)?o:new A.hb(o,A.a7(o).i("hb<1,N>"))
 s=J.ai(o)
@@ -43333,7 +43333,7 @@ YV(a){var s,r,q,p,o,n,m,l=A.b([],t.Lx)
 for(s=a.a,r=J.ai(s),q=a.$ti.y[1],p=0;p<r.gv(s);++p){o=q.a(r.h(s,p))
 n=o.rect
 m=J.b0(o.dir.value)
-l.push(new A.hG(n[0],n[1],n[2],n[3],B.ws[m]))}return l},
+l.push(new A.hG(n[0],n[1],n[2],n[3],B.wr[m]))}return l},
 f6(a){var s,r,q=this.a
 q===$&&A.a()
 s=q.a.getGlyphPositionAtCoordinate(a.a,a.b)
@@ -50364,7 +50364,7 @@ o=A.aV(s.h(0,"textAlignIndex"))
 n=A.aV(s.h(0,"textDirectionIndex"))
 m=A.c5(s.h(0,"fontWeightIndex"))
 l=m!=null?A.bpT(m):"normal"
-p=new A.aLt(new A.arJ(A.aw9(s,"fontSize"),l,A.ag(s.h(0,"fontFamily")),B.aXc[o],B.ws[n],A.aw9(s,"letterSpacing"),A.aw9(s,"wordSpacing"),A.aw9(s,"lineHeight")))
+p=new A.aLt(new A.arJ(A.aw9(s,"fontSize"),l,A.ag(s.h(0,"fontFamily")),B.aXc[o],B.wr[n],A.aw9(s,"letterSpacing"),A.aw9(s,"wordSpacing"),A.aw9(s,"lineHeight")))
 break
 case"TextInput.clearClient":p=B.a3D
 break
@@ -59188,7 +59188,7 @@ p===$&&A.a()
 q.a6_(s,p)
 q.RG.OB(q)
 for(p=q.p3,r=18;r>=3;--r){p===$&&A.a()
-if(p[B.wz[r]*2+1]!==0)break}p=q.aS
+if(p[B.wy[r]*2+1]!==0)break}p=q.aS
 p===$&&A.a()
 q.aS=p+(3*(r+1)+5+5+4)
 return r},
@@ -59199,7 +59199,7 @@ p.iu(s,5)
 p.iu(c-4,4)
 for(r=0;r<c;++r){q=p.p3
 q===$&&A.a()
-p.iu(q[B.wz[r]*2+1],3)}q=p.p1
+p.iu(q[B.wy[r]*2+1],3)}q=p.p1
 q===$&&A.a()
 p.a6u(q,a-1)
 q=p.p2
@@ -60010,7 +60010,7 @@ if(r>19)return-1
 q=new Uint8Array(19)
 for(p=0;p<r;++p){o=i.mr(3)
 if(o===-1)return-1
-q[B.wz[p]]=o}n=A.a_e(q)
+q[B.wy[p]]=o}n=A.a_e(q)
 m=h+s
 l=new Uint8Array(m)
 k=J.dM(B.I.ga9(l),0,h)
@@ -62684,7 +62684,7 @@ return A.c(b6.cq("purchases","id = ?",[b2]),$async$$1)
 case 2:b3=b8
 b4=J.ai(b3)
 if(b4.gU(b3))throw A.f(A.bZ("Purchase not found"))
-p=A.a4i(b4.gX(b3),B.wv)
+p=A.a4i(b4.gX(b3),B.wu)
 if(p.ax)throw A.f(A.bZ("Reversed purchase cannot be edited"))
 o=p.b
 n=p.c
@@ -62814,7 +62814,7 @@ return A.c(a6.cq("purchases","id = ?",[a0]),$async$$1)
 case 2:a1=a8
 a2=J.ai(a1)
 if(a2.gU(a1))throw A.f(A.bZ("Purchase not found"))
-p=A.a4i(a2.gX(a1),B.wv)
+p=A.a4i(a2.gX(a1),B.wu)
 if(p.ax)throw A.f(A.bZ("Purchase is already reversed"))
 s=3
 return A.c(a6.cq("purchase_items","purchase_id = ?",[a0]),$async$$1)
@@ -62878,7 +62878,7 @@ return A.c(a2.cq("purchases","id = ?",[a]),$async$$1)
 case 2:a0=a4
 a1=J.ai(a0)
 if(a1.gU(a0))throw A.f(A.bZ("Purchase not found"))
-p=A.a4i(a1.gX(a0),B.wv)
+p=A.a4i(a1.gX(a0),B.wu)
 a1=q.b
 s=3
 return A.c(a2.cq("products","id = ?",[a1]),$async$$1)
@@ -63498,7 +63498,7 @@ return A.c(c6.cq("sales","id = ?",[b8]),$async$$1)
 case 2:b9=c8
 c0=J.ai(b9)
 if(c0.gU(b9))throw A.f(A.bZ("Sale not found"))
-p=A.Mf(c0.gX(b9),B.wu)
+p=A.Mf(c0.gX(b9),B.wt)
 if(p.ay)throw A.f(A.bZ("Reversed bill cannot be edited"))
 o=p.b
 n=p.c
@@ -63683,7 +63683,7 @@ return A.c(a6.cq("sales","id = ?",[a0]),$async$$1)
 case 2:a1=a8
 a2=J.ai(a1)
 if(a2.gU(a1))throw A.f(A.bZ("Sale not found"))
-p=A.Mf(a2.gX(a1),B.wu)
+p=A.Mf(a2.gX(a1),B.wt)
 if(p.ay)throw A.f(A.bZ("Sale is already reversed"))
 s=3
 return A.c(a6.cq("sale_items","sale_id = ?",[a0]),$async$$1)
@@ -63750,7 +63750,7 @@ return A.c(a3.cq("sales","id = ?",[a0]),$async$$1)
 case 2:a1=a5
 a2=J.ai(a1)
 if(a2.gU(a1))throw A.f(A.bZ("Sale not found"))
-p=A.Mf(a2.gX(a1),B.wu)
+p=A.Mf(a2.gX(a1),B.wt)
 a2=q.b
 s=3
 return A.c(a3.cq("products","id = ?",[a2]),$async$$1)
@@ -66080,7 +66080,7 @@ o=r?m:s.r
 if(o==null)o=""
 n.z=new A.by(new A.bl(o,B.aB,B.ap),p)
 p=r?m:s.b
-n.Q=p==null?B.n.gX(B.wl):p
+n.Q=p==null?B.n.gX(B.wG):p
 r=r?m:s.e
 n.at=r==null?"Cash":r
 if(q&&s.d.length!==0)n.as=A.bwf(s.d)},
@@ -66163,7 +66163,7 @@ A.aTu.prototype={
 $0(){return this.a.ax=!1},
 $S:0}
 A.aTF.prototype={
-$1(a){var s,r,q,p,o,n,m,l,k=null,j=t.N,i=A.fB(B.wl,!0,j),h=this.a,g=h.Q
+$1(a){var s,r,q,p,o,n,m,l,k=null,j=t.N,i=A.fB(B.wG,!0,j),h=this.a,g=h.Q
 g===$&&A.a()
 if(!B.n.p(i,g))B.n.d4(i,0,h.Q)
 g=t.s
@@ -66252,7 +66252,7 @@ s=1
 break
 case 1:return A.k(q,r)}})
 return A.l($async$QV,r)},
-L(a){var s=this,r=null,q=t.p,p=A.dt(A.b([A.cC(r,r,r,B.ji,r,r,new A.aTY(s,a),r,r,r,"Add Expense")],q),r,r,r,B.bDO),o=A.b([A.t0(B.a_L,new A.aTZ(s),s.w==="All",B.ep),B.cx],q),n=A.h0(B.wl,0,A.no(5,"count",t.S),t.N)
+L(a){var s=this,r=null,q=t.p,p=A.dt(A.b([A.cC(r,r,r,B.ji,r,r,new A.aTY(s,a),r,r,r,"Add Expense")],q),r,r,r,B.bDO),o=A.b([A.t0(B.a_L,new A.aTZ(s),s.w==="All",B.ep),B.cx],q),n=A.h0(B.wG,0,A.no(5,"count",t.S),t.N)
 B.n.R(o,new A.a3(n,new A.aU_(s),n.$ti.i("a3<ap.E,h>")))
 return A.df(p,r,A.ac(A.b([A.b3(r,A.dK(A.a4(o,B.C,B.x,B.u,0),r,B.ak,r,r,B.bl),B.N,B.G,r,r,r,r,r,B.hO,r,r,r),B.cr,A.aT(A.hh(new A.aU0(s),s.QV(),t.nf),1)],q),B.C,B.x,B.u),r,A.ZE(B.R,B.vs,new A.aU1(s,a)))}}
 A.aTY.prototype={
@@ -67513,7 +67513,7 @@ m.push(A.cr(!1,q.z,B.ads,p,B.cl,p,1,!1,p,p,p,new A.aWD()))
 m.push(B.ao)
 s=q.at
 r=t.fo
-r=A.S(new A.a3(B.wp,new A.aWE(),r),r.i("ap.E"))
+r=A.S(new A.a3(B.wo,new A.aWE(),r),r.i("ap.E"))
 s=A.aT(A.hA(B.vw,p,!0,r,new A.aWF(q),s,t.N),1)
 r=A.hX(p,p,p,p,p,p,p,p,p,p,p,p,B.fZ,p,p,p,p,p,p,p)
 m.push(A.a4(A.b([s,B.ea,A.aT(A.ea(B.nW,A.x(A.lk(q.y),p,p,p,p,p,p,p,p),new A.aWG(q,a),r),1)],n),B.C,B.x,B.u,0))
@@ -67748,7 +67748,7 @@ m.push(A.cr(!1,q.z,B.ad5,p,B.cl,p,1,!1,p,p,p,new A.b0L()))
 m.push(B.ao)
 s=q.at
 r=t.fo
-r=A.S(new A.a3(B.wp,new A.b0M(),r),r.i("ap.E"))
+r=A.S(new A.a3(B.wo,new A.b0M(),r),r.i("ap.E"))
 s=A.aT(A.hA(B.vw,p,!0,r,new A.b0N(q),s,t.N),1)
 r=A.hX(p,p,p,p,p,p,p,p,p,p,p,p,B.fZ,p,p,p,p,p,p,p)
 m.push(A.a4(A.b([s,B.ea,A.aT(A.ea(B.nW,A.x(A.lk(q.y),p,p,p,p,p,p,p,p),new A.b0O(q,a),r),1)],n),B.C,B.x,B.u,0))
@@ -68122,7 +68122,7 @@ k=A.a4(A.b([A.aT(A.cr(!1,p.Q,B.acV,o,B.cl,o,1,!1,new A.b_D(p),o,o,o),1),B.ea,A.a
 s=A.aT(A.cr(!1,p.at,B.adh,o,B.cl,o,1,!1,new A.b_F(p),o,o,o),1)
 r=p.ay
 q=t.fo
-q=A.S(new A.a3(B.wp,new A.b_G(),q),q.i("ap.E"))
+q=A.S(new A.a3(B.wo,new A.b_G(),q),q.i("ap.E"))
 m=A.b([k,B.ao,A.a4(A.b([s,B.ea,A.aT(A.hA(B.vw,o,!0,q,new A.b_H(p),r,t.N),1)],m),B.C,B.x,B.u,0),B.iP,p.a75("Subtotal:",A.ar(p.gjM(),!0))],m)
 if(p.gjY()>0)m.push(p.a76("Discount:","- "+A.ar(p.gjY(),!0),B.X))
 if(p.gKN()>0)m.push(p.a75("Freight Charges:","+ "+A.ar(p.gKN(),!0)))
@@ -119338,7 +119338,7 @@ gCO(){return A.bLi()},
 az7(){if(this.x)return
 this.IT()},
 ahZ(){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c=this,b=null,a=c.c
-if(a===-1||c.d===-1||c.b.length===0)return new A.ue(b,b,B.hj,B.ww,c.b.length!==0)
+if(a===-1||c.d===-1||c.b.length===0)return new A.ue(b,b,B.hj,B.wv,c.b.length!==0)
 if(!c.as){a=c.a_h(c.d,a)
 c.d=a
 c.c=c.a_h(c.c,a)}s=c.b[c.d].gt()
@@ -134840,8 +134840,8 @@ j=0}e=f.x
 e.toString
 e=f.x=e+1
 h=B.k.cF(m&B.lE[l],k)
-g=B.k.dt(o&B.wB[i],8-i)
-if(j!==0){g=B.k.cF(g,j)|B.k.dt(n&B.wB[j],8-j)
+g=B.k.dt(o&B.wA[i],8-i)
+if(j!==0){g=B.k.cF(g,j)|B.k.dt(n&B.wA[j],8-j)
 f.x=e+1
 f.w=j}else if(i===8){f.w=0
 f.x=e+1}else f.w=i
@@ -134871,7 +134871,7 @@ i.w=h
 if(h===8){i.w=0
 h=i.x
 h.toString
-i.x=h+1}}else{j=(B.k.cF(n&B.lE[m],-k)|B.k.dt(o&B.wB[l],8-l))>>>0
+i.x=h+1}}else{j=(B.k.cF(n&B.lE[m],-k)|B.k.dt(o&B.wA[l],8-l))>>>0
 h=i.x
 h.toString
 i.x=h+1
@@ -135691,7 +135691,7 @@ f.$flags&2&&A.i(f)
 f[0]=e
 if(h<0)e=0
 else e=h>127?127:h
-f[1]=B.wn[e]
+f[1]=B.wm[e]
 e=g.b
 f=h+q
 if(f<0)f=0
@@ -135702,7 +135702,7 @@ e[0]=f*2
 f=h+p
 if(f<0)f=0
 else if(f>127)f=127
-e[1]=B.wn[f]*101581>>>16
+e[1]=B.wm[f]*101581>>>16
 if(e[1]<8)e[1]=8
 f=g.c
 e=h+o
@@ -135714,7 +135714,7 @@ f[0]=e
 e=h+n
 if(e<0)e=0
 else if(e>127)e=127
-f[1]=B.wn[e]}},
+f[1]=B.wm[e]}},
 aDz(){var s,r,q,p,o,n,m=this,l=m.fr
 for(s=0;s<4;++s)for(r=0;r<8;++r)for(q=0;q<3;++q)for(p=0;p<11;++p){o=m.c
 o===$&&A.a()
@@ -137178,11 +137178,11 @@ aOy(a,b){return this.auE(a,b)}}
 A.a7B.prototype={
 EE(){var s,r,q=this.a
 if(q<32){s=this.d
-r=B.k.dt(s[0],q)+((s[1]&B.wC[q])>>>0)*(B.wC[32-q]+1)}else{s=this.d
+r=B.k.dt(s[0],q)+((s[1]&B.wB[q])>>>0)*(B.wB[32-q]+1)}else{s=this.d
 r=q===32?s[1]:B.k.dt(s[1],q-32)}return r},
 fw(a){var s,r,q=this
 if(!q.b&&a<25){s=q.EE()
-r=B.wC[a]
+r=B.wB[a]
 q.a+=a
 q.v_()
 return(s&r)>>>0}else{q.b=!0
@@ -152834,8 +152834,8 @@ B.IW=s(["Dydd Sul","Dydd Llun","Dydd Mawrth","Dydd Mercher","Dydd Iau","Dydd Gwe
 B.IX=s(["\u0ea1\u0eb1\u0e87\u0e81\u0ead\u0e99","\u0e81\u0eb8\u0ea1\u0e9e\u0eb2","\u0ea1\u0eb5\u0e99\u0eb2","\u0ec0\u0ea1\u0eaa\u0eb2","\u0e9e\u0eb6\u0e94\u0eaa\u0eb0\u0e9e\u0eb2","\u0ea1\u0eb4\u0e96\u0eb8\u0e99\u0eb2","\u0e81\u0ecd\u0ea5\u0eb0\u0e81\u0ebb\u0e94","\u0eaa\u0eb4\u0e87\u0eab\u0eb2","\u0e81\u0eb1\u0e99\u0e8d\u0eb2","\u0e95\u0eb8\u0ea5\u0eb2","\u0e9e\u0eb0\u0e88\u0eb4\u0e81","\u0e97\u0eb1\u0e99\u0ea7\u0eb2"],t.s)
 B.aIS=s(["prije Krista","poslije Krista"],t.s)
 B.IY=s(["Paz","Pzt","Sal","\xc7ar","Per","Cum","Cmt"],t.s)
-B.wy=s([128,128,128,128,128,128,128,128,128,128,128],t.t)
-B.JJ=s([B.wy,B.wy,B.wy],t.r)
+B.wx=s([128,128,128,128,128,128,128,128,128,128,128],t.t)
+B.JJ=s([B.wx,B.wx,B.wx],t.r)
 B.aU3=s([253,136,254,255,228,219,128,128,128,128,128],t.t)
 B.aZI=s([189,129,242,255,227,213,255,219,128,128,128],t.t)
 B.aZV=s([106,126,227,252,214,209,255,255,128,128,128],t.t)
@@ -153201,19 +153201,18 @@ B.Kg=s(["\u056f\u056b\u0580\u0561\u056f\u056b","\u0565\u0580\u056f\u0578\u0582\u
 B.Kh=s(["\u09b0","\u09b8\u09cb","\u09ae","\u09ac\u09c1","\u09ac\u09c3","\u09b6\u09c1","\u09b6"],t.s)
 B.Ki=s(["\u0d89\u0dbb\u0dd2\u0daf\u0dcf","\u0dc3\u0db3\u0dd4\u0daf\u0dcf","\u0d85\u0d9f\u0dc4","\u0db6\u0daf\u0dcf\u0daf\u0dcf","\u0db6\u0dca\u200d\u0dbb\u0dc4\u0dc3\u0dca","\u0dc3\u0dd2\u0d9a\u0dd4","\u0dc3\u0dd9\u0db1"],t.s)
 B.wk=s([4,5,6,7,8,9,10,10,11,12,13,14,15,16,17,17,18,19,20,20,21,21,22,22,23,23,24,25,25,26,27,28,29,30,31,32,33,34,35,36,37,37,38,39,40,41,42,43,44,45,46,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,76,77,78,79,80,81,82,83,84,85,86,87,88,89,91,93,95,96,98,100,101,102,104,106,108,110,112,114,116,118,122,124,126,128,130,132,134,136,138,140,143,145,148,151,154,157],t.t)
-B.wl=s(["Transport / Freight (Kiraya)","Loading & Unloading (Muzdoori/Hammali)","Shop Rent","Electricity / Utilities","Shop & Warehouse Maintenance","Staff Refreshment / Tea","Labor / Daily Wages","Taxes / Levies","Stationery & Office Supplies","Miscellaneous"],t.s)
 B.aYG=s(["F1","F2","F3","F4"],t.s)
 B.aYH=s(["1. \u010detrtletje","2. \u010detrtletje","3. \u010detrtletje","4. \u010detrtletje"],t.s)
 B.aYL=s(["I ketvirtis","II ketvirtis","III ketvirtis","IV ketvirtis"],t.s)
 B.aYN=s(["1:a kvartalet","2:a kvartalet","3:e kvartalet","4:e kvartalet"],t.s)
 B.Kj=s(["\u044f\u043d\u0443\u0430\u0440\u0438","\u0444\u0435\u0432\u0440\u0443\u0430\u0440\u0438","\u043c\u0430\u0440\u0442","\u0430\u043f\u0440\u0438\u043b","\u043c\u0430\u0439","\u044e\u043d\u0438","\u044e\u043b\u0438","\u0430\u0432\u0433\u0443\u0441\u0442","\u0441\u0435\u043f\u0442\u0435\u043c\u0432\u0440\u0438","\u043e\u043a\u0442\u043e\u043c\u0432\u0440\u0438","\u043d\u043e\u0435\u043c\u0432\u0440\u0438","\u0434\u0435\u043a\u0435\u043c\u0432\u0440\u0438"],t.s)
-B.wm=s(["\u0698\u0627\u0646\u0648\u06cc\u0647","\u0641\u0648\u0631\u06cc\u0647","\u0645\u0627\u0631\u0633","\u0622\u0648\u0631\u06cc\u0644","\u0645\u0647","\u0698\u0648\u0626\u0646","\u0698\u0648\u0626\u06cc\u0647","\u0627\u0648\u062a","\u0633\u067e\u062a\u0627\u0645\u0628\u0631","\u0627\u06a9\u062a\u0628\u0631","\u0646\u0648\u0627\u0645\u0628\u0631","\u062f\u0633\u0627\u0645\u0628\u0631"],t.s)
+B.wl=s(["\u0698\u0627\u0646\u0648\u06cc\u0647","\u0641\u0648\u0631\u06cc\u0647","\u0645\u0627\u0631\u0633","\u0622\u0648\u0631\u06cc\u0644","\u0645\u0647","\u0698\u0648\u0626\u0646","\u0698\u0648\u0626\u06cc\u0647","\u0627\u0648\u062a","\u0633\u067e\u062a\u0627\u0645\u0628\u0631","\u0627\u06a9\u062a\u0628\u0631","\u0646\u0648\u0627\u0645\u0628\u0631","\u062f\u0633\u0627\u0645\u0628\u0631"],t.s)
 B.Kk=s(["e diel","e h\xebn\xeb","e mart\xeb","e m\xebrkur\xeb","e enjte","e premte","e shtun\xeb"],t.s)
 B.aYP=s([24,7,23,25,40,6,39,41,22,26,38,42,56,5,55,57,21,27,54,58,37,43,72,4,71,73,20,28,53,59,70,74,36,44,88,69,75,52,60,3,87,89,19,29,86,90,35,45,68,76,85,91,51,61,104,2,103,105,18,30,102,106,34,46,84,92,67,77,101,107,50,62,120,1,119,121,83,93,17,31,100,108,66,78,118,122,33,47,117,123,49,63,99,109,82,94,0,116,124,65,79,16,32,98,110,48,115,125,81,95,64,114,126,97,111,80,113,127,96,112],t.t)
 B.aYQ=s(["\u0441\u0456\u0447\u043d\u044f","\u043b\u044e\u0442\u043e\u0433\u043e","\u0431\u0435\u0440\u0435\u0437\u043d\u044f","\u043a\u0432\u0456\u0442\u043d\u044f","\u0442\u0440\u0430\u0432\u043d\u044f","\u0447\u0435\u0440\u0432\u043d\u044f","\u043b\u0438\u043f\u043d\u044f","\u0441\u0435\u0440\u043f\u043d\u044f","\u0432\u0435\u0440\u0435\u0441\u043d\u044f","\u0436\u043e\u0432\u0442\u043d\u044f","\u043b\u0438\u0441\u0442\u043e\u043f\u0430\u0434\u0430","\u0433\u0440\u0443\u0434\u043d\u044f"],t.s)
 B.aYR=s(["Sv\u0113td.","Pirmd.","Otrd.","Tre\u0161d.","Ceturtd.","Piektd.","Sestd."],t.s)
 B.aYS=s([37,194,165,194,177,195,171,10],t.t)
-B.wn=s([4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,110,112,114,116,119,122,125,128,131,134,137,140,143,146,149,152,155,158,161,164,167,170,173,177,181,185,189,193,197,201,205,209,213,217,221,225,229,234,239,245,249,254,259,264,269,274,279,284],t.t)
+B.wm=s([4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,110,112,114,116,119,122,125,128,131,134,137,140,143,146,149,152,155,158,161,164,167,170,173,177,181,185,189,193,197,201,205,209,213,217,221,225,229,234,239,245,249,254,259,264,269,274,279,284],t.t)
 B.Kl=s(["urt.","ots.","mar.","api.","mai.","eka.","uzt.","abu.","ira.","urr.","aza.","abe."],t.s)
 B.Km=s(["1-\u0440 \u0441\u0430\u0440","2-\u0440 \u0441\u0430\u0440","3-\u0440 \u0441\u0430\u0440","4-\u0440 \u0441\u0430\u0440","5-\u0440 \u0441\u0430\u0440","6-\u0440 \u0441\u0430\u0440","7-\u0440 \u0441\u0430\u0440","8-\u0440 \u0441\u0430\u0440","9-\u0440 \u0441\u0430\u0440","10-\u0440 \u0441\u0430\u0440","11-\u0440 \u0441\u0430\u0440","12-\u0440 \u0441\u0430\u0440"],t.s)
 B.Kn=s(["Oca","\u015eub","Mar","Nis","May","Haz","Tem","A\u011fu","Eyl","Eki","Kas","Ara"],t.s)
@@ -153246,7 +153245,7 @@ B.aZh=s([B.a8y,B.BO,B.BP],A.aA("A<wu>"))
 B.aZi=s(["H.mm.ss zzzz","H.mm.ss z","H.mm.ss","H.mm"],t.s)
 B.aZj=s(["\u043d\u044d\u0433\u0434\u04af\u0433\u044d\u044d\u0440 \u0441\u0430\u0440","\u0445\u043e\u0451\u0440\u0434\u0443\u0433\u0430\u0430\u0440 \u0441\u0430\u0440","\u0433\u0443\u0440\u0430\u0432\u0434\u0443\u0433\u0430\u0430\u0440 \u0441\u0430\u0440","\u0434\u04e9\u0440\u04e9\u0432\u0434\u04af\u0433\u044d\u044d\u0440 \u0441\u0430\u0440","\u0442\u0430\u0432\u0434\u0443\u0433\u0430\u0430\u0440 \u0441\u0430\u0440","\u0437\u0443\u0440\u0433\u0430\u0430\u0434\u0443\u0433\u0430\u0430\u0440 \u0441\u0430\u0440","\u0434\u043e\u043b\u043e\u043e\u0434\u0443\u0433\u0430\u0430\u0440 \u0441\u0430\u0440","\u043d\u0430\u0439\u043c\u0434\u0443\u0433\u0430\u0430\u0440 \u0441\u0430\u0440","\u0435\u0441\u0434\u04af\u0433\u044d\u044d\u0440 \u0441\u0430\u0440","\u0430\u0440\u0430\u0432\u0434\u0443\u0433\u0430\u0430\u0440 \u0441\u0430\u0440","\u0430\u0440\u0432\u0430\u043d \u043d\u044d\u0433\u0434\u04af\u0433\u044d\u044d\u0440 \u0441\u0430\u0440","\u0430\u0440\u0432\u0430\u043d \u0445\u043e\u0451\u0440\u0434\u0443\u0433\u0430\u0430\u0440 \u0441\u0430\u0440"],t.s)
 B.aZk=s(["1-\u0440 \u0443\u043b\u0438\u0440\u0430\u043b","2-\u0440 \u0443\u043b\u0438\u0440\u0430\u043b","3-\u0440 \u0443\u043b\u0438\u0440\u0430\u043b","4-\u0440 \u0443\u043b\u0438\u0440\u0430\u043b"],t.s)
-B.wo=s(["\u7b2c1\u5b63","\u7b2c2\u5b63","\u7b2c3\u5b63","\u7b2c4\u5b63"],t.s)
+B.wn=s(["\u7b2c1\u5b63","\u7b2c2\u5b63","\u7b2c3\u5b63","\u7b2c4\u5b63"],t.s)
 B.Kw=s(["\u0b1c\u0b3e","\u0b2b\u0b47","\u0b2e\u0b3e","\u0b05","\u0b2e\u0b07","\u0b1c\u0b41","\u0b1c\u0b41","\u0b05","\u0b38\u0b47","\u0b05","\u0b28","\u0b21\u0b3f"],t.s)
 B.h6=s(["E","F","M","A","M","J","J","A","S","O","N","D"],t.s)
 B.Kx=s(["Ean\xe1ir","Feabhra","M\xe1rta","Aibre\xe1n","Bealtaine","Meitheamh","I\xfail","L\xfanasa","Me\xe1n F\xf3mhair","Deireadh F\xf3mhair","Samhain","Nollaig"],t.s)
@@ -153263,7 +153262,7 @@ B.aZs=s(["f.h.","e.h."],t.s)
 B.KC=s(["\u0436\u0435\u043a\u0441\u0435\u043d\u0431\u0456","\u0434\u04af\u0439\u0441\u0435\u043d\u0431\u0456","\u0441\u0435\u0439\u0441\u0435\u043d\u0431\u0456","\u0441\u04d9\u0440\u0441\u0435\u043d\u0431\u0456","\u0431\u0435\u0439\u0441\u0435\u043d\u0431\u0456","\u0436\u04b1\u043c\u0430","\u0441\u0435\u043d\u0431\u0456"],t.s)
 B.KD=s(["\u0ead\u0eb2\u0e97\u0eb4\u0e94","\u0e88\u0eb1\u0e99","\u0ead\u0eb1\u0e87\u0e84\u0eb2\u0e99","\u0e9e\u0eb8\u0e94","\u0e9e\u0eb0\u0eab\u0eb1\u0e94","\u0eaa\u0eb8\u0e81","\u0ec0\u0eaa\u0ebb\u0eb2"],t.s)
 B.aZv=s(["\u17a2\u17b6\u1791\u17b7\u178f\u17d2\u1799","\u1785\u1793\u17d2\u1791","\u17a2\u1784\u17d2\u1782\u17b6\u179a","\u1796\u17bb\u1792","\u1796\u17d2\u179a\u17a0\u179f\u17d2\u1794\u178f\u17b7\u17cd","\u179f\u17bb\u1780\u17d2\u179a","\u179f\u17c5\u179a\u17cd"],t.s)
-B.wp=s(["Cash","Bank Transfer","Cheque","JazzCash / EasyPaisa"],t.s)
+B.wo=s(["Cash","Bank Transfer","Cheque","JazzCash / EasyPaisa"],t.s)
 B.aZy=s(["{1}\u060c \u0633\u0627\u0639\u062a {0}","{1}\u060c \u0633\u0627\u0639\u062a {0}","{1}\u060c\u200f {0}","{1}\u060c\u200f {0}"],t.s)
 B.aZz=s(["\u0ca4\u0ccd\u0cb0\u0cc8 1","\u0ca4\u0ccd\u0cb0\u0cc8 2","\u0ca4\u0ccd\u0cb0\u0cc8 3","\u0ca4\u0ccd\u0cb0\u0cc8 4"],t.s)
 B.aZA=s(["p\u0159ed na\u0161\xedm letopo\u010dtem","na\u0161eho letopo\u010dtu"],t.s)
@@ -153476,7 +153475,7 @@ B.Ly=s(["\u10d8\u10d0\u10dc","\u10d7\u10d4\u10d1","\u10db\u10d0\u10e0","\u10d0\u
 B.pS=s(["januar","februar","mars","april","mai","juni","juli","august","september","oktober","november","desember"],t.s)
 B.Lz=s(["\u1010","\u1010","\u1021","\u1017","\u1000","\u101e","\u1005"],t.s)
 B.LA=s([B.a7,B.D4,B.bK,B.bs,B.cW,B.dI,B.D9,B.h2,B.Da,B.Db,B.D5,B.D6,B.D7,B.D8],A.aA("A<iC>"))
-B.wr=s(["EEEE, d MMMM y","d MMMM y","d MMM y","dd/MM/y"],t.s)
+B.wq=s(["EEEE, d MMMM y","d MMMM y","d MMM y","dd/MM/y"],t.s)
 B.b0Y=s(["R1","R2","R3","R4"],t.s)
 B.LB=s(["\u091c","\u092b\u093c","\u092e\u093e","\u0905","\u092e","\u091c\u0942","\u091c\u0941","\u0905","\u0938\u093f","\u0905","\u0928","\u0926\u093f"],t.s)
 B.b11=s(["RC","AD"],t.s)
@@ -153535,7 +153534,7 @@ B.bD=new A.Ny(0,"upstream")
 B.b1x=s([B.bD,B.Q],A.aA("A<Ny>"))
 B.bI=new A.yZ(0,"rtl")
 B.O=new A.yZ(1,"ltr")
-B.ws=s([B.bI,B.O],A.aA("A<yZ>"))
+B.wr=s([B.bI,B.O],A.aA("A<yZ>"))
 B.b1B=s(["\u1014\u1036\u1014\u1000\u103a","\u100a\u1014\u1031"],t.s)
 B.b4p=s([231,120,48,89,115,113,120,152,112],t.t)
 B.aqD=s([152,179,64,126,170,118,46,70,95],t.t)
@@ -153654,7 +153653,7 @@ B.LZ=s(["\u0d89\u0dbb\u0dd2\u0daf\u0dcf","\u0dc3\u0db3\u0dd4\u0daf\u0dcf","\u0d8
 B.b1G=s([0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.25,0.333,0.713,0.5,0.549,0.833,0.778,0.439,0.333,0.333,0.5,0.549,0.25,0.549,0.25,0.278,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.278,0.278,0.549,0.549,0.549,0.444,0.549,0.722,0.667,0.722,0.612,0.611,0.763,0.603,0.722,0.333,0.631,0.722,0.686,0.889,0.722,0.722,0.768,0.741,0.556,0.592,0.611,0.69,0.439,0.768,0.645,0.795,0.611,0.333,0.863,0.333,0.658,0.5,0.5,0.631,0.549,0.549,0.494,0.439,0.521,0.411,0.603,0.329,0.603,0.549,0.549,0.576,0.521,0.549,0.549,0.521,0.549,0.603,0.439,0.576,0.713,0.686,0.493,0.686,0.494,0.48,0.2,0.48,0.549,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.587,0.75,0.62,0.247,0.549,0.167,0.713,0.5,0.753,0.753,0.753,0.753,1.042,0.987,0.603,0.987,0.603,0.4,0.549,0.411,0.549,0.549,0.713,0.494,0.46,0.549,0.549,0.549,0.549,1,0.603,1,0.658,0.823,0.686,0.795,0.987,0.768,0.768,0.823,0.768,0.768,0.713,0.713,0.713,0.713,0.713,0.713,0.713,0.768,0.713,0.79,0.79,0.89,0.823,0.549,0.25,0.713,0.603,0.603,1.042,0.987,0.603,0.987,0.603,0.494,0.329,0.79,0.79,0.786,0.713,0.384,0.384,0.384,0.384,0.384,0.384,0.494,0.494,0.494,0.494,0.587,0.329,0.274,0.686,0.686,0.686,0.384,0.384,0.384,0.384,0.384,0.384,0.494,0.494,0.494,0.587],t.n)
 B.M_=s(["igandea","astelehena","asteartea","asteazkena","osteguna","ostirala","larunbata"],t.s)
 B.M0=s(["nedelja","ponedeljak","utorak","sreda","\u010detvrtak","petak","subota"],t.s)
-B.wt=s(["EEEE, d. MMMM y","d. MMMM y","dd.MM.y","dd.MM.yy"],t.s)
+B.ws=s(["EEEE, d. MMMM y","d. MMMM y","dd.MM.y","dd.MM.yy"],t.s)
 B.M1=s(["\u0458\u0430\u043d\u0443\u0430\u0440\u0438","\u0444\u0435\u0432\u0440\u0443\u0430\u0440\u0438","\u043c\u0430\u0440\u0442","\u0430\u043f\u0440\u0438\u043b","\u043c\u0430\u0458","\u0458\u0443\u043d\u0438","\u0458\u0443\u043b\u0438","\u0430\u0432\u0433\u0443\u0441\u0442","\u0441\u0435\u043f\u0442\u0435\u043c\u0432\u0440\u0438","\u043e\u043a\u0442\u043e\u043c\u0432\u0440\u0438","\u043d\u043e\u0435\u043c\u0432\u0440\u0438","\u0434\u0435\u043a\u0435\u043c\u0432\u0440\u0438"],t.s)
 B.b1J=s(["1. kv.","2. kv.","3. kv.","4. kv."],t.s)
 B.b1K=s(["EEEE, d MMMM y","d MMMM y","d MMM y","dd.MM.y"],t.s)
@@ -153863,9 +153862,9 @@ B.q3=s([],t.jl)
 B.MY=s([],t.wi)
 B.MV=s([],A.aA("A<mP>"))
 B.b6I=s([],A.aA("A<og<@>>"))
-B.wv=s([],t.WM)
-B.ww=s([],t.AO)
-B.wu=s([],t.sS)
+B.wu=s([],t.WM)
+B.wv=s([],t.AO)
+B.wt=s([],t.sS)
 B.b6K=s([],t.D1)
 B.q2=s([],t.QF)
 B.bMZ=s([],t.nk)
@@ -153890,7 +153889,7 @@ B.N2=s(["jan.","feb.","mars","apr.","mai","juni","juli","aug.","sep.","okt.","no
 B.N3=s(["\u0930\u0935\u093f","\u0938\u094b\u092e","\u092e\u0902\u0917\u0933","\u092c\u0941\u0927","\u0917\u0941\u0930\u0941","\u0936\u0941\u0915\u094d\u0930","\u0936\u0928\u093f"],t.s)
 B.N4=s(["avant J\xe9sus-Christ","apr\xe8s J\xe9sus-Christ"],t.s)
 B.N5=s(["Januar","Februar","M\xe4rz","April","Mai","Juni","Juli","Auguscht","Sept\xe4mber","Oktoober","Nov\xe4mber","Dez\xe4mber"],t.s)
-B.wx=s(["HH.mm.ss zzzz","HH.mm.ss z","HH.mm.ss","HH.mm"],t.s)
+B.ww=s(["HH.mm.ss zzzz","HH.mm.ss z","HH.mm.ss","HH.mm"],t.s)
 B.b78=s(["pirms m\u016bsu \u0113ras","m\u016bsu \u0113r\u0101"],t.s)
 B.N6=s(["H:mm:ss (zzzz)","H:mm:ss z","H:mm:ss","H:mm"],t.s)
 B.b7a=s(["\u043f. \u043d. \u0435.","\u043d. \u0435."],t.s)
@@ -154021,7 +154020,7 @@ B.NQ=s(["janv.","febr.","marts","apr.","maijs","j\u016bn.","j\u016bl.","aug.","s
 B.e5=s(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sept","Oct","Nov","Dec"],t.s)
 B.NR=s(["D\xe9 Domhnaigh","D\xe9 Luain","D\xe9 M\xe1irt","D\xe9 C\xe9adaoin","D\xe9ardaoin","D\xe9 hAoine","D\xe9 Sathairn"],t.s)
 B.baX=s(["1-\u0448\u044b \u043a\u0432.","2-\u0433\u0456 \u043a\u0432.","3-\u0446\u0456 \u043a\u0432.","4-\u0442\u044b \u043a\u0432."],t.s)
-B.wz=s([16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15],t.t)
+B.wy=s([16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15],t.t)
 B.baY=s(["trimestrul I","trimestrul al II-lea","trimestrul al III-lea","trimestrul al IV-lea"],t.s)
 B.NS=s(["D","L","M","M","G","V","S"],t.s)
 B.bba=s(["\u0406 \u0442\u043e\u049b\u0441\u0430\u043d","\u0406\u0406 \u0442\u043e\u049b\u0441\u0430\u043d","\u0406\u0406\u0406 \u0442\u043e\u049b\u0441\u0430\u043d","IV \u0442\u043e\u049b\u0441\u0430\u043d"],t.s)
@@ -154057,10 +154056,10 @@ B.aqA=s([217,255,255,255,255,255,255,255,255,255,255],t.t)
 B.b0X=s([225,252,241,253,255,255,254,255,255,255,255],t.t)
 B.b7A=s([234,250,241,250,253,255,253,254,255,255,255],t.t)
 B.bct=s([B.aqA,B.b0X,B.b7A],t.r)
-B.wG=s([255,254,255,255,255,255,255,255,255,255,255],t.t)
+B.wF=s([255,254,255,255,255,255,255,255,255,255,255],t.t)
 B.aXt=s([223,254,254,255,255,255,255,255,255,255,255],t.t)
 B.aQF=s([238,253,254,254,255,255,255,255,255,255,255],t.t)
-B.b4C=s([B.wG,B.aXt,B.aQF],t.r)
+B.b4C=s([B.wF,B.aXt,B.aQF],t.r)
 B.b_c=s([249,254,255,255,255,255,255,255,255,255,255],t.t)
 B.bfj=s([B.KT,B.b_c,B.e3],t.r)
 B.bcJ=s([255,253,255,255,255,255,255,255,255,255,255],t.t)
@@ -154084,7 +154083,7 @@ B.b0d=s([B.w0,B.aYM,B.b4w],t.r)
 B.b9u=s([254,254,254,255,255,255,255,255,255,255,255],t.t)
 B.aYF=s([B.Ol,B.b9u,B.e3],t.r)
 B.bb7=s([254,254,255,255,255,255,255,255,255,255,255],t.t)
-B.aYK=s([B.wG,B.bb7,B.q5],t.r)
+B.aYK=s([B.wF,B.bb7,B.q5],t.r)
 B.Om=s([B.e3,B.q5,B.e3],t.r)
 B.aIG=s([B.aYU,B.b0d,B.aYF,B.aYK,B.Om,B.jB,B.jB,B.jB],t.wX)
 B.b_A=s([248,255,255,255,255,255,255,255,255,255,255],t.t)
@@ -154105,7 +154104,7 @@ B.b28=s([253,253,254,255,255,255,255,255,255,255,255],t.t)
 B.aW1=s([B.bjT,B.b20,B.b28],t.r)
 B.aXh=s([255,251,253,255,255,255,255,255,255,255,255],t.t)
 B.b_Q=s([252,253,254,255,255,255,255,255,255,255,255],t.t)
-B.b9V=s([B.aXh,B.b_Q,B.wG],t.r)
+B.b9V=s([B.aXh,B.b_Q,B.wF],t.r)
 B.aN4=s([255,252,255,255,255,255,255,255,255,255,255],t.t)
 B.bj7=s([249,255,254,255,255,255,255,255,255,255,255],t.t)
 B.aZq=s([255,255,254,255,255,255,255,255,255,255,255],t.t)
@@ -154185,16 +154184,16 @@ B.O5=s(["1er trimestre","2e trimestre","3e trimestre","4e trimestre"],t.s)
 B.qb=s(["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."],t.s)
 B.bcQ=s(["\u0c09","\u0c38\u0c3e"],t.s)
 B.O6=s(["ne","po","ut","st","\u0161t","pi","so"],t.s)
-B.wA=s(["1. Quartal","2. Quartal","3. Quartal","4. Quartal"],t.s)
+B.wz=s(["1. Quartal","2. Quartal","3. Quartal","4. Quartal"],t.s)
 B.O7=s(["\u0458\u0430\u043d","\u0444\u0435\u0431","\u043c\u0430\u0440","\u0430\u043f\u0440","\u043c\u0430\u0458","\u0458\u0443\u043d","\u0458\u0443\u043b","\u0430\u0432\u0433","\u0441\u0435\u043f","\u043e\u043a\u0442","\u043d\u043e\u0432","\u0434\u0435\u0446"],t.s)
 B.h9=s(["domingo","lunes","martes","mi\xe9rcoles","jueves","viernes","s\xe1bado"],t.s)
 B.O8=s([0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.278,0.333,0.474,0.556,0.556,0.889,0.722,0.238,0.333,0.333,0.389,0.584,0.278,0.333,0.278,0.278,0.556,0.556,0.556,0.556,0.556,0.556,0.556,0.556,0.556,0.556,0.333,0.333,0.584,0.584,0.584,0.611,0.975,0.722,0.722,0.722,0.722,0.667,0.611,0.778,0.722,0.278,0.556,0.722,0.611,0.833,0.722,0.778,0.667,0.778,0.722,0.667,0.611,0.722,0.667,0.944,0.667,0.667,0.611,0.333,0.278,0.333,0.584,0.556,0.333,0.556,0.611,0.556,0.611,0.556,0.333,0.611,0.611,0.278,0.278,0.556,0.278,0.889,0.611,0.611,0.611,0.611,0.389,0.556,0.333,0.611,0.556,0.778,0.556,0.556,0.5,0.389,0.28,0.389,0.584,0.35,0.556,0.35,0.278,0.556,0.5,1,0.556,0.556,0.333,1,0.667,0.333,1,0.35,0.611,0.35,0.35,0.278,0.278,0.5,0.5,0.35,0.556,1,0.333,1,0.556,0.333,0.944,0.35,0.5,0.667,0.278,0.333,0.556,0.556,0.556,0.556,0.28,0.556,0.333,0.737,0.37,0.556,0.584,0.333,0.737,0.333,0.4,0.584,0.333,0.333,0.333,0.611,0.556,0.278,0.333,0.333,0.365,0.556,0.834,0.834,0.834,0.611,0.722,0.722,0.722,0.722,0.722,0.722,1,0.722,0.667,0.667,0.667,0.667,0.278,0.278,0.278,0.278,0.722,0.722,0.778,0.778,0.778,0.778,0.778,0.584,0.778,0.722,0.722,0.722,0.722,0.667,0.667,0.611,0.556,0.556,0.556,0.556,0.556,0.556,0.889,0.556,0.556,0.556,0.556,0.556,0.278,0.278,0.278,0.278,0.611,0.611,0.611,0.611,0.611,0.611,0.611,0.584,0.611,0.611,0.611,0.611,0.611,0.556,0.611,0.556],t.n)
-B.wB=s([0,128,192,224,240,248,252,254,255],t.t)
+B.wA=s([0,128,192,224,240,248,252,254,255],t.t)
 B.O9=s([137,80,78,71,13,10,26,10],t.t)
 B.bcX=s(["\u0399\u03b1\u03bd\u03bf\u03c5\u03ac\u03c1\u03b9\u03bf\u03c2","\u03a6\u03b5\u03b2\u03c1\u03bf\u03c5\u03ac\u03c1\u03b9\u03bf\u03c2","\u039c\u03ac\u03c1\u03c4\u03b9\u03bf\u03c2","\u0391\u03c0\u03c1\u03af\u03bb\u03b9\u03bf\u03c2","\u039c\u03ac\u03b9\u03bf\u03c2","\u0399\u03bf\u03cd\u03bd\u03b9\u03bf\u03c2","\u0399\u03bf\u03cd\u03bb\u03b9\u03bf\u03c2","\u0391\u03cd\u03b3\u03bf\u03c5\u03c3\u03c4\u03bf\u03c2","\u03a3\u03b5\u03c0\u03c4\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2","\u039f\u03ba\u03c4\u03ce\u03b2\u03c1\u03b9\u03bf\u03c2","\u039d\u03bf\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2","\u0394\u03b5\u03ba\u03ad\u03bc\u03b2\u03c1\u03b9\u03bf\u03c2"],t.s)
 B.bcY=s(["\u0a2a\u0a42.\u0a26\u0a41.","\u0a2c\u0a3e.\u0a26\u0a41."],t.s)
 B.bcZ=s(["\u042f\u043d\u0432\u0430\u0440\u044c","\u0424\u0435\u0432\u0440\u0430\u043b\u044c","\u041c\u0430\u0440\u0442","\u0410\u043f\u0440\u0435\u043b\u044c","\u041c\u0430\u0439","\u0418\u044e\u043d\u044c","\u0418\u044e\u043b\u044c","\u0410\u0432\u0433\u0443\u0441\u0442","\u0421\u0435\u043d\u0442\u044f\u0431\u0440\u044c","\u041e\u043a\u0442\u044f\u0431\u0440\u044c","\u041d\u043e\u044f\u0431\u0440\u044c","\u0414\u0435\u043a\u0430\u0431\u0440\u044c"],t.s)
-B.wC=s([0,1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535,131071,262143,524287,1048575,2097151,4194303,8388607,16777215,33554431,67108863,134217727,268435455,536870911,1073741823,2147483647,4294967295],t.t)
+B.wB=s([0,1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535,131071,262143,524287,1048575,2097151,4194303,8388607,16777215,33554431,67108863,134217727,268435455,536870911,1073741823,2147483647,4294967295],t.t)
 B.bdf=s([3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258],t.t)
 B.bdg=s(["    CREATE TABLE IF NOT EXISTS business_settings (\n      id INTEGER PRIMARY KEY,\n      business_name TEXT NOT NULL,\n      owner_name TEXT,\n      phone TEXT,\n      address TEXT,\n      city TEXT,\n      ntn_strn TEXT,\n      invoice_prefix TEXT DEFAULT 'INV-',\n      purchase_prefix TEXT DEFAULT 'PUR-',\n      currency_symbol TEXT DEFAULT '\u20a8',\n      pin_code TEXT,\n      is_pin_enabled INTEGER DEFAULT 0,\n      initial_cash_balance REAL DEFAULT 0,\n      updated_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS products (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      sku TEXT UNIQUE,\n      category TEXT NOT NULL,\n      brand TEXT NOT NULL,\n      bag_size TEXT,\n      unit TEXT NOT NULL,\n      purchase_price REAL NOT NULL,\n      selling_price REAL NOT NULL,\n      opening_stock REAL NOT NULL DEFAULT 0,\n      current_stock REAL NOT NULL DEFAULT 0,\n      min_stock_alert REAL NOT NULL DEFAULT 10,\n      notes TEXT,\n      is_active INTEGER NOT NULL DEFAULT 1,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS stock_cost_layers (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,\n      purchase_id INTEGER,\n      purchase_date TEXT NOT NULL,\n      unit_cost REAL NOT NULL,\n      original_quantity REAL NOT NULL,\n      remaining_quantity REAL NOT NULL,\n      created_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS customers (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      phone TEXT,\n      village_or_address TEXT,\n      opening_balance REAL NOT NULL DEFAULT 0,\n      current_balance REAL NOT NULL DEFAULT 0,\n      credit_limit REAL NOT NULL DEFAULT 0,\n      notes TEXT,\n      is_active INTEGER NOT NULL DEFAULT 1,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS suppliers (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      phone TEXT,\n      company_or_address TEXT,\n      opening_balance REAL NOT NULL DEFAULT 0,\n      current_balance REAL NOT NULL DEFAULT 0,\n      notes TEXT,\n      is_active INTEGER NOT NULL DEFAULT 1,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS purchases (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      invoice_number TEXT UNIQUE NOT NULL,\n      supplier_id INTEGER NOT NULL REFERENCES suppliers(id),\n      supplier_name TEXT NOT NULL,\n      purchase_date TEXT NOT NULL,\n      subtotal REAL NOT NULL,\n      discount REAL NOT NULL DEFAULT 0,\n      freight_charges REAL NOT NULL DEFAULT 0,\n      grand_total REAL NOT NULL,\n      paid_amount REAL NOT NULL DEFAULT 0,\n      balance_due REAL NOT NULL DEFAULT 0,\n      payment_status TEXT NOT NULL,\n      payment_method TEXT,\n      notes TEXT,\n      is_reversed INTEGER NOT NULL DEFAULT 0,\n      created_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS purchase_items (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      purchase_id INTEGER NOT NULL REFERENCES purchases(id) ON DELETE CASCADE,\n      product_id INTEGER NOT NULL REFERENCES products(id),\n      product_name TEXT NOT NULL,\n      unit TEXT NOT NULL,\n      quantity REAL NOT NULL,\n      unit_price REAL NOT NULL,\n      total_price REAL NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS sales (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      invoice_number TEXT UNIQUE NOT NULL,\n      customer_id INTEGER,\n      customer_name TEXT NOT NULL,\n      sale_date TEXT NOT NULL,\n      subtotal REAL NOT NULL,\n      discount REAL NOT NULL DEFAULT 0,\n      grand_total REAL NOT NULL,\n      paid_amount REAL NOT NULL DEFAULT 0,\n      balance_due REAL NOT NULL DEFAULT 0,\n      total_cost REAL NOT NULL DEFAULT 0,\n      gross_profit REAL NOT NULL DEFAULT 0,\n      payment_status TEXT NOT NULL,\n      payment_method TEXT NOT NULL,\n      notes TEXT,\n      is_reversed INTEGER NOT NULL DEFAULT 0,\n      created_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS sale_items (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,\n      product_id INTEGER NOT NULL REFERENCES products(id),\n      product_name TEXT NOT NULL,\n      unit TEXT NOT NULL,\n      quantity REAL NOT NULL,\n      unit_price REAL NOT NULL,\n      unit_cost REAL NOT NULL DEFAULT 0,\n      total_price REAL NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS payments (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      payment_type TEXT NOT NULL,\n      party_type TEXT NOT NULL,\n      party_id INTEGER NOT NULL,\n      party_name TEXT NOT NULL,\n      reference_invoice_id INTEGER,\n      reference_invoice_number TEXT,\n      amount REAL NOT NULL,\n      payment_date TEXT NOT NULL,\n      payment_method TEXT NOT NULL,\n      reference_number TEXT,\n      notes TEXT,\n      created_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS expenses (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      category TEXT NOT NULL,\n      amount REAL NOT NULL,\n      expense_date TEXT NOT NULL,\n      payment_method TEXT NOT NULL DEFAULT 'Cash',\n      title TEXT NOT NULL,\n      notes TEXT,\n      created_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS stock_movements (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      product_id INTEGER NOT NULL REFERENCES products(id),\n      product_name TEXT NOT NULL,\n      movement_type TEXT NOT NULL,\n      quantity REAL NOT NULL,\n      balance_after REAL NOT NULL,\n      reference_id INTEGER,\n      reference_type TEXT,\n      notes TEXT,\n      movement_date TEXT NOT NULL,\n      created_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS customer_ledger (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      customer_id INTEGER NOT NULL REFERENCES customers(id),\n      transaction_date TEXT NOT NULL,\n      transaction_type TEXT NOT NULL,\n      reference_id INTEGER,\n      reference_number TEXT,\n      description TEXT NOT NULL,\n      debit REAL NOT NULL DEFAULT 0,\n      credit REAL NOT NULL DEFAULT 0,\n      running_balance REAL NOT NULL,\n      created_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS supplier_ledger (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      supplier_id INTEGER NOT NULL REFERENCES suppliers(id),\n      transaction_date TEXT NOT NULL,\n      transaction_type TEXT NOT NULL,\n      reference_id INTEGER,\n      reference_number TEXT,\n      description TEXT NOT NULL,\n      debit REAL NOT NULL DEFAULT 0,\n      credit REAL NOT NULL DEFAULT 0,\n      running_balance REAL NOT NULL,\n      created_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS returns (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      return_type TEXT NOT NULL,\n      original_invoice_id INTEGER NOT NULL,\n      original_invoice_number TEXT NOT NULL,\n      party_id INTEGER NOT NULL,\n      party_name TEXT NOT NULL,\n      return_date TEXT NOT NULL,\n      product_id INTEGER NOT NULL,\n      product_name TEXT NOT NULL,\n      quantity REAL NOT NULL,\n      unit_price REAL NOT NULL,\n      total_amount REAL NOT NULL,\n      refund_type TEXT NOT NULL,\n      reason TEXT,\n      created_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS storages (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      code TEXT,\n      location TEXT,\n      incharge_name TEXT,\n      contact_number TEXT,\n      capacity_bags INTEGER DEFAULT 0,\n      is_default INTEGER DEFAULT 0,\n      is_active INTEGER NOT NULL DEFAULT 1,\n      created_at TEXT NOT NULL,\n      updated_at TEXT NOT NULL\n    );\n    ","    CREATE TABLE IF NOT EXISTS storage_stocks (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      storage_id INTEGER NOT NULL REFERENCES storages(id) ON DELETE CASCADE,\n      product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,\n      quantity REAL NOT NULL DEFAULT 0,\n      updated_at TEXT NOT NULL,\n      UNIQUE(storage_id, product_id)\n    );\n    ","    CREATE TABLE IF NOT EXISTS stock_transfers (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      transfer_number TEXT UNIQUE NOT NULL,\n      from_storage_id INTEGER NOT NULL REFERENCES storages(id),\n      to_storage_id INTEGER NOT NULL REFERENCES storages(id),\n      product_id INTEGER NOT NULL REFERENCES products(id),\n      quantity REAL NOT NULL,\n      transfer_date TEXT NOT NULL,\n      vehicle_number TEXT,\n      driver_name TEXT,\n      notes TEXT,\n      created_at TEXT NOT NULL\n    );\n    "],t.s)
 B.bdA=s(["Krisztus el\u0151tt","id\u0151sz\xe1m\xedt\xe1sunk szerint"],t.s)
@@ -154298,7 +154297,7 @@ B.bhA=s(["\u09e7\u09ae\u0983 \u09a4\u09bf\u0983","\u09e8\u09af\u09bc\u0983 \u09a
 B.Oy=s(["S","M","B","T","S","H","M"],t.s)
 B.bhL=s(["\u0c95\u0ccd\u0cb0\u0cbf\u0cb8\u0ccd\u0ca4 \u0caa\u0cc2\u0cb0\u0ccd\u0cb5","\u0c95\u0ccd\u0cb0\u0cbf\u0cb8\u0ccd\u0ca4 \u0cb6\u0c95"],t.s)
 B.qe=s(["antes de Cristo","despu\xe9s de Cristo"],t.s)
-B.wD=s([!0,!1],t.HZ)
+B.wC=s([!0,!1],t.HZ)
 B.qf=s(["\uc77c","\uc6d4","\ud654","\uc218","\ubaa9","\uae08","\ud1a0"],t.s)
 B.Oz=s(["1-\u0439 \u043a\u0432.","2-\u0439 \u043a\u0432.","3-\u0439 \u043a\u0432.","4-\u0439 \u043a\u0432."],t.s)
 B.qg=s(["domingo","segunda-feira","ter\xe7a-feira","quarta-feira","quinta-feira","sexta-feira","s\xe1bado"],t.s)
@@ -154323,14 +154322,14 @@ B.OD=s(["janar","shkurt","mars","prill","maj","qershor","korrik","gusht","shtato
 B.bif=s([null,A.bMq(),A.bMr(),A.bMp()],A.aA("A<~(t,t,t,t,t,em)?>"))
 B.OE=s(["Min","Sen","Sel","Rab","Kam","Jum","Sab"],t.s)
 B.OF=s(["\u091c\u093e\u0928\u0947\u0935\u093e\u0930\u0940","\u092b\u0947\u092c\u094d\u0930\u0941\u0935\u093e\u0930\u0940","\u092e\u093e\u0930\u094d\u091a","\u090f\u092a\u094d\u0930\u093f\u0932","\u092e\u0947","\u091c\u0942\u0928","\u091c\u0941\u0932\u0948","\u0911\u0917\u0938\u094d\u091f","\u0938\u092a\u094d\u091f\u0947\u0902\u092c\u0930","\u0911\u0915\u094d\u091f\u094b\u092c\u0930","\u0928\u094b\u0935\u094d\u0939\u0947\u0902\u092c\u0930","\u0921\u093f\u0938\u0947\u0902\u092c\u0930"],t.s)
-B.wE=s(["\u4e0a\u5348","\u4e0b\u5348"],t.s)
+B.wD=s(["\u4e0a\u5348","\u4e0b\u5348"],t.s)
 B.OG=s(["\u09a4\u09cd\u09b0\u09c8\u09ae\u09be\u09b8\u09bf\u0995","\u09a6\u09cd\u09ac\u09bf\u09a4\u09c0\u09af\u09bc \u09a4\u09cd\u09b0\u09c8\u09ae\u09be\u09b8\u09bf\u0995","\u09a4\u09c3\u09a4\u09c0\u09af\u09bc \u09a4\u09cd\u09b0\u09c8\u09ae\u09be\u09b8\u09bf\u0995","\u099a\u09a4\u09c1\u09b0\u09cd\u09a5 \u09a4\u09cd\u09b0\u09c8\u09ae\u09be\u09b8\u09bf\u0995"],t.s)
 B.biA=s(["\u0908\u0938\u0935\u0940\u0938\u0928\u092a\u0942\u0930\u094d\u0935","\u0908\u0938\u0935\u0940\u0938\u0928"],t.s)
 B.biC=s(["\u03a41","\u03a42","\u03a43","\u03a44"],t.s)
 B.biE=s(["EEEE, d MMMM y\u202f'\u0440'.","d MMMM y\u202f'\u0440'.","d MMM y\u202f'\u0440'.","dd.MM.yy"],t.s)
 B.OH=s(["yakshanba","dushanba","seshanba","chorshanba","payshanba","juma","shanba"],t.s)
 B.OI=s(["Cash","Bank Transfer","Cheque","Online"],t.s)
-B.wF=s(["H:mm:ss zzzz","H:mm:ss z","H:mm:ss","H:mm"],t.s)
+B.wE=s(["H:mm:ss zzzz","H:mm:ss z","H:mm:ss","H:mm"],t.s)
 B.biH=s(["n","p","w","\u015b","c","p","s"],t.s)
 B.OJ=s(["1\xba trimestre","2\xba trimestre","3\xba trimestre","4\xba trimestre"],t.s)
 B.OK=s(["A","I","S","R","K","J","S"],t.s)
@@ -154375,6 +154374,7 @@ B.OS=s(["\u0da2\u0db1\u0dc0\u0dcf\u0dbb\u0dd2","\u0db4\u0dd9\u0db6\u0dbb\u0dc0\u
 B.ql=s(["Enero","Pebrero","Marso","Abril","Mayo","Hunyo","Hulyo","Agosto","Setyembre","Oktubre","Nobyembre","Disyembre"],t.s)
 B.dL=s(["Before Christ","Anno Domini"],t.s)
 B.bk6=s(["B.","B.E.","\xc7.A.","\xc7.","C.A.","C.","\u015e."],t.s)
+B.wG=s(["Transport / Freight (Kiraya)","Loading & Unloading (Muzdoori/Hammali)","Shop Rent","Staff Salary (Tankhwah)","Labor / Daily Wages","Electricity / Utilities","Shop & Warehouse Maintenance","Staff Refreshment / Tea","Taxes / Levies","Stationery & Office Supplies","Miscellaneous"],t.s)
 B.OT=s(["\u10d9\u10d5\u10d8\u10e0\u10d0","\u10dd\u10e0\u10e8\u10d0\u10d1\u10d0\u10d7\u10d8","\u10e1\u10d0\u10db\u10e8\u10d0\u10d1\u10d0\u10d7\u10d8","\u10dd\u10d7\u10ee\u10e8\u10d0\u10d1\u10d0\u10d7\u10d8","\u10ee\u10e3\u10d7\u10e8\u10d0\u10d1\u10d0\u10d7\u10d8","\u10de\u10d0\u10e0\u10d0\u10e1\u10d9\u10d4\u10d5\u10d8","\u10e8\u10d0\u10d1\u10d0\u10d7\u10d8"],t.s)
 B.OU=s(["I","A","A","A","O","O","L"],t.s)
 B.bkF=s(["ennen Kristuksen syntym\xe4\xe4","j\xe4lkeen Kristuksen syntym\xe4n"],t.s)
@@ -159298,13 +159298,13 @@ B.bp5=new A.ck([" ",12288," \u0301",900," \u0303",732," \u0304",175," \u0305",82
 B.bpI={KeyA:0,KeyB:1,KeyC:2,KeyD:3,KeyE:4,KeyF:5,KeyG:6,KeyH:7,KeyI:8,KeyJ:9,KeyK:10,KeyL:11,KeyM:12,KeyN:13,KeyO:14,KeyP:15,KeyQ:16,KeyR:17,KeyS:18,KeyT:19,KeyU:20,KeyV:21,KeyW:22,KeyX:23,KeyY:24,KeyZ:25,Digit1:26,Digit2:27,Digit3:28,Digit4:29,Digit5:30,Digit6:31,Digit7:32,Digit8:33,Digit9:34,Digit0:35,Minus:36,Equal:37,BracketLeft:38,BracketRight:39,Backslash:40,Semicolon:41,Quote:42,Backquote:43,Comma:44,Period:45,Slash:46}
 B.Ui=new A.an(B.bpI,["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","1","2","3","4","5","6","7","8","9","0","-","=","[","]","\\",";","'","`",",",".","/"],t.w)
 B.bpH={"zh-Hant":0,"zh-TW":1,"zh-MO":2,"zh-HK":3,ja:4,ko:5,zh:6,"zh-Hans":7,"zh-CN":8}
-B.wq=s(["Noto Sans TC"],t.s)
+B.wp=s(["Noto Sans TC"],t.s)
 B.b2o=s(["Noto Sans HK","Noto Sans TC"],t.s)
 B.aKU=s(["Noto Sans JP"],t.s)
 B.axe=s(["Noto Sans KR"],t.s)
 B.Lt=s(["Noto Sans SC"],t.s)
 B.bj9=s(["Noto Sans SC","Noto Sans TC"],t.s)
-B.qA=new A.an(B.bpH,[B.wq,B.wq,B.wq,B.b2o,B.aKU,B.axe,B.Lt,B.Lt,B.bj9],t.VJ)
+B.qA=new A.an(B.bpH,[B.wp,B.wp,B.wp,B.b2o,B.aKU,B.axe,B.Lt,B.Lt,B.bj9],t.VJ)
 B.bp8=new A.ck([B.mq,-7,B.k8,1,B.rA,7,B.ir,-1],A.aA("ck<qR,t>"))
 B.bpD={Abort:0,Again:1,AltLeft:2,AltRight:3,ArrowDown:4,ArrowLeft:5,ArrowRight:6,ArrowUp:7,AudioVolumeDown:8,AudioVolumeMute:9,AudioVolumeUp:10,Backquote:11,Backslash:12,Backspace:13,BracketLeft:14,BracketRight:15,BrightnessDown:16,BrightnessUp:17,BrowserBack:18,BrowserFavorites:19,BrowserForward:20,BrowserHome:21,BrowserRefresh:22,BrowserSearch:23,BrowserStop:24,CapsLock:25,Comma:26,ContextMenu:27,ControlLeft:28,ControlRight:29,Convert:30,Copy:31,Cut:32,Delete:33,Digit0:34,Digit1:35,Digit2:36,Digit3:37,Digit4:38,Digit5:39,Digit6:40,Digit7:41,Digit8:42,Digit9:43,DisplayToggleIntExt:44,Eject:45,End:46,Enter:47,Equal:48,Escape:49,Esc:50,F1:51,F10:52,F11:53,F12:54,F13:55,F14:56,F15:57,F16:58,F17:59,F18:60,F19:61,F2:62,F20:63,F21:64,F22:65,F23:66,F24:67,F3:68,F4:69,F5:70,F6:71,F7:72,F8:73,F9:74,Find:75,Fn:76,FnLock:77,GameButton1:78,GameButton10:79,GameButton11:80,GameButton12:81,GameButton13:82,GameButton14:83,GameButton15:84,GameButton16:85,GameButton2:86,GameButton3:87,GameButton4:88,GameButton5:89,GameButton6:90,GameButton7:91,GameButton8:92,GameButton9:93,GameButtonA:94,GameButtonB:95,GameButtonC:96,GameButtonLeft1:97,GameButtonLeft2:98,GameButtonMode:99,GameButtonRight1:100,GameButtonRight2:101,GameButtonSelect:102,GameButtonStart:103,GameButtonThumbLeft:104,GameButtonThumbRight:105,GameButtonX:106,GameButtonY:107,GameButtonZ:108,Help:109,Home:110,Hyper:111,Insert:112,IntlBackslash:113,IntlRo:114,IntlYen:115,KanaMode:116,KeyA:117,KeyB:118,KeyC:119,KeyD:120,KeyE:121,KeyF:122,KeyG:123,KeyH:124,KeyI:125,KeyJ:126,KeyK:127,KeyL:128,KeyM:129,KeyN:130,KeyO:131,KeyP:132,KeyQ:133,KeyR:134,KeyS:135,KeyT:136,KeyU:137,KeyV:138,KeyW:139,KeyX:140,KeyY:141,KeyZ:142,KeyboardLayoutSelect:143,Lang1:144,Lang2:145,Lang3:146,Lang4:147,Lang5:148,LaunchApp1:149,LaunchApp2:150,LaunchAssistant:151,LaunchControlPanel:152,LaunchMail:153,LaunchScreenSaver:154,MailForward:155,MailReply:156,MailSend:157,MediaFastForward:158,MediaPause:159,MediaPlay:160,MediaPlayPause:161,MediaRecord:162,MediaRewind:163,MediaSelect:164,MediaStop:165,MediaTrackNext:166,MediaTrackPrevious:167,MetaLeft:168,MetaRight:169,MicrophoneMuteToggle:170,Minus:171,NonConvert:172,NumLock:173,Numpad0:174,Numpad1:175,Numpad2:176,Numpad3:177,Numpad4:178,Numpad5:179,Numpad6:180,Numpad7:181,Numpad8:182,Numpad9:183,NumpadAdd:184,NumpadBackspace:185,NumpadClear:186,NumpadClearEntry:187,NumpadComma:188,NumpadDecimal:189,NumpadDivide:190,NumpadEnter:191,NumpadEqual:192,NumpadMemoryAdd:193,NumpadMemoryClear:194,NumpadMemoryRecall:195,NumpadMemoryStore:196,NumpadMemorySubtract:197,NumpadMultiply:198,NumpadParenLeft:199,NumpadParenRight:200,NumpadSubtract:201,Open:202,PageDown:203,PageUp:204,Paste:205,Pause:206,Period:207,Power:208,PrintScreen:209,PrivacyScreenToggle:210,Props:211,Quote:212,Resume:213,ScrollLock:214,Select:215,SelectTask:216,Semicolon:217,ShiftLeft:218,ShiftRight:219,ShowAllWindows:220,Slash:221,Sleep:222,Space:223,Super:224,Suspend:225,Tab:226,Turbo:227,Undo:228,WakeUp:229,ZoomToggle:230}
 B.Xt=new A.L(458907)
@@ -159998,8 +159998,8 @@ B.xH=new A.Di(1,"nextLine")
 B.r6=new A.Di(2,"forward")
 B.r7=new A.Di(3,"backward")
 B.hj=new A.MC(2,"none")
-B.YV=new A.ue(null,null,B.hj,B.ww,!0)
-B.YW=new A.ue(null,null,B.hj,B.ww,!1)
+B.YV=new A.ue(null,null,B.hj,B.wv,!0)
+B.YW=new A.ue(null,null,B.hj,B.wv,!1)
 B.aQ=new A.uf(0,"next")
 B.b2=new A.uf(1,"previous")
 B.bc=new A.uf(2,"end")
@@ -161877,7 +161877,7 @@ return q})
 r($,"bPC","bsi",()=>{var q=A.aA("~(c_<bV>)")
 return A.a0([B.bHn,A.biI(!0),B.bHa,A.biI(!1),B.bHI,new A.a57(A.KF(q)),B.a0b,new A.a2N(A.KF(q)),B.a0c,new A.a42(A.KF(q)),B.yH,new A.I5(!1,A.KF(q)),B.yK,A.bBh(),B.bHE,new A.a45(A.KF(q)),B.bHX,new A.a7P(A.KF(q))],t.E,t.od)})
 s($,"bMS","bb4",()=>{var q,p,o,n=t.vz,m=A.z(t.Vz,n)
-for(q=A.aA("aP"),p=0;p<2;++p){o=B.wD[p]
+for(q=A.aA("aP"),p=0;p<2;++p){o=B.wC[p]
 m.R(0,A.a0([A.ie(B.d8,!1,!1,!1,o),B.ue,A.ie(B.d8,!1,!0,!1,o),B.uh,A.ie(B.d8,!0,!1,!1,o),B.uf,A.ie(B.d9,!1,!0,!1,o),B.kT,A.ie(B.d9,!0,!1,!1,o),B.ug],q,n))}m.l(0,B.Zi,B.kS)
 m.l(0,B.md,B.iW)
 m.l(0,B.me,B.iX)
@@ -161933,7 +161933,7 @@ q.l(0,B.xX,B.nA)
 q.l(0,B.xY,B.nB)
 return q})
 s($,"bMY","bg8",()=>{var q,p,o,n=t.vz,m=A.z(t.Vz,n)
-for(q=A.aA("aP"),p=0;p<2;++p){o=B.wD[p]
+for(q=A.aA("aP"),p=0;p<2;++p){o=B.wC[p]
 m.R(0,A.a0([A.ie(B.d8,!1,!1,!1,o),B.ue,A.ie(B.d8,!0,!1,!1,o),B.uh,A.ie(B.d8,!1,!1,!0,o),B.uf,A.ie(B.d9,!1,!1,!1,o),B.kS,A.ie(B.d9,!0,!1,!1,o),B.kT,A.ie(B.d9,!1,!1,!0,o),B.ug],q,n))}m.l(0,B.md,B.iW)
 m.l(0,B.me,B.iX)
 m.l(0,B.k_,B.j_)
@@ -161997,7 +161997,7 @@ q.l(0,B.xX,B.nA)
 q.l(0,B.xY,B.nB)
 return q})
 s($,"bMZ","bg9",()=>{var q,p,o,n=t.vz,m=A.z(t.Vz,n)
-for(q=A.aA("aP"),p=0;p<2;++p){o=B.wD[p]
+for(q=A.aA("aP"),p=0;p<2;++p){o=B.wC[p]
 m.R(0,A.a0([A.ie(B.d8,!1,!1,!1,o),B.an,A.ie(B.d9,!1,!1,!1,o),B.an,A.ie(B.d8,!0,!1,!1,o),B.an,A.ie(B.d9,!0,!1,!1,o),B.an,A.ie(B.d8,!1,!0,!1,o),B.an,A.ie(B.d9,!1,!0,!1,o),B.an,A.ie(B.d8,!1,!1,!0,o),B.an,A.ie(B.d9,!1,!1,!0,o),B.an],q,n))}m.R(0,B.U5)
 for(n=$.al5().gdz().ga0(0);n.q();)m.l(0,n.gP(),B.an)
 m.l(0,B.Ze,B.an)
@@ -162043,7 +162043,7 @@ s($,"bQM","bsV",()=>A.awT(A.dk([B.wN],t.bd)))
 s($,"bRK","btB",()=>A.awT(A.dk([B.wO],t.bd)))
 s($,"bSS","bh4",()=>A.bcz(B.aYo,t.N))
 s($,"bSG","bu9",()=>{var q=null
-return A.a0(["af",A.b1(B.b08,B.b5A,B.b1,B.aSj,B.b0K,6,5,B.Oi,"af",B.ay,B.Lb,B.b0F,B.J5,B.hX,B.NZ,B.Oi,B.ay,B.Lb,B.J5,B.NZ,B.LX,B.aZ,B.LX,B.a3,q),"am",A.b1(B.b0O,B.pX,B.b1,B.aqB,B.b82,6,5,B.N8,"am",B.Nl,B.It,B.aUb,B.Ku,B.b_s,B.Np,B.N8,B.Nl,B.It,B.Ku,B.Np,B.HU,B.e4,B.HU,B.a3,q),"ar",A.b1(B.b0p,B.b5m,B.b_V,B.b_z,B.b2G,5,4,B.qh,"ar",B.N1,B.Ji,B.Hd,B.qh,B.Hd,B.pR,B.qh,B.N1,B.Ji,B.qh,B.pR,B.pR,B.e4,B.pR,B.IU,"\u0660"),"as",A.b1(B.dK,B.b8G,B.b1,B.b4n,B.b92,6,5,B.JN,"as",B.Ha,B.M6,B.bl8,B.MI,B.bhA,B.LE,B.JN,B.Ha,B.M6,B.MI,B.LE,B.Ms,B.aIF,B.Ms,B.eu,"\u09e6"),"az",A.b1(B.f2,B.baO,B.b1,B.bhr,B.bjU,0,6,B.KV,"az",B.cB,B.Ni,B.b2W,B.NB,B.b0a,B.aXM,B.KV,B.cB,B.Ni,B.NB,B.bk6,B.Nm,B.aZ,B.Nm,B.a3,q),"be",A.b1(B.dK,B.bbp,B.aT,B.aZF,B.b_e,0,6,B.bjP,"be",B.Os,B.J4,B.b0k,B.b1Z,B.baX,B.JW,B.b2L,B.Os,B.J4,B.aQx,B.JW,B.Mc,B.b_F,B.Mc,B.a3,q),"bg",A.b1(B.dK,B.aQv,B.aT,B.bgy,B.b44,0,3,B.Kj,"bg",B.Nf,B.q8,B.bbf,B.Mw,B.b_o,B.qd,B.Kj,B.Nf,B.q8,B.Mw,B.qd,B.Mr,B.b35,B.Mr,B.a3,q),"bn",A.b1(B.ct,B.lD,B.b1,B.ael,B.aCR,6,5,B.O2,"bn",B.Nh,B.Kh,B.OG,B.bff,B.OG,B.K6,B.O2,B.Nh,B.Kh,B.b4A,B.K6,B.Ng,B.e4,B.Ng,B.a3,"\u09e6"),"bs",A.b1(B.pA,B.b5y,B.NF,B.aXe,B.JK,0,6,B.OR,"bs",B.h3,B.Ev,B.bkR,B.Nv,B.b_9,B.p8,B.OR,B.h3,B.pL,B.Nv,B.p8,B.pM,B.aZ,B.pM,B.a3,q),"ca",A.b1(B.pA,B.aY5,B.pC,B.baP,B.b3k,0,3,B.aOO,"ca",B.Mn,B.pI,B.b9z,B.aei,B.b7M,B.pI,B.bac,B.Mn,B.pI,B.aYi,B.pI,B.MZ,B.N6,B.MZ,B.a3,q),"cs",A.b1(B.b89,B.b0A,B.b1,B.aZA,B.baK,0,3,B.bf3,"cs",B.cB,B.NT,B.aZ9,B.Oj,B.bS,B.Hh,B.aXj,B.cB,B.NT,B.Oj,B.Hh,B.MR,B.aL9,B.MR,B.a3,q),"cy",A.b1(B.b4b,B.LU,B.NF,B.baa,B.aY8,0,3,B.L3,"cy",B.Ne,B.NI,B.b8o,B.aKT,B.aYh,B.b2P,B.L3,B.Ne,B.NI,B.aZ7,B.b5Q,B.IW,B.aZ,B.IW,B.a3,q),"da",A.b1(B.f2,B.aYl,B.b1,B.aXn,B.lu,0,3,B.J3,"da",B.ay,B.h4,B.lA,B.LV,B.b36,B.KG,B.J3,B.ay,B.h4,B.LV,B.KG,B.js,B.wx,B.js,B.a3,q),"de",A.b1(B.ct,B.wt,B.aT,B.jw,B.jw,0,3,B.pq,"de",B.ay,B.jv,B.wA,B.Ny,B.bS,B.HQ,B.pq,B.ay,B.jv,B.pB,B.N7,B.qc,B.aZ,B.qc,B.a3,q),"de_CH",A.b1(B.ct,B.wt,B.aT,B.jw,B.jw,0,3,B.pq,"de_CH",B.ay,B.jv,B.wA,B.Ny,B.bS,B.HQ,B.pq,B.ay,B.jv,B.pB,B.N7,B.qc,B.aZ,B.qc,B.a3,q),"el",A.b1(B.b3j,B.Lf,B.b7f,B.bev,B.b1T,0,3,B.b37,"el",B.OY,B.MO,B.b8x,B.axd,B.biC,B.Jm,B.bcX,B.OY,B.MO,B.b2d,B.Jm,B.Iw,B.dj,B.Iw,B.a3,q),"en",A.b1(B.ct,B.hZ,B.aT,B.dL,B.cX,6,5,B.c_,"en",B.ay,B.bH,B.ex,B.fy,B.bS,B.cd,B.c_,B.ay,B.bH,B.fy,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_AU",A.b1(B.dK,B.qm,B.aT,B.dL,B.cX,0,6,B.c_,"en_AU",B.ay,B.b2K,B.ex,B.KX,B.bS,B.cd,B.c_,B.ay,B.bH,B.KX,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_CA",A.b1(B.ev,B.b0J,B.aT,B.dL,B.cX,6,5,B.c_,"en_CA",B.ay,B.bH,B.ex,B.fy,B.bS,B.cd,B.c_,B.ay,B.bH,B.fy,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_GB",A.b1(B.dK,B.wr,B.aT,B.dL,B.cX,0,3,B.c_,"en_GB",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.aZ,B.cc,B.a3,q),"en_IE",A.b1(B.ev,B.pX,B.aT,B.dL,B.cX,0,3,B.c_,"en_IE",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.aZ,B.cc,B.a3,q),"en_IN",A.b1(B.dK,B.LU,B.aT,B.dL,B.cX,6,5,B.c_,"en_IN",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.dj,B.cc,B.eu,q),"en_NZ",A.b1(B.dK,B.wr,B.aT,B.dL,B.cX,0,6,B.c_,"en_NZ",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_SG",A.b1(B.dK,B.qm,B.aT,B.dL,B.cX,6,5,B.c_,"en_SG",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_US",A.b1(B.ct,B.hZ,B.aT,B.dL,B.cX,6,5,B.c_,"en_US",B.ay,B.bH,B.ex,B.fy,B.bS,B.cd,B.c_,B.ay,B.bH,B.fy,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_ZA",A.b1(B.dK,B.aZc,B.aT,B.dL,B.cX,6,5,B.c_,"en_ZA",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.aZ,B.cc,B.a3,q),"es",A.b1(B.pA,B.M4,B.aT,B.qe,B.b2T,0,3,B.ha,"es",B.h6,B.NJ,B.aZm,B.jy,B.f1,B.h8,B.ha,B.h6,B.NJ,B.jy,B.h8,B.h9,B.N6,B.h9,B.a3,q),"es_419",A.b1(B.ev,B.M4,B.aT,B.qe,B.hY,0,3,B.ha,"es_419",B.h6,B.e2,B.pG,B.jy,B.f1,B.h8,B.ha,B.h6,B.e2,B.jy,B.h8,B.h9,B.dj,B.h9,B.a3,q),"es_MX",A.b1(B.pA,B.aYD,B.aT,B.qe,B.hY,6,5,B.ha,"es_MX",B.h6,B.e2,B.pG,B.KZ,B.f1,B.h8,B.ha,B.h6,B.e2,B.KZ,B.h8,B.h9,B.dj,B.h9,B.a3,q),"es_US",A.b1(B.ev,B.b6o,B.aT,B.qe,B.hY,6,5,B.ha,"es_US",B.h6,B.e2,B.b2N,B.jy,B.f1,B.h8,B.ha,B.h6,B.e2,B.jy,B.h8,B.h9,B.dj,B.h9,B.a3,q),"et",A.b1(B.ct,B.b6x,B.b1,B.b4x,B.b6n,0,3,B.K_,"et",B.LH,B.qk,B.lA,B.P1,B.hX,B.qk,B.K_,B.LH,B.qk,B.P1,B.qk,B.Hc,B.aZ,B.Hc,B.a3,q),"eu",A.b1(B.b7N,B.aqt,B.aU4,B.bi3,B.aZP,0,3,B.JV,"eu",B.Lu,B.OU,B.aYs,B.Kl,B.b_b,B.KE,B.JV,B.Lu,B.OU,B.Kl,B.KE,B.M_,B.LP,B.M_,B.a3,q),"fa",A.b1(B.b7C,B.bdT,B.aZy,B.aUe,B.b1V,5,4,B.b0o,"fa",B.Mm,B.DG,B.b90,B.wm,B.biI,B.q0,B.wm,B.Mm,B.DG,B.wm,B.q0,B.q0,B.O3,B.q0,B.aIO,"\u06f0"),"fi",A.b1(B.aYn,B.bhx,B.b1,B.bkF,B.b4B,0,3,B.aZH,"fi",B.HT,B.NY,B.b0H,B.Iy,B.b1Y,B.Iv,B.aY0,B.HT,B.NY,B.Iy,B.Iv,B.b6p,B.aZi,B.aCV,B.a3,q),"fil",A.b1(B.dK,B.hZ,B.aT,B.dL,B.cX,6,5,B.ql,"fil",B.jt,B.h7,B.Ks,B.jt,B.bS,B.h7,B.ql,B.Ou,B.h7,B.jt,B.h7,B.pQ,B.dj,B.pQ,B.a3,q),"fr",A.b1(B.ct,B.pX,B.pC,B.N4,B.L4,0,3,B.pz,"fr",B.ay,B.e2,B.O5,B.Kp,B.f1,B.q6,B.pz,B.ay,B.e2,B.Kp,B.q6,B.pF,B.aZ,B.pF,B.a3,q),"fr_CA",A.b1(B.ev,B.Na,B.pC,B.N4,B.L4,6,5,B.pz,"fr_CA",B.ay,B.e2,B.O5,B.JZ,B.f1,B.q6,B.pz,B.ay,B.e2,B.JZ,B.q6,B.pF,B.aIL,B.pF,B.a3,q),"ga",A.b1(B.b0l,B.pX,B.b1,B.bdE,B.b11,0,3,B.Kx,"ga",B.P_,B.OQ,B.aIE,B.Jy,B.b0Y,B.P2,B.Kx,B.P_,B.OQ,B.Jy,B.P2,B.NR,B.aZ,B.NR,B.a3,q),"gl",A.b1(B.ev,B.aN8,B.aT,B.b0e,B.hY,0,3,B.IR,"gl",B.b2H,B.bi4,B.pG,B.L8,B.f1,B.Ma,B.IR,B.aZB,B.b0u,B.L8,B.Ma,B.Oe,B.aZ,B.Oe,B.a3,q),"gsw",A.b1(B.aQI,B.wt,B.b1,B.jw,B.jw,0,3,B.N5,"gsw",B.ay,B.jv,B.wA,B.pB,B.bS,B.J6,B.N5,B.ay,B.jv,B.pB,B.J6,B.Nz,B.aZ,B.Nz,B.a3,q),"gu",A.b1(B.ct,B.lD,B.b1,B.b1l,B.b32,6,5,B.Kt,"gu",B.KI,B.O0,B.aZR,B.NM,B.bS,B.Nk,B.Kt,B.KI,B.O0,B.NM,B.Nk,B.JU,B.Mt,B.JU,B.eu,q),"he",A.b1(B.ct,B.baf,B.aT,B.aZ0,B.b0B,6,5,B.ML,"he",B.cB,B.JR,B.aN5,B.KW,B.bS,B.Nx,B.ML,B.cB,B.JR,B.KW,B.Nx,B.My,B.wF,B.My,B.IU,q),"hi",A.b1(B.dK,B.qm,B.aT,B.bdV,B.aL2,6,5,B.Jk,"hi",B.LB,B.pY,B.bae,B.OC,B.b9L,B.K4,B.Jk,B.LB,B.pY,B.OC,B.K4,B.KF,B.e4,B.KF,B.eu,q),"hr",A.b1(B.ct,B.aXQ,B.b1,B.aIS,B.b2O,0,6,B.bcv,"hr",B.Je,B.Ev,B.lA,B.Od,B.bi7,B.p8,B.b9N,B.Je,B.pL,B.Od,B.p8,B.pM,B.b4d,B.pM,B.a3,q),"hu",A.b1(B.aZX,B.b17,B.b1,B.bdA,B.aZY,0,3,B.HN,"hu",B.Mq,B.HR,B.aFs,B.KU,B.aKK,B.LJ,B.HN,B.Mq,B.HR,B.KU,B.LJ,B.OL,B.wF,B.OL,B.a3,q),"hy",A.b1(B.aV1,B.b9W,B.aT,B.b0i,B.b04,0,6,B.aYe,"hy",B.Lo,B.Ka,B.aQz,B.LT,B.b0x,B.M5,B.b8I,B.Lo,B.Ka,B.LT,B.M5,B.Kg,B.aZ,B.Kg,B.a3,q),"id",A.b1(B.ct,B.bdH,B.b1,B.bjs,B.b1e,6,5,B.ND,"id",B.ay,B.KA,B.b2q,B.Jl,B.hX,B.OE,B.ND,B.ay,B.KA,B.Jl,B.OE,B.M8,B.wx,B.M8,B.a3,q),"is",A.b1(B.aZs,B.bal,B.aT,B.b0L,B.lu,0,3,B.NG,"is",B.LO,B.MS,B.bkM,B.P7,B.aYG,B.N9,B.NG,B.LO,B.MS,B.P7,B.N9,B.KK,B.aZ,B.KK,B.a3,q),"it",A.b1(B.b_8,B.b03,B.jz,B.aYk,B.hY,0,3,B.OM,"it",B.KM,B.NS,B.OJ,B.JL,B.f1,B.Jd,B.OM,B.KM,B.NS,B.JL,B.Jd,B.Mf,B.aZ,B.Mf,B.a3,q),"ja",A.b1(B.anl,B.b8E,B.b1,B.KH,B.KH,6,5,B.dw,"ja",B.cB,B.q1,B.b2e,B.dw,B.bS,B.q1,B.dw,B.cB,B.q1,B.dw,B.q1,B.Ky,B.b4h,B.Ky,B.a3,q),"ka",A.b1(B.f2,B.b13,B.aT,B.bcm,B.b8C,0,6,B.Jz,"ka",B.MC,B.Ix,B.aXd,B.Ly,B.aZ1,B.NL,B.Jz,B.MC,B.Ix,B.Ly,B.NL,B.OT,B.aZ,B.OT,B.a3,q),"kk",A.b1(B.ct,B.aCJ,B.aT,B.aXH,B.aCX,0,6,B.b_v,"kk",B.O1,B.DA,B.bba,B.HP,B.b76,B.Ke,B.aqy,B.O1,B.DA,B.HP,B.Ke,B.KC,B.aZ,B.KC,B.a3,q),"km",A.b1(B.f2,B.Lf,B.aT,B.aXu,B.b23,6,5,B.pD,"km",B.P0,B.K8,B.Ir,B.pD,B.Ir,B.KN,B.pD,B.P0,B.K8,B.pD,B.KN,B.aZv,B.e4,B.b9p,B.a3,q),"kn",A.b1(B.f2,B.bcy,B.b1,B.bhL,B.aZK,6,5,B.Mh,"kn",B.Jh,B.Js,B.aZ2,B.N0,B.aZz,B.Nj,B.Mh,B.Jh,B.Js,B.N0,B.Nj,B.La,B.Mt,B.La,B.eu,q),"ko",A.b1(B.aXg,B.bht,B.b1,B.b9U,B.cX,6,5,B.jx,"ko",B.jx,B.qf,B.aL4,B.jx,B.biK,B.qf,B.jx,B.jx,B.qf,B.jx,B.qf,B.Lm,B.b2E,B.Lm,B.a3,q),"ky",A.b1(B.b0R,B.b8k,B.b1,B.b9G,B.b_L,0,6,B.Kz,"ky",B.pU,B.Jj,B.ba_,B.aYC,B.b1M,B.ON,B.bcZ,B.pU,B.Jj,B.b_l,B.ON,B.LM,B.aZ,B.LM,B.a3,q),"lo",A.b1(B.b_t,B.b3i,B.aT,B.b8B,B.aYA,6,5,B.IX,"lo",B.cB,B.JS,B.biZ,B.Hb,B.b16,B.KD,B.IX,B.cB,B.JS,B.Hb,B.KD,B.J_,B.b9x,B.J_,B.a3,q),"lt",A.b1(B.aZN,B.ax9,B.b1,B.aXU,B.Jq,0,3,B.bf0,"lt",B.Oh,B.J0,B.aYL,B.NE,B.b8y,B.P4,B.b0t,B.Oh,B.J0,B.NE,B.P4,B.Nb,B.aZ,B.Nb,B.a3,q),"lv",A.b1(B.b12,B.b_H,B.b1,B.b78,B.bcx,0,6,B.IS,"lv",B.ay,B.LF,B.aY3,B.NQ,B.bj5,B.b_K,B.IS,B.ay,B.LF,B.NQ,B.aYR,B.b9O,B.aZ,B.aXK,B.a3,q),"mk",A.b1(B.b9I,B.aqv,B.aT,B.aXE,B.bl1,0,6,B.M1,"mk",B.pV,B.q8,B.aCW,B.Dz,B.aru,B.KB,B.M1,B.pV,B.q8,B.Dz,B.KB,B.LN,B.aZ,B.LN,B.a3,q),"ml",A.b1(B.ct,B.bbk,B.b1,B.b4v,B.bex,6,5,B.Og,"ml",B.MH,B.b_r,B.NH,B.Lr,B.NH,B.L0,B.Og,B.MH,B.aYx,B.Lr,B.L0,B.b3A,B.e4,B.bl_,B.eu,q),"mn",A.b1(B.bcB,B.b1p,B.b1,B.b3l,B.aQA,0,6,B.aZj,"mn",B.Jp,B.pP,B.aZk,B.Km,B.aXS,B.pP,B.bbD,B.Jp,B.pP,B.Km,B.pP,B.bkS,B.LP,B.bek,B.a3,q),"mr",A.b1(B.f2,B.lD,B.aT,B.biA,B.aYZ,6,5,B.OF,"mr",B.LK,B.pY,B.b8z,B.Nw,B.ax3,B.N3,B.OF,B.LK,B.pY,B.Nw,B.N3,B.LW,B.e4,B.LW,B.eu,"\u0966"),"ms",A.b1(B.b0s,B.b2Y,B.jz,B.OO,B.OO,0,6,B.Mg,"ms",B.JP,B.OK,B.aZ8,B.K7,B.b1b,B.MQ,B.Mg,B.JP,B.OK,B.K7,B.MQ,B.KJ,B.dj,B.KJ,B.a3,q),"my",A.b1(B.b1B,B.b8Z,B.b1,B.aQG,B.bbU,6,5,B.KL,"my",B.M3,B.Lz,B.b0W,B.Jn,B.bS,B.q9,B.KL,B.M3,B.Lz,B.Jn,B.q9,B.q9,B.aJP,B.q9,B.a3,"\u1040"),"nb",A.b1(B.ev,B.Hg,B.aT,B.Ln,B.lu,0,3,B.pS,"nb",B.ay,B.h4,B.lA,B.N2,B.hX,B.pK,B.pS,B.ay,B.h4,B.IZ,B.pK,B.js,B.aZ,B.js,B.a3,q),"ne",A.b1(B.ble,B.aII,B.jz,B.MA,B.MA,6,5,B.qj,"ne",B.b2j,B.OP,B.Mk,B.qj,B.Mk,B.H9,B.qj,B.aL6,B.OP,B.qj,B.H9,B.Iu,B.aZ,B.Iu,B.a3,"\u0966"),"nl",A.b1(B.ev,B.b0C,B.aT,B.bcA,B.aXp,0,3,B.Ox,"nl",B.ay,B.Mp,B.aZW,B.LS,B.hX,B.Kd,B.Ox,B.ay,B.Mp,B.LS,B.Kd,B.Mb,B.aZ,B.Mb,B.a3,q),"no",A.b1(B.ev,B.Hg,B.aT,B.Ln,B.lu,0,3,B.pS,"no",B.ay,B.h4,B.lA,B.N2,B.hX,B.pK,B.pS,B.ay,B.h4,B.IZ,B.pK,B.js,B.aZ,B.js,B.a3,q),"or",A.b1(B.b_0,B.hZ,B.aT,B.b61,B.cX,6,5,B.q4,"or",B.Kw,B.Jf,B.b_y,B.q4,B.b2u,B.MJ,B.q4,B.Kw,B.Jf,B.q4,B.MJ,B.O4,B.e4,B.O4,B.eu,q),"pa",A.b1(B.bcY,B.qm,B.jz,B.aUa,B.b43,6,5,B.M7,"pa",B.Ns,B.Ld,B.b07,B.M9,B.bib,B.L1,B.M7,B.Ns,B.Ld,B.M9,B.L1,B.HI,B.e4,B.HI,B.eu,q),"pl",A.b1(B.f2,B.b5z,B.jz,B.b75,B.b8A,0,3,B.aXl,"pl",B.b9T,B.biH,B.b9E,B.LD,B.b2c,B.NP,B.b2v,B.aYc,B.b0w,B.LD,B.NP,B.JY,B.aZ,B.JY,B.a3,q),"ps",A.b1(B.bdY,B.b0j,B.b1,B.b2X,B.b29,5,4,B.J1,"ps",B.aXi,B.bH,B.Mx,B.J1,B.Mx,B.ob,B.b1a,B.cB,B.bH,B.aUf,B.ob,B.ob,B.O3,B.ob,B.aCO,"\u06f0"),"pt",A.b1(B.ct,B.aKR,B.b1,B.Ok,B.hY,6,5,B.pT,"pt",B.ay,B.pW,B.OJ,B.qb,B.f1,B.NW,B.pT,B.ay,B.pW,B.qb,B.NW,B.qg,B.aZ,B.qg,B.a3,q),"pt_PT",A.b1(B.ev,B.bjW,B.aT,B.Ok,B.hY,6,2,B.pT,"pt_PT",B.ay,B.pW,B.pG,B.qb,B.f1,B.Ml,B.pT,B.ay,B.pW,B.qb,B.Ml,B.qg,B.aZ,B.qg,B.a3,q),"ro",A.b1(B.ev,B.b1K,B.aT,B.b_g,B.aXx,0,6,B.NA,"ro",B.Li,B.e2,B.baY,B.Jt,B.bfo,B.Lw,B.NA,B.Li,B.e2,B.Jt,B.Lw,B.Mu,B.aZ,B.Mu,B.a3,q),"ru",A.b1(B.ct,B.b1u,B.aT,B.bjm,B.aem,0,3,B.bkN,"ru",B.pU,B.MG,B.L6,B.bia,B.Oz,B.Md,B.Kz,B.pU,B.MG,B.bk_,B.Md,B.O_,B.aZ,B.O_,B.a3,q),"si",A.b1(B.bhq,B.bfm,B.b1,B.aen,B.bdR,0,6,B.OS,"si",B.Lc,B.Ov,B.bbl,B.bkX,B.b1N,B.Ki,B.OS,B.Lc,B.Ov,B.baF,B.Ki,B.LZ,B.wx,B.LZ,B.a3,q),"sk",A.b1(B.ct,B.b3f,B.pC,B.aYy,B.aXY,0,3,B.bec,"sk",B.h3,B.JI,B.bi5,B.OV,B.bS,B.O6,B.aXL,B.h3,B.JI,B.OV,B.O6,B.MP,B.wF,B.MP,B.a3,q),"sl",A.b1(B.b1X,B.b2Z,B.jz,B.b95,B.Jq,0,6,B.P5,"sl",B.h3,B.NX,B.aYH,B.Kv,B.b_S,B.NN,B.P5,B.h3,B.NX,B.Kv,B.NN,B.Mj,B.aZ,B.Mj,B.a3,q),"sq",A.b1(B.aZC,B.b94,B.aT,B.b0r,B.b_X,0,6,B.OD,"sq",B.No,B.Il,B.b05,B.Ow,B.b2I,B.N_,B.OD,B.No,B.Il,B.Ow,B.N_,B.Kk,B.b7E,B.Kk,B.a3,q),"sr",A.b1(B.ct,B.Lh,B.b1,B.bl0,B.b7a,0,6,B.Nc,"sr",B.pV,B.Oc,B.aYq,B.O7,B.aU5,B.OB,B.Nc,B.pV,B.Oc,B.O7,B.OB,B.Nd,B.aZ,B.Nd,B.a3,q),"sr_Latn",A.b1(B.ct,B.Lh,B.b1,B.b_O,B.JK,0,6,B.K9,"sr_Latn",B.h3,B.pL,B.b9A,B.Jr,B.b1J,B.Jc,B.K9,B.h3,B.pL,B.Jr,B.Jc,B.M0,B.aZ,B.M0,B.a3,q),"sv",A.b1(B.b7s,B.Na,B.b1,B.bei,B.lu,0,3,B.MD,"sv",B.ay,B.h4,B.aYN,B.NO,B.hX,B.KS,B.MD,B.ay,B.h4,B.NO,B.KS,B.OW,B.aZ,B.OW,B.a3,q),"sw",A.b1(B.dK,B.wr,B.b1,B.bho,B.b_7,0,6,B.L2,"sw",B.ay,B.bH,B.Lk,B.Lg,B.Lk,B.p9,B.L2,B.ay,B.bH,B.Lg,B.p9,B.p9,B.aZ,B.p9,B.a3,q),"ta",A.b1(B.ct,B.lD,B.aT,B.aqw,B.aXs,6,5,B.KO,"ta",B.LY,B.Jg,B.bkZ,B.K5,B.aCS,B.NC,B.KO,B.LY,B.Jg,B.K5,B.NC,B.Lj,B.e4,B.Lj,B.eu,q),"te",A.b1(B.bcQ,B.aqs,B.b1,B.aXB,B.aqu,6,5,B.Nn,"te",B.LQ,B.Ob,B.b_w,B.Oo,B.b09,B.Lp,B.Nn,B.LQ,B.Ob,B.Oo,B.Lp,B.LI,B.e4,B.LI,B.eu,q),"th",A.b1(B.f2,B.aZL,B.b1,B.aZo,B.bhs,6,5,B.Ko,"th",B.qa,B.Ls,B.JT,B.qa,B.JT,B.Lq,B.Ko,B.qa,B.Ls,B.qa,B.Lq,B.K1,B.b6T,B.K1,B.a3,q),"tl",A.b1(B.dK,B.hZ,B.aT,B.dL,B.cX,6,5,B.ql,"tl",B.jt,B.h7,B.Ks,B.jt,B.bS,B.h7,B.ql,B.Ou,B.h7,B.jt,B.h7,B.pQ,B.dj,B.pQ,B.a3,q),"tr",A.b1(B.aZJ,B.b0y,B.b1,B.axa,B.b25,0,6,B.On,"tr",B.Mv,B.LC,B.aL_,B.Kn,B.aYg,B.IY,B.On,B.Mv,B.LC,B.Kn,B.IY,B.ME,B.aZ,B.ME,B.a3,q),"uk",A.b1(B.b46,B.biE,B.aT,B.bbT,B.aY4,0,6,B.aYQ,"uk",B.b2Q,B.NK,B.L6,B.KQ,B.Oz,B.qd,B.aKZ,B.b_W,B.NK,B.KQ,B.qd,B.Nr,B.aZ,B.Nr,B.a3,q),"ur",A.b1(B.f2,B.aXo,B.b1,B.LG,B.LG,6,5,B.pa,"ur",B.ay,B.bH,B.Mi,B.pa,B.Mi,B.pN,B.pa,B.ay,B.bH,B.pa,B.pN,B.pN,B.e4,B.pN,B.a3,q),"uz",A.b1(B.b1r,B.b2k,B.aT,B.bf1,B.b_k,0,6,B.b8S,"uz",B.Ll,B.MK,B.aZn,B.bjV,B.bjY,B.L9,B.bfp,B.Ll,B.MK,B.b2t,B.L9,B.OH,B.b6m,B.OH,B.a3,q),"vi",A.b1(B.b1c,B.lD,B.aek,B.b8v,B.b1i,0,6,B.b0f,"vi",B.cB,B.Lv,B.bkP,B.b_N,B.bS,B.JQ,B.OZ,B.cB,B.Lv,B.OZ,B.JQ,B.Jo,B.aZ,B.Jo,B.a3,q),"zh",A.b1(B.wE,B.aev,B.b1,B.q7,B.q7,0,6,B.Oa,"zh",B.cB,B.jA,B.b5G,B.dw,B.axg,B.LR,B.Oa,B.cB,B.jA,B.dw,B.LR,B.ju,B.b_U,B.ju,B.a3,q),"zh_HK",A.b1(B.wE,B.b0c,B.b1,B.q7,B.q7,6,5,B.dw,"zh_HK",B.cB,B.jA,B.wo,B.dw,B.bS,B.pJ,B.dw,B.cB,B.jA,B.dw,B.pJ,B.ju,B.bkO,B.ju,B.a3,q),"zh_TW",A.b1(B.wE,B.bdW,B.b1,B.LL,B.LL,6,5,B.dw,"zh_TW",B.cB,B.jA,B.wo,B.dw,B.wo,B.pJ,B.dw,B.cB,B.jA,B.dw,B.pJ,B.ju,B.b2C,B.ju,B.a3,q),"zu",A.b1(B.f2,B.hZ,B.b1,B.cX,B.cX,6,5,B.IV,"zu",B.b0g,B.Oy,B.aZE,B.Is,B.bS,B.Nt,B.IV,B.ay,B.Oy,B.Is,B.Nt,B.M2,B.aZ,B.M2,B.a3,q)],t.N,t.fs)})
+return A.a0(["af",A.b1(B.b08,B.b5A,B.b1,B.aSj,B.b0K,6,5,B.Oi,"af",B.ay,B.Lb,B.b0F,B.J5,B.hX,B.NZ,B.Oi,B.ay,B.Lb,B.J5,B.NZ,B.LX,B.aZ,B.LX,B.a3,q),"am",A.b1(B.b0O,B.pX,B.b1,B.aqB,B.b82,6,5,B.N8,"am",B.Nl,B.It,B.aUb,B.Ku,B.b_s,B.Np,B.N8,B.Nl,B.It,B.Ku,B.Np,B.HU,B.e4,B.HU,B.a3,q),"ar",A.b1(B.b0p,B.b5m,B.b_V,B.b_z,B.b2G,5,4,B.qh,"ar",B.N1,B.Ji,B.Hd,B.qh,B.Hd,B.pR,B.qh,B.N1,B.Ji,B.qh,B.pR,B.pR,B.e4,B.pR,B.IU,"\u0660"),"as",A.b1(B.dK,B.b8G,B.b1,B.b4n,B.b92,6,5,B.JN,"as",B.Ha,B.M6,B.bl8,B.MI,B.bhA,B.LE,B.JN,B.Ha,B.M6,B.MI,B.LE,B.Ms,B.aIF,B.Ms,B.eu,"\u09e6"),"az",A.b1(B.f2,B.baO,B.b1,B.bhr,B.bjU,0,6,B.KV,"az",B.cB,B.Ni,B.b2W,B.NB,B.b0a,B.aXM,B.KV,B.cB,B.Ni,B.NB,B.bk6,B.Nm,B.aZ,B.Nm,B.a3,q),"be",A.b1(B.dK,B.bbp,B.aT,B.aZF,B.b_e,0,6,B.bjP,"be",B.Os,B.J4,B.b0k,B.b1Z,B.baX,B.JW,B.b2L,B.Os,B.J4,B.aQx,B.JW,B.Mc,B.b_F,B.Mc,B.a3,q),"bg",A.b1(B.dK,B.aQv,B.aT,B.bgy,B.b44,0,3,B.Kj,"bg",B.Nf,B.q8,B.bbf,B.Mw,B.b_o,B.qd,B.Kj,B.Nf,B.q8,B.Mw,B.qd,B.Mr,B.b35,B.Mr,B.a3,q),"bn",A.b1(B.ct,B.lD,B.b1,B.ael,B.aCR,6,5,B.O2,"bn",B.Nh,B.Kh,B.OG,B.bff,B.OG,B.K6,B.O2,B.Nh,B.Kh,B.b4A,B.K6,B.Ng,B.e4,B.Ng,B.a3,"\u09e6"),"bs",A.b1(B.pA,B.b5y,B.NF,B.aXe,B.JK,0,6,B.OR,"bs",B.h3,B.Ev,B.bkR,B.Nv,B.b_9,B.p8,B.OR,B.h3,B.pL,B.Nv,B.p8,B.pM,B.aZ,B.pM,B.a3,q),"ca",A.b1(B.pA,B.aY5,B.pC,B.baP,B.b3k,0,3,B.aOO,"ca",B.Mn,B.pI,B.b9z,B.aei,B.b7M,B.pI,B.bac,B.Mn,B.pI,B.aYi,B.pI,B.MZ,B.N6,B.MZ,B.a3,q),"cs",A.b1(B.b89,B.b0A,B.b1,B.aZA,B.baK,0,3,B.bf3,"cs",B.cB,B.NT,B.aZ9,B.Oj,B.bS,B.Hh,B.aXj,B.cB,B.NT,B.Oj,B.Hh,B.MR,B.aL9,B.MR,B.a3,q),"cy",A.b1(B.b4b,B.LU,B.NF,B.baa,B.aY8,0,3,B.L3,"cy",B.Ne,B.NI,B.b8o,B.aKT,B.aYh,B.b2P,B.L3,B.Ne,B.NI,B.aZ7,B.b5Q,B.IW,B.aZ,B.IW,B.a3,q),"da",A.b1(B.f2,B.aYl,B.b1,B.aXn,B.lu,0,3,B.J3,"da",B.ay,B.h4,B.lA,B.LV,B.b36,B.KG,B.J3,B.ay,B.h4,B.LV,B.KG,B.js,B.ww,B.js,B.a3,q),"de",A.b1(B.ct,B.ws,B.aT,B.jw,B.jw,0,3,B.pq,"de",B.ay,B.jv,B.wz,B.Ny,B.bS,B.HQ,B.pq,B.ay,B.jv,B.pB,B.N7,B.qc,B.aZ,B.qc,B.a3,q),"de_CH",A.b1(B.ct,B.ws,B.aT,B.jw,B.jw,0,3,B.pq,"de_CH",B.ay,B.jv,B.wz,B.Ny,B.bS,B.HQ,B.pq,B.ay,B.jv,B.pB,B.N7,B.qc,B.aZ,B.qc,B.a3,q),"el",A.b1(B.b3j,B.Lf,B.b7f,B.bev,B.b1T,0,3,B.b37,"el",B.OY,B.MO,B.b8x,B.axd,B.biC,B.Jm,B.bcX,B.OY,B.MO,B.b2d,B.Jm,B.Iw,B.dj,B.Iw,B.a3,q),"en",A.b1(B.ct,B.hZ,B.aT,B.dL,B.cX,6,5,B.c_,"en",B.ay,B.bH,B.ex,B.fy,B.bS,B.cd,B.c_,B.ay,B.bH,B.fy,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_AU",A.b1(B.dK,B.qm,B.aT,B.dL,B.cX,0,6,B.c_,"en_AU",B.ay,B.b2K,B.ex,B.KX,B.bS,B.cd,B.c_,B.ay,B.bH,B.KX,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_CA",A.b1(B.ev,B.b0J,B.aT,B.dL,B.cX,6,5,B.c_,"en_CA",B.ay,B.bH,B.ex,B.fy,B.bS,B.cd,B.c_,B.ay,B.bH,B.fy,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_GB",A.b1(B.dK,B.wq,B.aT,B.dL,B.cX,0,3,B.c_,"en_GB",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.aZ,B.cc,B.a3,q),"en_IE",A.b1(B.ev,B.pX,B.aT,B.dL,B.cX,0,3,B.c_,"en_IE",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.aZ,B.cc,B.a3,q),"en_IN",A.b1(B.dK,B.LU,B.aT,B.dL,B.cX,6,5,B.c_,"en_IN",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.dj,B.cc,B.eu,q),"en_NZ",A.b1(B.dK,B.wq,B.aT,B.dL,B.cX,0,6,B.c_,"en_NZ",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_SG",A.b1(B.dK,B.qm,B.aT,B.dL,B.cX,6,5,B.c_,"en_SG",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_US",A.b1(B.ct,B.hZ,B.aT,B.dL,B.cX,6,5,B.c_,"en_US",B.ay,B.bH,B.ex,B.fy,B.bS,B.cd,B.c_,B.ay,B.bH,B.fy,B.cd,B.cc,B.dj,B.cc,B.a3,q),"en_ZA",A.b1(B.dK,B.aZc,B.aT,B.dL,B.cX,6,5,B.c_,"en_ZA",B.ay,B.bH,B.ex,B.e5,B.bS,B.cd,B.c_,B.ay,B.bH,B.e5,B.cd,B.cc,B.aZ,B.cc,B.a3,q),"es",A.b1(B.pA,B.M4,B.aT,B.qe,B.b2T,0,3,B.ha,"es",B.h6,B.NJ,B.aZm,B.jy,B.f1,B.h8,B.ha,B.h6,B.NJ,B.jy,B.h8,B.h9,B.N6,B.h9,B.a3,q),"es_419",A.b1(B.ev,B.M4,B.aT,B.qe,B.hY,0,3,B.ha,"es_419",B.h6,B.e2,B.pG,B.jy,B.f1,B.h8,B.ha,B.h6,B.e2,B.jy,B.h8,B.h9,B.dj,B.h9,B.a3,q),"es_MX",A.b1(B.pA,B.aYD,B.aT,B.qe,B.hY,6,5,B.ha,"es_MX",B.h6,B.e2,B.pG,B.KZ,B.f1,B.h8,B.ha,B.h6,B.e2,B.KZ,B.h8,B.h9,B.dj,B.h9,B.a3,q),"es_US",A.b1(B.ev,B.b6o,B.aT,B.qe,B.hY,6,5,B.ha,"es_US",B.h6,B.e2,B.b2N,B.jy,B.f1,B.h8,B.ha,B.h6,B.e2,B.jy,B.h8,B.h9,B.dj,B.h9,B.a3,q),"et",A.b1(B.ct,B.b6x,B.b1,B.b4x,B.b6n,0,3,B.K_,"et",B.LH,B.qk,B.lA,B.P1,B.hX,B.qk,B.K_,B.LH,B.qk,B.P1,B.qk,B.Hc,B.aZ,B.Hc,B.a3,q),"eu",A.b1(B.b7N,B.aqt,B.aU4,B.bi3,B.aZP,0,3,B.JV,"eu",B.Lu,B.OU,B.aYs,B.Kl,B.b_b,B.KE,B.JV,B.Lu,B.OU,B.Kl,B.KE,B.M_,B.LP,B.M_,B.a3,q),"fa",A.b1(B.b7C,B.bdT,B.aZy,B.aUe,B.b1V,5,4,B.b0o,"fa",B.Mm,B.DG,B.b90,B.wl,B.biI,B.q0,B.wl,B.Mm,B.DG,B.wl,B.q0,B.q0,B.O3,B.q0,B.aIO,"\u06f0"),"fi",A.b1(B.aYn,B.bhx,B.b1,B.bkF,B.b4B,0,3,B.aZH,"fi",B.HT,B.NY,B.b0H,B.Iy,B.b1Y,B.Iv,B.aY0,B.HT,B.NY,B.Iy,B.Iv,B.b6p,B.aZi,B.aCV,B.a3,q),"fil",A.b1(B.dK,B.hZ,B.aT,B.dL,B.cX,6,5,B.ql,"fil",B.jt,B.h7,B.Ks,B.jt,B.bS,B.h7,B.ql,B.Ou,B.h7,B.jt,B.h7,B.pQ,B.dj,B.pQ,B.a3,q),"fr",A.b1(B.ct,B.pX,B.pC,B.N4,B.L4,0,3,B.pz,"fr",B.ay,B.e2,B.O5,B.Kp,B.f1,B.q6,B.pz,B.ay,B.e2,B.Kp,B.q6,B.pF,B.aZ,B.pF,B.a3,q),"fr_CA",A.b1(B.ev,B.Na,B.pC,B.N4,B.L4,6,5,B.pz,"fr_CA",B.ay,B.e2,B.O5,B.JZ,B.f1,B.q6,B.pz,B.ay,B.e2,B.JZ,B.q6,B.pF,B.aIL,B.pF,B.a3,q),"ga",A.b1(B.b0l,B.pX,B.b1,B.bdE,B.b11,0,3,B.Kx,"ga",B.P_,B.OQ,B.aIE,B.Jy,B.b0Y,B.P2,B.Kx,B.P_,B.OQ,B.Jy,B.P2,B.NR,B.aZ,B.NR,B.a3,q),"gl",A.b1(B.ev,B.aN8,B.aT,B.b0e,B.hY,0,3,B.IR,"gl",B.b2H,B.bi4,B.pG,B.L8,B.f1,B.Ma,B.IR,B.aZB,B.b0u,B.L8,B.Ma,B.Oe,B.aZ,B.Oe,B.a3,q),"gsw",A.b1(B.aQI,B.ws,B.b1,B.jw,B.jw,0,3,B.N5,"gsw",B.ay,B.jv,B.wz,B.pB,B.bS,B.J6,B.N5,B.ay,B.jv,B.pB,B.J6,B.Nz,B.aZ,B.Nz,B.a3,q),"gu",A.b1(B.ct,B.lD,B.b1,B.b1l,B.b32,6,5,B.Kt,"gu",B.KI,B.O0,B.aZR,B.NM,B.bS,B.Nk,B.Kt,B.KI,B.O0,B.NM,B.Nk,B.JU,B.Mt,B.JU,B.eu,q),"he",A.b1(B.ct,B.baf,B.aT,B.aZ0,B.b0B,6,5,B.ML,"he",B.cB,B.JR,B.aN5,B.KW,B.bS,B.Nx,B.ML,B.cB,B.JR,B.KW,B.Nx,B.My,B.wE,B.My,B.IU,q),"hi",A.b1(B.dK,B.qm,B.aT,B.bdV,B.aL2,6,5,B.Jk,"hi",B.LB,B.pY,B.bae,B.OC,B.b9L,B.K4,B.Jk,B.LB,B.pY,B.OC,B.K4,B.KF,B.e4,B.KF,B.eu,q),"hr",A.b1(B.ct,B.aXQ,B.b1,B.aIS,B.b2O,0,6,B.bcv,"hr",B.Je,B.Ev,B.lA,B.Od,B.bi7,B.p8,B.b9N,B.Je,B.pL,B.Od,B.p8,B.pM,B.b4d,B.pM,B.a3,q),"hu",A.b1(B.aZX,B.b17,B.b1,B.bdA,B.aZY,0,3,B.HN,"hu",B.Mq,B.HR,B.aFs,B.KU,B.aKK,B.LJ,B.HN,B.Mq,B.HR,B.KU,B.LJ,B.OL,B.wE,B.OL,B.a3,q),"hy",A.b1(B.aV1,B.b9W,B.aT,B.b0i,B.b04,0,6,B.aYe,"hy",B.Lo,B.Ka,B.aQz,B.LT,B.b0x,B.M5,B.b8I,B.Lo,B.Ka,B.LT,B.M5,B.Kg,B.aZ,B.Kg,B.a3,q),"id",A.b1(B.ct,B.bdH,B.b1,B.bjs,B.b1e,6,5,B.ND,"id",B.ay,B.KA,B.b2q,B.Jl,B.hX,B.OE,B.ND,B.ay,B.KA,B.Jl,B.OE,B.M8,B.ww,B.M8,B.a3,q),"is",A.b1(B.aZs,B.bal,B.aT,B.b0L,B.lu,0,3,B.NG,"is",B.LO,B.MS,B.bkM,B.P7,B.aYG,B.N9,B.NG,B.LO,B.MS,B.P7,B.N9,B.KK,B.aZ,B.KK,B.a3,q),"it",A.b1(B.b_8,B.b03,B.jz,B.aYk,B.hY,0,3,B.OM,"it",B.KM,B.NS,B.OJ,B.JL,B.f1,B.Jd,B.OM,B.KM,B.NS,B.JL,B.Jd,B.Mf,B.aZ,B.Mf,B.a3,q),"ja",A.b1(B.anl,B.b8E,B.b1,B.KH,B.KH,6,5,B.dw,"ja",B.cB,B.q1,B.b2e,B.dw,B.bS,B.q1,B.dw,B.cB,B.q1,B.dw,B.q1,B.Ky,B.b4h,B.Ky,B.a3,q),"ka",A.b1(B.f2,B.b13,B.aT,B.bcm,B.b8C,0,6,B.Jz,"ka",B.MC,B.Ix,B.aXd,B.Ly,B.aZ1,B.NL,B.Jz,B.MC,B.Ix,B.Ly,B.NL,B.OT,B.aZ,B.OT,B.a3,q),"kk",A.b1(B.ct,B.aCJ,B.aT,B.aXH,B.aCX,0,6,B.b_v,"kk",B.O1,B.DA,B.bba,B.HP,B.b76,B.Ke,B.aqy,B.O1,B.DA,B.HP,B.Ke,B.KC,B.aZ,B.KC,B.a3,q),"km",A.b1(B.f2,B.Lf,B.aT,B.aXu,B.b23,6,5,B.pD,"km",B.P0,B.K8,B.Ir,B.pD,B.Ir,B.KN,B.pD,B.P0,B.K8,B.pD,B.KN,B.aZv,B.e4,B.b9p,B.a3,q),"kn",A.b1(B.f2,B.bcy,B.b1,B.bhL,B.aZK,6,5,B.Mh,"kn",B.Jh,B.Js,B.aZ2,B.N0,B.aZz,B.Nj,B.Mh,B.Jh,B.Js,B.N0,B.Nj,B.La,B.Mt,B.La,B.eu,q),"ko",A.b1(B.aXg,B.bht,B.b1,B.b9U,B.cX,6,5,B.jx,"ko",B.jx,B.qf,B.aL4,B.jx,B.biK,B.qf,B.jx,B.jx,B.qf,B.jx,B.qf,B.Lm,B.b2E,B.Lm,B.a3,q),"ky",A.b1(B.b0R,B.b8k,B.b1,B.b9G,B.b_L,0,6,B.Kz,"ky",B.pU,B.Jj,B.ba_,B.aYC,B.b1M,B.ON,B.bcZ,B.pU,B.Jj,B.b_l,B.ON,B.LM,B.aZ,B.LM,B.a3,q),"lo",A.b1(B.b_t,B.b3i,B.aT,B.b8B,B.aYA,6,5,B.IX,"lo",B.cB,B.JS,B.biZ,B.Hb,B.b16,B.KD,B.IX,B.cB,B.JS,B.Hb,B.KD,B.J_,B.b9x,B.J_,B.a3,q),"lt",A.b1(B.aZN,B.ax9,B.b1,B.aXU,B.Jq,0,3,B.bf0,"lt",B.Oh,B.J0,B.aYL,B.NE,B.b8y,B.P4,B.b0t,B.Oh,B.J0,B.NE,B.P4,B.Nb,B.aZ,B.Nb,B.a3,q),"lv",A.b1(B.b12,B.b_H,B.b1,B.b78,B.bcx,0,6,B.IS,"lv",B.ay,B.LF,B.aY3,B.NQ,B.bj5,B.b_K,B.IS,B.ay,B.LF,B.NQ,B.aYR,B.b9O,B.aZ,B.aXK,B.a3,q),"mk",A.b1(B.b9I,B.aqv,B.aT,B.aXE,B.bl1,0,6,B.M1,"mk",B.pV,B.q8,B.aCW,B.Dz,B.aru,B.KB,B.M1,B.pV,B.q8,B.Dz,B.KB,B.LN,B.aZ,B.LN,B.a3,q),"ml",A.b1(B.ct,B.bbk,B.b1,B.b4v,B.bex,6,5,B.Og,"ml",B.MH,B.b_r,B.NH,B.Lr,B.NH,B.L0,B.Og,B.MH,B.aYx,B.Lr,B.L0,B.b3A,B.e4,B.bl_,B.eu,q),"mn",A.b1(B.bcB,B.b1p,B.b1,B.b3l,B.aQA,0,6,B.aZj,"mn",B.Jp,B.pP,B.aZk,B.Km,B.aXS,B.pP,B.bbD,B.Jp,B.pP,B.Km,B.pP,B.bkS,B.LP,B.bek,B.a3,q),"mr",A.b1(B.f2,B.lD,B.aT,B.biA,B.aYZ,6,5,B.OF,"mr",B.LK,B.pY,B.b8z,B.Nw,B.ax3,B.N3,B.OF,B.LK,B.pY,B.Nw,B.N3,B.LW,B.e4,B.LW,B.eu,"\u0966"),"ms",A.b1(B.b0s,B.b2Y,B.jz,B.OO,B.OO,0,6,B.Mg,"ms",B.JP,B.OK,B.aZ8,B.K7,B.b1b,B.MQ,B.Mg,B.JP,B.OK,B.K7,B.MQ,B.KJ,B.dj,B.KJ,B.a3,q),"my",A.b1(B.b1B,B.b8Z,B.b1,B.aQG,B.bbU,6,5,B.KL,"my",B.M3,B.Lz,B.b0W,B.Jn,B.bS,B.q9,B.KL,B.M3,B.Lz,B.Jn,B.q9,B.q9,B.aJP,B.q9,B.a3,"\u1040"),"nb",A.b1(B.ev,B.Hg,B.aT,B.Ln,B.lu,0,3,B.pS,"nb",B.ay,B.h4,B.lA,B.N2,B.hX,B.pK,B.pS,B.ay,B.h4,B.IZ,B.pK,B.js,B.aZ,B.js,B.a3,q),"ne",A.b1(B.ble,B.aII,B.jz,B.MA,B.MA,6,5,B.qj,"ne",B.b2j,B.OP,B.Mk,B.qj,B.Mk,B.H9,B.qj,B.aL6,B.OP,B.qj,B.H9,B.Iu,B.aZ,B.Iu,B.a3,"\u0966"),"nl",A.b1(B.ev,B.b0C,B.aT,B.bcA,B.aXp,0,3,B.Ox,"nl",B.ay,B.Mp,B.aZW,B.LS,B.hX,B.Kd,B.Ox,B.ay,B.Mp,B.LS,B.Kd,B.Mb,B.aZ,B.Mb,B.a3,q),"no",A.b1(B.ev,B.Hg,B.aT,B.Ln,B.lu,0,3,B.pS,"no",B.ay,B.h4,B.lA,B.N2,B.hX,B.pK,B.pS,B.ay,B.h4,B.IZ,B.pK,B.js,B.aZ,B.js,B.a3,q),"or",A.b1(B.b_0,B.hZ,B.aT,B.b61,B.cX,6,5,B.q4,"or",B.Kw,B.Jf,B.b_y,B.q4,B.b2u,B.MJ,B.q4,B.Kw,B.Jf,B.q4,B.MJ,B.O4,B.e4,B.O4,B.eu,q),"pa",A.b1(B.bcY,B.qm,B.jz,B.aUa,B.b43,6,5,B.M7,"pa",B.Ns,B.Ld,B.b07,B.M9,B.bib,B.L1,B.M7,B.Ns,B.Ld,B.M9,B.L1,B.HI,B.e4,B.HI,B.eu,q),"pl",A.b1(B.f2,B.b5z,B.jz,B.b75,B.b8A,0,3,B.aXl,"pl",B.b9T,B.biH,B.b9E,B.LD,B.b2c,B.NP,B.b2v,B.aYc,B.b0w,B.LD,B.NP,B.JY,B.aZ,B.JY,B.a3,q),"ps",A.b1(B.bdY,B.b0j,B.b1,B.b2X,B.b29,5,4,B.J1,"ps",B.aXi,B.bH,B.Mx,B.J1,B.Mx,B.ob,B.b1a,B.cB,B.bH,B.aUf,B.ob,B.ob,B.O3,B.ob,B.aCO,"\u06f0"),"pt",A.b1(B.ct,B.aKR,B.b1,B.Ok,B.hY,6,5,B.pT,"pt",B.ay,B.pW,B.OJ,B.qb,B.f1,B.NW,B.pT,B.ay,B.pW,B.qb,B.NW,B.qg,B.aZ,B.qg,B.a3,q),"pt_PT",A.b1(B.ev,B.bjW,B.aT,B.Ok,B.hY,6,2,B.pT,"pt_PT",B.ay,B.pW,B.pG,B.qb,B.f1,B.Ml,B.pT,B.ay,B.pW,B.qb,B.Ml,B.qg,B.aZ,B.qg,B.a3,q),"ro",A.b1(B.ev,B.b1K,B.aT,B.b_g,B.aXx,0,6,B.NA,"ro",B.Li,B.e2,B.baY,B.Jt,B.bfo,B.Lw,B.NA,B.Li,B.e2,B.Jt,B.Lw,B.Mu,B.aZ,B.Mu,B.a3,q),"ru",A.b1(B.ct,B.b1u,B.aT,B.bjm,B.aem,0,3,B.bkN,"ru",B.pU,B.MG,B.L6,B.bia,B.Oz,B.Md,B.Kz,B.pU,B.MG,B.bk_,B.Md,B.O_,B.aZ,B.O_,B.a3,q),"si",A.b1(B.bhq,B.bfm,B.b1,B.aen,B.bdR,0,6,B.OS,"si",B.Lc,B.Ov,B.bbl,B.bkX,B.b1N,B.Ki,B.OS,B.Lc,B.Ov,B.baF,B.Ki,B.LZ,B.ww,B.LZ,B.a3,q),"sk",A.b1(B.ct,B.b3f,B.pC,B.aYy,B.aXY,0,3,B.bec,"sk",B.h3,B.JI,B.bi5,B.OV,B.bS,B.O6,B.aXL,B.h3,B.JI,B.OV,B.O6,B.MP,B.wE,B.MP,B.a3,q),"sl",A.b1(B.b1X,B.b2Z,B.jz,B.b95,B.Jq,0,6,B.P5,"sl",B.h3,B.NX,B.aYH,B.Kv,B.b_S,B.NN,B.P5,B.h3,B.NX,B.Kv,B.NN,B.Mj,B.aZ,B.Mj,B.a3,q),"sq",A.b1(B.aZC,B.b94,B.aT,B.b0r,B.b_X,0,6,B.OD,"sq",B.No,B.Il,B.b05,B.Ow,B.b2I,B.N_,B.OD,B.No,B.Il,B.Ow,B.N_,B.Kk,B.b7E,B.Kk,B.a3,q),"sr",A.b1(B.ct,B.Lh,B.b1,B.bl0,B.b7a,0,6,B.Nc,"sr",B.pV,B.Oc,B.aYq,B.O7,B.aU5,B.OB,B.Nc,B.pV,B.Oc,B.O7,B.OB,B.Nd,B.aZ,B.Nd,B.a3,q),"sr_Latn",A.b1(B.ct,B.Lh,B.b1,B.b_O,B.JK,0,6,B.K9,"sr_Latn",B.h3,B.pL,B.b9A,B.Jr,B.b1J,B.Jc,B.K9,B.h3,B.pL,B.Jr,B.Jc,B.M0,B.aZ,B.M0,B.a3,q),"sv",A.b1(B.b7s,B.Na,B.b1,B.bei,B.lu,0,3,B.MD,"sv",B.ay,B.h4,B.aYN,B.NO,B.hX,B.KS,B.MD,B.ay,B.h4,B.NO,B.KS,B.OW,B.aZ,B.OW,B.a3,q),"sw",A.b1(B.dK,B.wq,B.b1,B.bho,B.b_7,0,6,B.L2,"sw",B.ay,B.bH,B.Lk,B.Lg,B.Lk,B.p9,B.L2,B.ay,B.bH,B.Lg,B.p9,B.p9,B.aZ,B.p9,B.a3,q),"ta",A.b1(B.ct,B.lD,B.aT,B.aqw,B.aXs,6,5,B.KO,"ta",B.LY,B.Jg,B.bkZ,B.K5,B.aCS,B.NC,B.KO,B.LY,B.Jg,B.K5,B.NC,B.Lj,B.e4,B.Lj,B.eu,q),"te",A.b1(B.bcQ,B.aqs,B.b1,B.aXB,B.aqu,6,5,B.Nn,"te",B.LQ,B.Ob,B.b_w,B.Oo,B.b09,B.Lp,B.Nn,B.LQ,B.Ob,B.Oo,B.Lp,B.LI,B.e4,B.LI,B.eu,q),"th",A.b1(B.f2,B.aZL,B.b1,B.aZo,B.bhs,6,5,B.Ko,"th",B.qa,B.Ls,B.JT,B.qa,B.JT,B.Lq,B.Ko,B.qa,B.Ls,B.qa,B.Lq,B.K1,B.b6T,B.K1,B.a3,q),"tl",A.b1(B.dK,B.hZ,B.aT,B.dL,B.cX,6,5,B.ql,"tl",B.jt,B.h7,B.Ks,B.jt,B.bS,B.h7,B.ql,B.Ou,B.h7,B.jt,B.h7,B.pQ,B.dj,B.pQ,B.a3,q),"tr",A.b1(B.aZJ,B.b0y,B.b1,B.axa,B.b25,0,6,B.On,"tr",B.Mv,B.LC,B.aL_,B.Kn,B.aYg,B.IY,B.On,B.Mv,B.LC,B.Kn,B.IY,B.ME,B.aZ,B.ME,B.a3,q),"uk",A.b1(B.b46,B.biE,B.aT,B.bbT,B.aY4,0,6,B.aYQ,"uk",B.b2Q,B.NK,B.L6,B.KQ,B.Oz,B.qd,B.aKZ,B.b_W,B.NK,B.KQ,B.qd,B.Nr,B.aZ,B.Nr,B.a3,q),"ur",A.b1(B.f2,B.aXo,B.b1,B.LG,B.LG,6,5,B.pa,"ur",B.ay,B.bH,B.Mi,B.pa,B.Mi,B.pN,B.pa,B.ay,B.bH,B.pa,B.pN,B.pN,B.e4,B.pN,B.a3,q),"uz",A.b1(B.b1r,B.b2k,B.aT,B.bf1,B.b_k,0,6,B.b8S,"uz",B.Ll,B.MK,B.aZn,B.bjV,B.bjY,B.L9,B.bfp,B.Ll,B.MK,B.b2t,B.L9,B.OH,B.b6m,B.OH,B.a3,q),"vi",A.b1(B.b1c,B.lD,B.aek,B.b8v,B.b1i,0,6,B.b0f,"vi",B.cB,B.Lv,B.bkP,B.b_N,B.bS,B.JQ,B.OZ,B.cB,B.Lv,B.OZ,B.JQ,B.Jo,B.aZ,B.Jo,B.a3,q),"zh",A.b1(B.wD,B.aev,B.b1,B.q7,B.q7,0,6,B.Oa,"zh",B.cB,B.jA,B.b5G,B.dw,B.axg,B.LR,B.Oa,B.cB,B.jA,B.dw,B.LR,B.ju,B.b_U,B.ju,B.a3,q),"zh_HK",A.b1(B.wD,B.b0c,B.b1,B.q7,B.q7,6,5,B.dw,"zh_HK",B.cB,B.jA,B.wn,B.dw,B.bS,B.pJ,B.dw,B.cB,B.jA,B.dw,B.pJ,B.ju,B.bkO,B.ju,B.a3,q),"zh_TW",A.b1(B.wD,B.bdW,B.b1,B.LL,B.LL,6,5,B.dw,"zh_TW",B.cB,B.jA,B.wn,B.dw,B.wn,B.pJ,B.dw,B.cB,B.jA,B.dw,B.pJ,B.ju,B.b2C,B.ju,B.a3,q),"zu",A.b1(B.f2,B.hZ,B.b1,B.cX,B.cX,6,5,B.IV,"zu",B.b0g,B.Oy,B.aZE,B.Is,B.bS,B.Nt,B.IV,B.ay,B.Oy,B.Is,B.Nt,B.M2,B.aZ,B.M2,B.a3,q)],t.N,t.fs)})
 s($,"bSV","bh5",()=>A.bcz(B.MN,t.N))
 s($,"bSY","bh8",()=>A.bcz(B.MN,t.N))
 s($,"bTo","bui",()=>new A.aCy(A.z(t.N,A.aA("af<eW?>?(eW?)"))))
