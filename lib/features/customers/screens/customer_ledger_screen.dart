@@ -828,17 +828,44 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                                       if (e.isSale ||
                                           e.transactionType ==
                                               'PAYMENT_RECEIVED') ...[
-                                        const SizedBox(width: 4),
+                                        const SizedBox(width: 8),
                                         InkWell(
                                           onTap: () => _editEntry(e),
                                           borderRadius:
-                                              BorderRadius.circular(16),
-                                          child: const Padding(
-                                            padding: EdgeInsets.all(4),
-                                            child: Icon(
-                                              Icons.edit,
-                                              size: 18,
-                                              color: AppColors.primary,
+                                              BorderRadius.circular(6),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color: AppColors.primary
+                                                    .withOpacity(0.4),
+                                              ),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.edit,
+                                                  size: 14,
+                                                  color: AppColors.primary,
+                                                ),
+                                                SizedBox(width: 4),
+                                                Text(
+                                                  'Edit',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AppColors.primary,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
