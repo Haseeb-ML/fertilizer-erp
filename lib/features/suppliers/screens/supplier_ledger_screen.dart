@@ -506,54 +506,56 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            if (!PdfService.isValidPakistaniMobile(_supplier.phone)) ...[
-                              const SizedBox(width: 8),
-                              InkWell(
-                                onTap: () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => SupplierFormScreen(supplier: _supplier),
-                                    ),
-                                  );
-                                  _loadLedger();
-                                },
-                                borderRadius: BorderRadius.circular(4),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFF3E0),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: const Color(0xFFFFB74D)),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.edit, size: 11, color: Color(0xFFE65100)),
-                                      SizedBox(width: 3),
-                                      Text(
-                                        'نمبر درست کریں',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFFE65100),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
                         ),
+                        if (!PdfService.isValidPakistaniMobile(_supplier.phone)) ...[
+                          const SizedBox(height: 3),
+                          InkWell(
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SupplierFormScreen(supplier: _supplier),
+                                ),
+                              );
+                              _loadLedger();
+                            },
+                            borderRadius: BorderRadius.circular(4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF3E0),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFFFFB74D)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.edit, size: 10, color: Color(0xFFE65100)),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'نمبر درست کریں',
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFE65100),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
+                  constraints: const BoxConstraints(minWidth: 80),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: 10,
+                    vertical: 7,
                   ),
                   decoration: BoxDecoration(
                     color: _supplier.currentBalance > 0

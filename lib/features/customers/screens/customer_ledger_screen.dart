@@ -618,54 +618,56 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                                     color: AppColors.textSecondary,
                                   ),
                                 ),
-                                if (!PdfService.isValidPakistaniMobile(_customer.phone)) ...[
-                                  const SizedBox(width: 8),
-                                  InkWell(
-                                    onTap: () async {
-                                      await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => CustomerFormScreen(customer: _customer),
-                                        ),
-                                      );
-                                      _loadLedger();
-                                    },
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF3E0),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: const Color(0xFFFFB74D)),
-                                      ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.edit, size: 11, color: Color(0xFFE65100)),
-                                          SizedBox(width: 3),
-                                          Text(
-                                            'نمبر درست کریں',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFFE65100),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
                               ],
                             ),
+                            if (!PdfService.isValidPakistaniMobile(_customer.phone)) ...[
+                              const SizedBox(height: 3),
+                              InkWell(
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CustomerFormScreen(customer: _customer),
+                                    ),
+                                  );
+                                  _loadLedger();
+                                },
+                                borderRadius: BorderRadius.circular(4),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF3E0),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: const Color(0xFFFFB74D)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.edit, size: 10, color: Color(0xFFE65100)),
+                                      SizedBox(width: 3),
+                                      Text(
+                                        'نمبر درست کریں',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFFE65100),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
+                      constraints: const BoxConstraints(minWidth: 80),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                        horizontal: 10,
+                        vertical: 7,
                       ),
                       decoration: BoxDecoration(
                         color: _customer.currentBalance > 0
@@ -777,58 +779,86 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Top Row: Type Badge, Invoice Badge, Date
+                                  // Top Row: Badges (Wrap), Date, and Edit Button
                                   Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      _buildTypeBadge(e),
-                                      const SizedBox(width: 8),
-                                      if (e.referenceNumber != null &&
-                                          e.referenceNumber!.isNotEmpty)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 7,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey.shade100,
-                                            borderRadius:
-                                                BorderRadius.circular(5),
-                                            border: Border.all(
-                                              color: Colors.grey.shade300,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.tag,
-                                                size: 11,
-                                                color: AppColors.textSecondary,
-                                              ),
-                                              Text(
-                                                e.referenceNumber!,
-                                                style: const TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.textPrimary,
+                                      Expanded(
+                                        child: Wrap(
+                                          spacing: 6,
+                                          runSpacing: 4,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          children: [
+                                            _buildTypeBadge(e),
+                                            if (e.referenceNumber != null &&
+                                                e.referenceNumber!.isNotEmpty)
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 6,
+                                                  vertical: 2,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey.shade100,
+                                                  borderRadius:
+                                                      BorderRadius.circular(5),
+                                                  border: Border.all(
+                                                    color: Colors.grey.shade300,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.tag,
+                                                      size: 11,
+                                                      color: AppColors
+                                                          .textSecondary,
+                                                    ),
+                                                    Text(
+                                                      e.referenceNumber!,
+                                                      style: const TextStyle(
+                                                        fontSize: 10.5,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: AppColors
+                                                            .textPrimary,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                            ],
-                                          ),
-                                        ),
-                                      const Spacer(),
-                                      Text(
-                                        e.transactionDate,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors.textSecondary,
-                                          fontWeight: FontWeight.w500,
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons
+                                                      .calendar_today_outlined,
+                                                  size: 11,
+                                                  color: AppColors.textMuted,
+                                                ),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  e.transactionDate,
+                                                  style: const TextStyle(
+                                                    fontSize: 11.5,
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
                                       ),
                                       if (e.isSale ||
                                           e.transactionType ==
                                               'PAYMENT_RECEIVED') ...[
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: 6),
                                         InkWell(
                                           onTap: () => _editEntry(e),
                                           borderRadius:
@@ -853,10 +883,10 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                                               children: [
                                                 Icon(
                                                   Icons.edit,
-                                                  size: 14,
+                                                  size: 13,
                                                   color: AppColors.primary,
                                                 ),
-                                                SizedBox(width: 4),
+                                                SizedBox(width: 3),
                                                 Text(
                                                   'Edit',
                                                   style: TextStyle(
