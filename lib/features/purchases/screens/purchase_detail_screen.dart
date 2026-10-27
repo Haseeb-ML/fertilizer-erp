@@ -6,6 +6,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/confirmation_dialog.dart';
 import '../../../core/widgets/status_badge.dart';
+import 'purchase_form_screen.dart';
 import 'purchase_return_screen.dart';
 
 class PurchaseDetailScreen extends ConsumerStatefulWidget {
@@ -97,7 +98,37 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Purchase Invoice Details')),
+      appBar: AppBar(
+        title: const Text('Purchase Invoice Details'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Edit Purchase Invoice',
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final navigator = Navigator.of(context);
+              final p = await _fetchPurchase();
+              if (p == null || !mounted) return;
+              if (p.isReversed) {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Reversed purchase edit nahi ho sakti'),
+                  ),
+                );
+                return;
+              }
+              final updated = await navigator.push<bool>(
+                MaterialPageRoute(
+                  builder: (_) => PurchaseFormScreen(editPurchase: p),
+                ),
+              );
+              if (updated == true && mounted) {
+                setState(() {});
+              }
+            },
+          ),
+        ],
+      ),
       body: FutureBuilder<Purchase?>(
         future: _fetchPurchase(),
         builder: (context, snapshot) {

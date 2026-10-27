@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/supplier.dart';
+import '../../../core/models/purchase.dart';
 import '../../../core/models/ledger_entry.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/services/csv_service.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state_view.dart';
+import '../../purchases/screens/purchase_detail_screen.dart';
+import '../../purchases/screens/purchase_form_screen.dart';
 import 'supplier_form_screen.dart';
 
 class SupplierLedgerScreen extends ConsumerStatefulWidget {
@@ -43,6 +46,151 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
       _entries = list;
       _isLoading = false;
     });
+  }
+
+  Future<void> _openPurchaseEdit(int? purchaseId, String? invoice) async {
+    final repo = ref.read(purchaseRepoProvider);
+    Purchase? purchase;
+    if (purchaseId != null) {
+      purchase = await repo.getPurchaseById(purchaseId);
+    }
+    if (purchase == null && invoice != null && invoice.isNotEmpty) {
+      final all = await repo.getPurchases(supplierId: _supplier.id);
+      final match = all.where((p) => p.invoiceNumber == invoice);
+      if (match.isNotEmpty) purchase = match.first;
+    }
+    if (!mounted) return;
+    if (purchase == null || purchase.isReversed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Yeh purchase invoice edit nahi ho sakti')),
+      );
+      return;
+    }
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PurchaseFormScreen(editPurchase: purchase),
+      ),
+    );
+    if (updated == true && mounted) _loadLedger();
+  }
+
+  Future<void> _editEntry(LedgerEntry e) async {
+    if (e.transactionType == 'PURCHASE') {
+      await _openPurchaseEdit(e.referenceId, e.referenceNumber);
+      return;
+    }
+
+    if (e.transactionType == 'PAYMENT_PAID') {
+      final payRepo = ref.read(paymentRepoProvider);
+      final pay = e.referenceId != null
+          ? await payRepo.getSupplierPaymentById(e.referenceId!, _supplier.id!)
+          : null;
+      if (!mounted) return;
+
+      if (pay == null) {
+        // Linked to purchase bill directly
+        await _openPurchaseEdit(e.referenceId, e.referenceNumber);
+        return;
+      }
+
+      final amountCtrl = TextEditingController(
+        text: pay.amount.toStringAsFixed(0),
+      );
+      final notesCtrl = TextEditingController(text: pay.notes);
+      final dateCtrl = TextEditingController(text: pay.paymentDate);
+      String method = pay.paymentMethod;
+      const methods = [
+        'Cash',
+        'Bank Transfer',
+        'Cheque',
+        'JazzCash / EasyPaisa',
+        'Other',
+      ];
+      if (!methods.contains(method)) method = 'Cash';
+
+      final saved = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setD) => AlertDialog(
+            title: const Text('Edit Supplier Payment'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: amountCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Amount (PKR)'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: dateCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Date (YYYY-MM-DD)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: method,
+                    decoration: const InputDecoration(labelText: 'Payment Method'),
+                    items: methods
+                        .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                        .toList(),
+                    onChanged: (v) => setD(() => method = v ?? method),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: notesCtrl,
+                    decoration: const InputDecoration(labelText: 'Notes / Remarks'),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Update'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (saved != true) return;
+      final amount = double.tryParse(amountCtrl.text.trim()) ?? 0;
+      try {
+        await payRepo.updateSupplierPayment(
+          paymentId: pay.id!,
+          amount: amount,
+          paymentDate: dateCtrl.text.trim().isEmpty
+              ? pay.paymentDate
+              : dateCtrl.text.trim(),
+          paymentMethod: method,
+          notes: notesCtrl.text.trim(),
+        );
+        ref.read(productsUpdateTriggerProvider.notifier).state++;
+        await _loadLedger();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Supplier payment update ho gayi')),
+          );
+        }
+      } catch (err) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Update nahi hui: $err'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _exportPdf() async {
@@ -524,13 +672,64 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                                           ],
                                         ),
                                       ),
-                                    Text(
-                                      'Bal: ${CurrencyFormatter.format(e.runningBalance)}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                        color: AppColors.secondary,
-                                      ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Bal: ${CurrencyFormatter.format(e.runningBalance)}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                            color: AppColors.secondary,
+                                          ),
+                                        ),
+                                        if (e.transactionType == 'PURCHASE' ||
+                                            e.transactionType == 'PAYMENT_PAID') ...[
+                                          const SizedBox(width: 8),
+                                          InkWell(
+                                            onTap: () => _editEntry(e),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 3,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.secondary
+                                                    .withOpacity(0.12),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                                border: Border.all(
+                                                  color: AppColors.secondary
+                                                      .withOpacity(0.4),
+                                                ),
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.edit,
+                                                    size: 13,
+                                                    color: AppColors.secondary,
+                                                  ),
+                                                  SizedBox(width: 3),
+                                                  Text(
+                                                    'Edit',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: AppColors.secondary,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ],
                                 ),

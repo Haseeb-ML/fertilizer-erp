@@ -4,6 +4,7 @@ import '../database/database_tables.dart';
 import '../models/payment.dart';
 import '../services/accounting_service.dart';
 import 'customer_repository.dart';
+import 'supplier_repository.dart';
 
 class PaymentRepository {
   final DatabaseHelper _dbHelper;
@@ -175,6 +176,66 @@ class PaymentRepository {
       );
 
       return paymentId;
+    });
+  }
+
+  /// Finds the payments row behind a PAYMENT_PAID ledger entry.
+  Future<Payment?> getSupplierPaymentById(int paymentId, int supplierId) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      DatabaseTables.payments,
+      where: 'id = ? AND party_id = ?',
+      whereArgs: [paymentId, supplierId],
+    );
+    if (rows.isEmpty) return null;
+    return Payment.fromMap(rows.first);
+  }
+
+  /// Edit a standalone supplier payment.
+  Future<void> updateSupplierPayment({
+    required int paymentId,
+    required double amount,
+    required String paymentDate,
+    required String paymentMethod,
+    required String notes,
+  }) async {
+    if (amount <= 0) throw Exception('Amount must be greater than 0');
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        DatabaseTables.payments,
+        where: 'id = ?',
+        whereArgs: [paymentId],
+      );
+      if (rows.isEmpty) throw Exception('Payment not found');
+      final p = rows.first;
+      final supplierId = p['party_id'] as int;
+      final oldAmount = (p['amount'] as num).toDouble();
+
+      await txn.update(
+        DatabaseTables.payments,
+        {
+          'amount': amount,
+          'payment_date': paymentDate,
+          'payment_method': paymentMethod,
+          'notes': notes,
+        },
+        where: 'id = ?',
+        whereArgs: [paymentId],
+      );
+      await txn.update(
+        DatabaseTables.supplierLedger,
+        {
+          'transaction_date': paymentDate,
+          'debit': amount,
+          'description':
+              'Payment Made ($paymentMethod)${notes.isNotEmpty ? ' - $notes' : ''}',
+        },
+        where:
+            "supplier_id = ? AND reference_id = ? AND transaction_type = 'PAYMENT_PAID' AND debit = ?",
+        whereArgs: [supplierId, paymentId, oldAmount],
+      );
+      await SupplierRepository.reconcileSupplierLedger(txn, supplierId);
     });
   }
 }

@@ -5,6 +5,7 @@ import '../models/purchase.dart';
 import '../models/purchase_item.dart';
 import '../services/accounting_service.dart';
 import '../services/fifo_inventory_service.dart';
+import 'supplier_repository.dart';
 
 class PurchaseRepository {
   final DatabaseHelper _dbHelper;
@@ -216,6 +217,200 @@ class PurchaseRepository {
       }
 
       return purchaseId;
+    });
+  }
+
+  /// Edits an existing (non-reversed) purchase: items, rates, discount,
+  /// freight, paid amount, method, date and notes.
+  Future<void> updatePurchase(Purchase purchase) async {
+    final purchaseId = purchase.id;
+    if (purchaseId == null) throw Exception('Purchase id required');
+    if (purchase.items.isEmpty) {
+      throw Exception('Purchase must have at least 1 item');
+    }
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final oldRows = await txn.query(
+        DatabaseTables.purchases,
+        where: 'id = ?',
+        whereArgs: [purchaseId],
+      );
+      if (oldRows.isEmpty) throw Exception('Purchase not found');
+      final old = Purchase.fromMap(oldRows.first);
+      if (old.isReversed) {
+        throw Exception('Reversed purchase cannot be edited');
+      }
+
+      final invoice = old.invoiceNumber;
+      final supplierId = old.supplierId;
+      final now = DateTime.now().toIso8601String();
+      final today = purchase.purchaseDate.isNotEmpty
+          ? purchase.purchaseDate
+          : now.substring(0, 10);
+
+      // 1. Revert old items stock
+      final oldItems = await txn.query(
+        DatabaseTables.purchaseItems,
+        where: 'purchase_id = ?',
+        whereArgs: [purchaseId],
+      );
+      for (final m in oldItems) {
+        final prodId = m['product_id'] as int;
+        final qty = (m['quantity'] as num).toDouble();
+        final prodRows = await txn.query(
+          DatabaseTables.products,
+          where: 'id = ?',
+          whereArgs: [prodId],
+        );
+        if (prodRows.isEmpty) continue;
+        final currentStock =
+            (prodRows.first['current_stock'] as num?)?.toDouble() ?? 0.0;
+        final newStock = currentStock - qty;
+        await txn.update(
+          DatabaseTables.products,
+          {'current_stock': newStock, 'updated_at': now},
+          where: 'id = ?',
+          whereArgs: [prodId],
+        );
+        await txn.insert(DatabaseTables.stockMovements, {
+          'product_id': prodId,
+          'product_name': m['product_name'],
+          'movement_type': 'PURCHASE_EDIT_RESTORE',
+          'quantity': -qty,
+          'balance_after': newStock,
+          'reference_id': purchaseId,
+          'reference_type': 'PURCHASE',
+          'notes': 'Purchase edit - reverted Inv #$invoice',
+          'movement_date': today,
+          'created_at': now,
+        });
+      }
+
+      // Delete old items and FIFO layers
+      await txn.delete(
+        DatabaseTables.purchaseItems,
+        where: 'purchase_id = ?',
+        whereArgs: [purchaseId],
+      );
+      await txn.delete(
+        DatabaseTables.stockCostLayers,
+        where: 'purchase_id = ?',
+        whereArgs: [purchaseId],
+      );
+
+      // 2. Add new items, increase stock, and add FIFO layers
+      for (final item in purchase.items) {
+        final itemMap = item.toMap();
+        itemMap.remove('id');
+        itemMap['purchase_id'] = purchaseId;
+        await txn.insert(DatabaseTables.purchaseItems, itemMap);
+
+        final prodRows = await txn.query(
+          DatabaseTables.products,
+          where: 'id = ?',
+          whereArgs: [item.productId],
+        );
+        final currentStock = prodRows.isNotEmpty
+            ? ((prodRows.first['current_stock'] as num?)?.toDouble() ?? 0.0)
+            : 0.0;
+        final newStock = currentStock + item.quantity;
+
+        await txn.update(
+          DatabaseTables.products,
+          {
+            'current_stock': newStock,
+            'purchase_price': item.unitPrice,
+            'updated_at': now,
+          },
+          where: 'id = ?',
+          whereArgs: [item.productId],
+        );
+
+        await FifoInventoryService.addStockLayer(
+          txn,
+          productId: item.productId,
+          purchaseId: purchaseId,
+          purchaseDate: today,
+          unitCost: item.unitPrice,
+          quantity: item.quantity,
+        );
+
+        await txn.insert(DatabaseTables.stockMovements, {
+          'product_id': item.productId,
+          'product_name': item.productName,
+          'movement_type': 'PURCHASE',
+          'quantity': item.quantity,
+          'balance_after': newStock,
+          'reference_id': purchaseId,
+          'reference_type': 'PURCHASE',
+          'notes': 'Purchase Inv #$invoice (edited)',
+          'movement_date': today,
+          'created_at': now,
+        });
+      }
+
+      // 3. Update purchases table row
+      final pMap = purchase.toMap();
+      pMap.remove('id');
+      pMap['invoice_number'] = invoice;
+      pMap['supplier_id'] = old.supplierId;
+      pMap['supplier_name'] = old.supplierName;
+      pMap['purchase_date'] = today;
+      pMap['is_reversed'] = 0;
+      pMap['created_at'] = oldRows.first['created_at'];
+
+      await txn.update(
+        DatabaseTables.purchases,
+        pMap,
+        where: 'id = ?',
+        whereArgs: [purchaseId],
+      );
+
+      // 4. Rewrite supplier ledger entries
+      await txn.delete(
+        DatabaseTables.supplierLedger,
+        where:
+            "supplier_id = ? AND reference_number = ? AND transaction_type IN ('PURCHASE', 'PAYMENT_PAID')",
+        whereArgs: [supplierId, invoice],
+      );
+
+      final itemsSummary = purchase.items.map((i) {
+        final qty = i.quantity == i.quantity.roundToDouble()
+            ? i.quantity.toInt().toString()
+            : i.quantity.toString();
+        return '$qty ${i.unit} ${i.productName}';
+      }).join(', ');
+      final desc = itemsSummary.isNotEmpty
+          ? 'Purchase #$invoice ($itemsSummary)'
+          : 'Purchase Invoice #$invoice';
+
+      await AccountingService.addSupplierLedgerEntry(
+        txn,
+        supplierId: supplierId,
+        transactionDate: today,
+        transactionType: 'PURCHASE',
+        referenceId: purchaseId,
+        referenceNumber: invoice,
+        description: desc,
+        debit: 0.0,
+        credit: purchase.grandTotal,
+      );
+
+      if (purchase.paidAmount > 0) {
+        await AccountingService.addSupplierLedgerEntry(
+          txn,
+          supplierId: supplierId,
+          transactionDate: today,
+          transactionType: 'PAYMENT_PAID',
+          referenceId: purchaseId,
+          referenceNumber: invoice,
+          description: 'Payment against Purchase #$invoice',
+          debit: purchase.paidAmount,
+          credit: 0.0,
+        );
+      }
+
+      await SupplierRepository.reconcileSupplierLedger(txn, supplierId);
     });
   }
 

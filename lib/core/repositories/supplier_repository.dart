@@ -189,6 +189,84 @@ class SupplierRepository {
     return entries;
   }
 
+  static Future<void> reconcileSupplierLedger(
+    DatabaseExecutor db,
+    int supplierId,
+  ) async {
+    final suppRows = await db.query(
+      DatabaseTables.suppliers,
+      where: 'id = ?',
+      whereArgs: [supplierId],
+    );
+    if (suppRows.isEmpty) return;
+    final supp = suppRows.first;
+    final openingBalance =
+        (supp['opening_balance'] as num?)?.toDouble() ?? 0.0;
+
+    // 1. Ensure opening balance entry exists if openingBalance != 0
+    if (openingBalance != 0.0) {
+      final existingOpening = await db.query(
+        DatabaseTables.supplierLedger,
+        where: "supplier_id = ? AND transaction_type = 'OPENING_BALANCE'",
+        whereArgs: [supplierId],
+      );
+      if (existingOpening.isEmpty) {
+        final createdAt =
+            (supp['created_at'] as String?) ?? DateTime.now().toIso8601String();
+        final date = createdAt.length >= 10
+            ? createdAt.substring(0, 10)
+            : DateTime.now().toIso8601String().substring(0, 10);
+        await db.insert(DatabaseTables.supplierLedger, {
+          'supplier_id': supplierId,
+          'transaction_date': date,
+          'transaction_type': 'OPENING_BALANCE',
+          'reference_id': null,
+          'reference_number': null,
+          'description': 'Opening Balance',
+          'debit': openingBalance < 0 ? openingBalance.abs() : 0.0,
+          'credit': openingBalance > 0 ? openingBalance : 0.0,
+          'running_balance': openingBalance,
+          'created_at': createdAt,
+        });
+      }
+    }
+
+    // 2. Recompute running balance chronologically (credit increases payable, debit decreases payable)
+    final allEntries = await db.query(
+      DatabaseTables.supplierLedger,
+      where: 'supplier_id = ?',
+      whereArgs: [supplierId],
+      orderBy:
+          "CASE WHEN transaction_type = 'OPENING_BALANCE' THEN 0 ELSE 1 END, transaction_date ASC, id ASC",
+    );
+
+    double runningBal = 0.0;
+    for (final entry in allEntries) {
+      final entryId = entry['id'] as int;
+      final debit = (entry['debit'] as num?)?.toDouble() ?? 0.0;
+      final credit = (entry['credit'] as num?)?.toDouble() ?? 0.0;
+      runningBal = runningBal + credit - debit;
+
+      await db.update(
+        DatabaseTables.supplierLedger,
+        {'running_balance': runningBal},
+        where: 'id = ?',
+        whereArgs: [entryId],
+      );
+    }
+
+    // 3. Update supplier's current balance
+    await db.update(
+      DatabaseTables.suppliers,
+      {
+        'current_balance': runningBal,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [supplierId],
+    );
+  }
+
   Future<double> getTotalPayables() async {
     final db = await _dbHelper.database;
     final res = await db.rawQuery(

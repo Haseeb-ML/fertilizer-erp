@@ -10,10 +10,12 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/validators.dart';
+import '../../dashboard/controllers/dashboard_controller.dart';
 import '../../suppliers/screens/supplier_form_screen.dart';
 
 class PurchaseFormScreen extends ConsumerStatefulWidget {
-  const PurchaseFormScreen({super.key});
+  final Purchase? editPurchase;
+  const PurchaseFormScreen({super.key, this.editPurchase});
 
   @override
   ConsumerState<PurchaseFormScreen> createState() => _PurchaseFormScreenState();
@@ -36,10 +38,32 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
   bool _isLoading = false;
   bool _isSaving = false;
 
+  bool get _isEdit => widget.editPurchase != null;
+
   @override
   void initState() {
     super.initState();
-    _initInvoiceNumber();
+    final ep = widget.editPurchase;
+    if (ep != null) {
+      _invoiceNumber = ep.invoiceNumber;
+      _purchaseDate = DateTime.tryParse(ep.purchaseDate) ?? DateTime.now();
+      _discountController.text = ep.discount.toStringAsFixed(0);
+      _freightController.text = ep.freightCharges.toStringAsFixed(0);
+      _paidAmountController.text = ep.paidAmount.toStringAsFixed(0);
+      _paymentMethod = ep.paymentMethod ?? 'Cash';
+      _notesController.text = ep.notes;
+      _items.addAll(ep.items);
+      _loadEditSupplier(ep.supplierId);
+    } else {
+      _initInvoiceNumber();
+    }
+  }
+
+  Future<void> _loadEditSupplier(int supplierId) async {
+    final s = await ref.read(supplierRepoProvider).getSupplierById(supplierId);
+    if (mounted && s != null) {
+      setState(() => _selectedSupplier = s);
+    }
   }
 
   Future<void> _initInvoiceNumber() async {
@@ -206,6 +230,7 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
         ? 'PAID'
         : (paidAmount > 0 ? 'PARTIAL' : 'UNPAID');
     final purchase = Purchase(
+      id: widget.editPurchase?.id,
       invoiceNumber: _invoiceNumber,
       supplierId: _selectedSupplier!.id!,
       supplierName: _selectedSupplier!.name,
@@ -225,6 +250,25 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
 
     try {
       final repo = ref.read(purchaseRepoProvider);
+      if (_isEdit) {
+        await repo.updatePurchase(purchase);
+        ref.read(productsUpdateTriggerProvider.notifier).state++;
+        ref.invalidate(dashboardDataProvider);
+
+        if (mounted) {
+          Navigator.of(context).pop(true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Purchase Invoice $_invoiceNumber updated successfully!',
+              ),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+        return;
+      }
+
       await repo.createPurchase(purchase);
 
       if (mounted) {
@@ -254,7 +298,9 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Purchase Invoice')),
+      appBar: AppBar(
+        title: Text(_isEdit ? 'Edit Purchase Invoice' : 'New Purchase Invoice'),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -587,7 +633,7 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text('Save Purchase Invoice'),
+                      : Text(_isEdit ? 'Update Purchase Invoice' : 'Save Purchase Invoice'),
                 ),
               ],
             ),
