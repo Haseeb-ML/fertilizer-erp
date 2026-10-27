@@ -11,6 +11,7 @@ import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../sales/screens/sale_detail_screen.dart';
+import '../../sales/screens/sales_pos_screen.dart';
 import 'customer_form_screen.dart';
 
 class CustomerLedgerScreen extends ConsumerStatefulWidget {
@@ -48,6 +49,134 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
       _entries = list;
       _isLoading = false;
     });
+  }
+
+  Future<void> _openBillEdit(int? saleId, String? invoice) async {
+    final repo = ref.read(saleRepoProvider);
+    var sale = saleId != null ? await repo.getSaleById(saleId) : null;
+    if ((sale == null || sale.invoiceNumber != invoice) &&
+        invoice != null &&
+        invoice.isNotEmpty) {
+      sale = await repo.getSaleByInvoiceNumber(invoice) ?? sale;
+    }
+    if (!mounted) return;
+    if (sale == null || sale.isReversed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Yeh bill edit nahi ho sakta')),
+      );
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SalesPosScreen(editSale: sale)),
+    );
+    if (mounted) _loadLedger();
+  }
+
+  Future<void> _editEntry(LedgerEntry e) async {
+    if (e.isSale) {
+      await _openBillEdit(e.referenceId, e.referenceNumber);
+      return;
+    }
+    // Payment entry
+    final payRepo = ref.read(paymentRepoProvider);
+    final pay = e.referenceId != null
+        ? await payRepo.getCustomerPaymentById(e.referenceId!, _customer.id!)
+        : null;
+    if (!mounted) return;
+    if (pay == null || pay.referenceInvoiceId != null) {
+      // Payment was received with a bill -> edit the bill
+      await _openBillEdit(pay?.referenceInvoiceId ?? e.referenceId, e.referenceNumber);
+      return;
+    }
+    final amountCtrl = TextEditingController(
+      text: pay.amount.toStringAsFixed(0),
+    );
+    final notesCtrl = TextEditingController(text: pay.notes);
+    final dateCtrl = TextEditingController(text: pay.paymentDate);
+    String method = pay.paymentMethod;
+    const methods = ['Cash', 'Bank Transfer', 'Cheque', 'Online'];
+    if (!methods.contains(method)) method = 'Cash';
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: const Text('Edit Payment'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Amount'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: dateCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Date (YYYY-MM-DD)',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: method,
+                  decoration: const InputDecoration(labelText: 'Method'),
+                  items: methods
+                      .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                      .toList(),
+                  onChanged: (v) => setD(() => method = v ?? method),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: notesCtrl,
+                  decoration: const InputDecoration(labelText: 'Notes'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved != true) return;
+    final amount = double.tryParse(amountCtrl.text.trim()) ?? 0;
+    try {
+      await payRepo.updateCustomerPayment(
+        paymentId: pay.id!,
+        amount: amount,
+        paymentDate: dateCtrl.text.trim().isEmpty
+            ? pay.paymentDate
+            : dateCtrl.text.trim(),
+        paymentMethod: method,
+        notes: notesCtrl.text.trim(),
+      );
+      ref.read(salesUpdateTriggerProvider.notifier).state++;
+      await _loadLedger();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment update ho gayi')),
+        );
+      }
+    } catch (err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Update nahi hui: $err'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _exportPdf() async {
@@ -696,6 +825,24 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
+                                      if (e.isSale ||
+                                          e.transactionType ==
+                                              'PAYMENT_RECEIVED') ...[
+                                        const SizedBox(width: 4),
+                                        InkWell(
+                                          onTap: () => _editEntry(e),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(4),
+                                            child: Icon(
+                                              Icons.edit,
+                                              size: 18,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                   const SizedBox(height: 10),

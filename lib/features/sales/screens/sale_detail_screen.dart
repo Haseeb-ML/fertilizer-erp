@@ -8,6 +8,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 import 'sale_return_screen.dart';
+import 'sales_pos_screen.dart';
 
 class SaleDetailScreen extends ConsumerStatefulWidget {
   final int saleId;
@@ -115,6 +116,30 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
       appBar: AppBar(
         title: const Text('Sales Invoice Details'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Edit Bill',
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final navigator = Navigator.of(context);
+              final sale = await _fetchSale();
+              if (sale == null || !mounted) return;
+              if (sale.isReversed) {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Reversed bill edit nahi ho sakta'),
+                  ),
+                );
+                return;
+              }
+              await navigator.push(
+                MaterialPageRoute(
+                  builder: (_) => SalesPosScreen(editSale: sale),
+                ),
+              );
+              if (mounted) setState(() {});
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.sync),
             tooltip: 'Recalculate Profit',

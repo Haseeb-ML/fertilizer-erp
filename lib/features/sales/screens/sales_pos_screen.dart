@@ -14,7 +14,9 @@ import '../../customers/screens/customer_form_screen.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 
 class SalesPosScreen extends ConsumerStatefulWidget {
-  const SalesPosScreen({super.key});
+  /// When set, the screen edits this existing bill instead of creating one.
+  final Sale? editSale;
+  const SalesPosScreen({super.key, this.editSale});
 
   @override
   ConsumerState<SalesPosScreen> createState() => _SalesPosScreenState();
@@ -37,10 +39,31 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
   List<Customer> _customers = [];
   bool _isLoadingCustomers = true;
 
+  bool get _isEdit => widget.editSale != null;
+  // productId -> qty already taken by the bill being edited (gets restored)
+  final Map<int, double> _originalQty = {};
+
+  double _availableOf(Product p) =>
+      p.currentStock + (_originalQty[p.id] ?? 0.0);
+
   @override
   void initState() {
     super.initState();
-    _initInvoiceNumber();
+    final e = widget.editSale;
+    if (e != null) {
+      _invoiceNumber = e.invoiceNumber;
+      _saleDate = DateTime.tryParse(e.saleDate) ?? DateTime.now();
+      _paymentMethod = e.paymentMethod;
+      _cart.addAll(e.items);
+      for (final i in e.items) {
+        _originalQty[i.productId] = (_originalQty[i.productId] ?? 0) + i.quantity;
+      }
+      _discountController.text = e.discount.toStringAsFixed(0);
+      _paidAmountController.text = e.paidAmount.toStringAsFixed(0);
+      _notesController.text = e.notes;
+    } else {
+      _initInvoiceNumber();
+    }
     _loadCustomers();
   }
 
@@ -56,6 +79,11 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
       setState(() {
         _customers = list;
         _isLoadingCustomers = false;
+        final editCid = widget.editSale?.customerId;
+        if (_selectedCustomer == null && editCid != null) {
+          final m = _customers.where((c) => c.id == editCid);
+          if (m.isNotEmpty) _selectedCustomer = m.first;
+        }
         if (_selectedCustomer != null) {
           final match = _customers.where((c) => c.id == _selectedCustomer!.id);
           if (match.isNotEmpty) {
@@ -163,7 +191,7 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (ctx, i) {
                       final p = filtered[i];
-                      final isOutOfStock = p.currentStock <= 0;
+                      final isOutOfStock = _availableOf(p) <= 0;
                       final cartIdx =
                           _cart.indexWhere((it) => it.productId == p.id);
                       final inCart = cartIdx != -1;
@@ -314,11 +342,11 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
     if (existingIndex != -1) {
       final existing = _cart[existingIndex];
       final newQty = existing.quantity + 1;
-      if (newQty > product.currentStock) {
+      if (newQty > _availableOf(product)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Cannot add more. Only ${product.currentStock.toStringAsFixed(0)} available in stock.',
+              'Cannot add more. Only ${_availableOf(product).toStringAsFixed(0)} available in stock.',
             ),
             backgroundColor: AppColors.danger,
           ),
@@ -360,7 +388,9 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
     final prod = await ref
         .read(productRepoProvider)
         .getProductById(item.productId);
-    final maxAvailable = prod?.currentStock ?? item.quantity;
+    final maxAvailable = prod != null
+        ? _availableOf(prod)
+        : item.quantity;
 
     final qtyCtrl = TextEditingController(
       text: item.quantity.toStringAsFixed(0),
@@ -460,6 +490,29 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
       return;
     }
 
+    if (_isEdit) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Update Bill?'),
+          content: const Text(
+            'Bill, stock, ledger aur customer balance sab update ho jayega.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+
     setState(() => _isSaving = true);
 
     String invoiceNumber = _invoiceNumber.trim();
@@ -474,6 +527,7 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
         : (paidAmount > 0 ? 'PARTIAL' : 'UNPAID');
 
     final sale = Sale(
+      id: widget.editSale?.id,
       invoiceNumber: invoiceNumber,
       customerId: _selectedCustomer?.id,
       customerName: customerName,
@@ -492,6 +546,22 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
 
     try {
       final repo = ref.read(saleRepoProvider);
+      if (_isEdit) {
+        await repo.updateSale(sale);
+        ref.read(salesUpdateTriggerProvider.notifier).state++;
+        ref.read(productsUpdateTriggerProvider.notifier).state++;
+        ref.invalidate(dashboardDataProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bill update ho gaya'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          Navigator.of(context).pop(true);
+        }
+        return;
+      }
       await repo.createSale(sale);
 
       // Trigger reactive UI refreshes across the whole app
@@ -577,7 +647,7 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Point of Sale'),
+        title: Text(_isEdit ? 'Edit Bill' : 'Point of Sale'),
         actions: [
           ElevatedButton.icon(
             onPressed: _showProductPicker,
@@ -692,7 +762,9 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                               ),
                             ),
                           ],
-                          onChanged: (c) {
+                          onChanged: _isEdit
+                              ? null
+                              : (c) {
                             setState(() {
                               _selectedCustomer = c;
                               if (c != null && _paymentMethod == 'Cash') {
@@ -994,7 +1066,7 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                                                   .getProductById(
                                                       item.productId);
                                               final maxStock =
-                                                  prod?.currentStock ?? 999999;
+                                                  prod != null ? _availableOf(prod) : 999999;
                                               if (item.quantity + 1 >
                                                   maxStock) {
                                                 if (!itemCtx.mounted) return;
@@ -1238,7 +1310,9 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                               )
                             : const Icon(Icons.check, size: 18),
                         label: Text(
-                          _isSaving ? 'Saving...' : 'Save & Print',
+                          _isSaving
+                              ? 'Saving...'
+                              : (_isEdit ? 'Update Bill' : 'Save & Print'),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,

@@ -3,6 +3,7 @@ import '../database/database_helper.dart';
 import '../database/database_tables.dart';
 import '../models/payment.dart';
 import '../services/accounting_service.dart';
+import 'customer_repository.dart';
 
 class PaymentRepository {
   final DatabaseHelper _dbHelper;
@@ -80,6 +81,69 @@ class PaymentRepository {
       );
 
       return paymentId;
+    });
+  }
+
+  /// Finds the payments row behind a PAYMENT_RECEIVED ledger entry.
+  Future<Payment?> getCustomerPaymentById(int paymentId, int customerId) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      DatabaseTables.payments,
+      where: 'id = ? AND party_id = ?',
+      whereArgs: [paymentId, customerId],
+    );
+    if (rows.isEmpty) return null;
+    return Payment.fromMap(rows.first);
+  }
+
+  /// Edit a standalone customer payment (not linked to a bill).
+  Future<void> updateCustomerPayment({
+    required int paymentId,
+    required double amount,
+    required String paymentDate,
+    required String paymentMethod,
+    required String notes,
+  }) async {
+    if (amount <= 0) throw Exception('Amount must be greater than 0');
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        DatabaseTables.payments,
+        where: 'id = ?',
+        whereArgs: [paymentId],
+      );
+      if (rows.isEmpty) throw Exception('Payment not found');
+      final p = rows.first;
+      if (p['reference_invoice_id'] != null) {
+        throw Exception('This payment belongs to a bill. Edit the bill instead.');
+      }
+      final customerId = p['party_id'] as int;
+      final oldAmount = (p['amount'] as num).toDouble();
+
+      await txn.update(
+        DatabaseTables.payments,
+        {
+          'amount': amount,
+          'payment_date': paymentDate,
+          'payment_method': paymentMethod,
+          'notes': notes,
+        },
+        where: 'id = ?',
+        whereArgs: [paymentId],
+      );
+      await txn.update(
+        DatabaseTables.customerLedger,
+        {
+          'transaction_date': paymentDate,
+          'credit': amount,
+          'description':
+              'Payment Received ($paymentMethod)${notes.isNotEmpty ? ' - $notes' : ''}',
+        },
+        where:
+            "customer_id = ? AND reference_id = ? AND transaction_type = 'PAYMENT_RECEIVED' AND credit = ?",
+        whereArgs: [customerId, paymentId, oldAmount],
+      );
+      await CustomerRepository.reconcileCustomerLedger(txn, customerId);
     });
   }
 
