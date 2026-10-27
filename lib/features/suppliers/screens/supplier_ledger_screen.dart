@@ -734,86 +734,27 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                Text(
-                                  e.description,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                if (e.itemsDetails.isNotEmpty) ...[
-                                  const SizedBox(height: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF6F8FA),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: const Color(0xFFE2E8F0),
+                                // Description (clean up repetitive bracketed items)
+                                Builder(
+                                  builder: (context) {
+                                    final cleanTitle = e.description.contains('(')
+                                        ? e.description
+                                            .substring(
+                                                0, e.description.indexOf('('))
+                                            .trim()
+                                        : e.description;
+                                    return Text(
+                                      cleanTitle,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                        color: AppColors.textPrimary,
                                       ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.shopping_bag_outlined,
-                                              size: 13,
-                                              color: AppColors.secondary,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Bags Detail (${e.totalBags.toStringAsFixed(0)} Total Bags):',
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.secondary,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        ...e.itemsDetails.map(
-                                          (detail) => Padding(
-                                            padding: const EdgeInsets.only(
-                                              top: 2,
-                                            ),
-                                            child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  '• ',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  child: Text(
-                                                    detail,
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
-                                                      color:
-                                                          AppColors.textPrimary,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                                    );
+                                  },
+                                ),
+                                if (e.parsedItems.isNotEmpty)
+                                  _buildItemsTable(e),
                                 const SizedBox(height: 6),
                                 Row(
                                   mainAxisAlignment:
@@ -855,4 +796,300 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
       ),
     );
   }
+
+  Widget _buildItemsTable(LedgerEntry e) {
+    final items = e.parsedItems;
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    final totalItemsQty =
+        items.fold<double>(0.0, (sum, i) => sum + i.quantity);
+    final totalItemsAmount =
+        items.fold<double>(0.0, (sum, i) => sum + i.totalPrice);
+    final qtyStr = totalItemsQty == totalItemsQty.roundToDouble()
+        ? totalItemsQty.toInt().toString()
+        : totalItemsQty.toString();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 14,
+                      color: AppColors.secondary,
+                    ),
+                    SizedBox(width: 5),
+                    Text(
+                      'Purchased Product Details:',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+                if (totalItemsQty > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: AppColors.secondary.withOpacity(0.35),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.shopping_bag,
+                          size: 11,
+                          color: AppColors.secondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$qtyStr Bags Purchased',
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.secondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Table Column Headers
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            color: const Color(0xFFF8FAFC),
+            child: const Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    'PRODUCT',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'QTY',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'PRICE',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'TOTAL',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+
+          // Table Data Rows
+          ...items.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            final itemQtyStr = item.quantity == item.quantity.roundToDouble()
+                ? item.quantity.toInt().toString()
+                : item.quantity.toString();
+            final itemRateStr = item.unitPrice == item.unitPrice.roundToDouble()
+                ? item.unitPrice.toInt().toString()
+                : item.unitPrice.toStringAsFixed(0);
+            final itemTotalStr =
+                item.totalPrice == item.totalPrice.roundToDouble()
+                    ? item.totalPrice.toInt().toString()
+                    : item.totalPrice.toStringAsFixed(0);
+
+            return Container(
+              color: idx.isEven ? Colors.white : const Color(0xFFFAFAFA),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: Text(
+                      item.productName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2F6),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 0.7,
+                          ),
+                        ),
+                        child: Text(
+                          '$itemQtyStr ${item.unit}',
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'Rs $itemRateStr',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      'Rs $itemTotalStr',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+
+          // Table Footer / Subtotal
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            color: const Color(0xFFF1F5F9),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    'Total (${items.length} ${items.length == 1 ? 'item' : 'items'})',
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF475569),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '$qtyStr Bags',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                ),
+                const Expanded(
+                  flex: 2,
+                  child: SizedBox.shrink(),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'Rs ${totalItemsAmount == totalItemsAmount.roundToDouble() ? totalItemsAmount.toInt().toString() : totalItemsAmount.toStringAsFixed(0)}',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+

@@ -167,6 +167,7 @@ class CustomerRepository {
       double? invoicePaidAmount;
       double? invoiceBalanceDue;
       String? invoicePaymentStatus;
+      final structuredItems = <LedgerItemDetail>[];
       String? invoiceNotes;
 
       if (entry.isReturn) {
@@ -194,9 +195,23 @@ class CustomerRepository {
           itemsDetails.add(
             'Returned: $qtyStr Bag × $name @ ₨$rateStr = ₨$totalStr$reasonStr',
           );
+          structuredItems.add(
+            LedgerItemDetail(
+              productName: name,
+              quantity: qty,
+              unit: 'Bag',
+              unitPrice: rate,
+              totalPrice: total,
+              reason: reason.isNotEmpty ? reason : null,
+            ),
+          );
         }
         entries.add(
-          entry.copyWith(itemsDetails: itemsDetails, totalBags: totalBags),
+          entry.copyWith(
+            itemsDetails: itemsDetails,
+            structuredItems: structuredItems,
+            totalBags: totalBags,
+          ),
         );
       } else if (entry.isSale && entry.referenceId != null) {
         final saleRows = await db.query(
@@ -236,11 +251,21 @@ class CustomerRepository {
           itemsDetails.add(
             '$qtyStr $unit × $name @ ₨$rateStr = ₨$totalStr',
           );
+          structuredItems.add(
+            LedgerItemDetail(
+              productName: name,
+              quantity: qty,
+              unit: unit,
+              unitPrice: rate,
+              totalPrice: total,
+            ),
+          );
         }
 
         entries.add(
           entry.copyWith(
             itemsDetails: itemsDetails,
+            structuredItems: structuredItems,
             totalBags: totalBags,
             invoicePaidAmount: invoicePaidAmount,
             invoiceBalanceDue: invoiceBalanceDue,

@@ -158,6 +158,7 @@ class SupplierRepository {
       final entry = LedgerEntry.fromMap(map, isCustomer: false);
       final itemsDetails = <String>[];
       double totalBags = 0.0;
+      final structuredItems = <LedgerItemDetail>[];
 
       if (entry.transactionType == 'PURCHASE' && entry.referenceId != null) {
         final items = await db.query(
@@ -178,11 +179,24 @@ class SupplierRepository {
           itemsDetails.add(
             '$qtyStr $unit × $name @ ₨${rate.toStringAsFixed(0)} = ₨${total.toStringAsFixed(0)}',
           );
+          structuredItems.add(
+            LedgerItemDetail(
+              productName: name,
+              quantity: qty,
+              unit: unit,
+              unitPrice: rate,
+              totalPrice: total,
+            ),
+          );
         }
       }
 
       entries.add(
-        entry.copyWith(itemsDetails: itemsDetails, totalBags: totalBags),
+        entry.copyWith(
+          itemsDetails: itemsDetails,
+          structuredItems: structuredItems,
+          totalBags: totalBags,
+        ),
       );
     }
 

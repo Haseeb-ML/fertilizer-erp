@@ -874,141 +874,30 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                                   ),
                                   const SizedBox(height: 10),
 
-                                  // Description
-                                  Text(
-                                    e.description,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
+                                  // Description (clean up repetitive bracketed items for a crisp title)
+                                  Builder(
+                                    builder: (context) {
+                                      final cleanTitle = (e.isSale || e.isReturn) &&
+                                              e.description.contains('(')
+                                          ? e.description
+                                              .substring(
+                                                  0, e.description.indexOf('('))
+                                              .trim()
+                                          : e.description;
+                                      return Text(
+                                        cleanTitle,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      );
+                                    },
                                   ),
 
-                                  // Sold Product Details (Requirement 1 & 3)
-                                  if (e.itemsDetails.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF8FAFC),
-                                        borderRadius:
-                                            BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: const Color(0xFFE2E8F0),
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  const Icon(
-                                                    Icons.inventory_2_outlined,
-                                                    size: 13,
-                                                    color: AppColors.primary,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  const Text(
-                                                    'Sold Product Details:',
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: AppColors.primary,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              if (e.totalBags > 0)
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 3,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: AppColors.primary
-                                                        .withOpacity(0.15),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                      6,
-                                                    ),
-                                                    border: Border.all(
-                                                      color: AppColors.primary
-                                                          .withOpacity(0.35),
-                                                      width: 0.8,
-                                                    ),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      const Icon(
-                                                        Icons.shopping_bag,
-                                                        size: 12,
-                                                        color: AppColors.primary,
-                                                      ),
-                                                      const SizedBox(width: 4),
-                                                      Text(
-                                                        '${e.totalBags == e.totalBags.roundToDouble() ? e.totalBags.toInt() : e.totalBags} Bags Sold',
-                                                        style: const TextStyle(
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color: AppColors.primary,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                          const Divider(
-                                            height: 10,
-                                            thickness: 0.5,
-                                          ),
-                                          ...e.itemsDetails.map(
-                                            (detail) => Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                vertical: 2,
-                                              ),
-                                              child: Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  const Text(
-                                                    '• ',
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 13,
-                                                    ),
-                                                  ),
-                                                  Expanded(
-                                                    child: Text(
-                                                      detail,
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        color: AppColors
-                                                            .textPrimary,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                  // Sold / Returned Product Details Professional Table
+                                  if (e.parsedItems.isNotEmpty)
+                                    _buildItemsTable(e),
 
                                   // Financial Breakdown for Sales (Invoice Total, Paid, Balance Due)
                                   if (e.isSale &&
@@ -1185,4 +1074,325 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
       ),
     );
   }
+
+  Widget _buildItemsTable(LedgerEntry e) {
+    final items = e.parsedItems;
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    final totalItemsQty =
+        items.fold<double>(0.0, (sum, i) => sum + i.quantity);
+    final totalItemsAmount =
+        items.fold<double>(0.0, (sum, i) => sum + i.totalPrice);
+    final qtyStr = totalItemsQty == totalItemsQty.roundToDouble()
+        ? totalItemsQty.toInt().toString()
+        : totalItemsQty.toString();
+
+    final isReturn = e.isReturn;
+    final primaryThemeColor =
+        isReturn ? AppColors.warning : AppColors.primary;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      isReturn
+                          ? Icons.assignment_return_outlined
+                          : Icons.inventory_2_outlined,
+                      size: 14,
+                      color: primaryThemeColor,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      isReturn
+                          ? 'Returned Product Details:'
+                          : 'Sold Product Details:',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                        color: primaryThemeColor,
+                      ),
+                    ),
+                  ],
+                ),
+                if (totalItemsQty > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: primaryThemeColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: primaryThemeColor.withOpacity(0.35),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.shopping_bag,
+                          size: 11,
+                          color: primaryThemeColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$qtyStr Bags ${isReturn ? 'Returned' : 'Sold'}',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: primaryThemeColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Table Column Headers
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            color: const Color(0xFFF8FAFC),
+            child: const Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    'PRODUCT',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'QTY',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'PRICE',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'TOTAL',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+
+          // Table Data Rows
+          ...items.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            final itemQtyStr = item.quantity == item.quantity.roundToDouble()
+                ? item.quantity.toInt().toString()
+                : item.quantity.toString();
+            final itemRateStr = item.unitPrice == item.unitPrice.roundToDouble()
+                ? item.unitPrice.toInt().toString()
+                : item.unitPrice.toStringAsFixed(0);
+            final itemTotalStr =
+                item.totalPrice == item.totalPrice.roundToDouble()
+                    ? item.totalPrice.toInt().toString()
+                    : item.totalPrice.toStringAsFixed(0);
+
+            return Container(
+              color: idx.isEven ? Colors.white : const Color(0xFFFAFAFA),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.productName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        if (item.reason != null && item.reason!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              'Reason: ${item.reason}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppColors.warning,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF2F6),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 0.7,
+                          ),
+                        ),
+                        child: Text(
+                          '$itemQtyStr ${item.unit}',
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'Rs $itemRateStr',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      'Rs $itemTotalStr',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+
+          // Table Footer / Subtotal
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            color: const Color(0xFFF1F5F9),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    'Total (${items.length} ${items.length == 1 ? 'item' : 'items'})',
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF475569),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '$qtyStr Bags',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.bold,
+                      color: primaryThemeColor,
+                    ),
+                  ),
+                ),
+                const Expanded(
+                  flex: 2,
+                  child: SizedBox.shrink(),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'Rs ${totalItemsAmount == totalItemsAmount.roundToDouble() ? totalItemsAmount.toInt().toString() : totalItemsAmount.toStringAsFixed(0)}',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: primaryThemeColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+

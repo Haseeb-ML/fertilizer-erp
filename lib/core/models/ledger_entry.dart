@@ -18,6 +18,7 @@ class LedgerEntry {
   final String? invoicePaymentStatus;
   final String? invoiceNotes;
   final String? customerName;
+  final List<LedgerItemDetail> structuredItems;
 
   LedgerEntry({
     this.id,
@@ -32,6 +33,7 @@ class LedgerEntry {
     required this.runningBalance,
     required this.createdAt,
     this.itemsDetails = const [],
+    this.structuredItems = const [],
     this.totalBags = 0.0,
     this.invoicePaidAmount,
     this.invoiceBalanceDue,
@@ -39,6 +41,27 @@ class LedgerEntry {
     this.invoiceNotes,
     this.customerName,
   });
+
+  List<LedgerItemDetail> get parsedItems {
+    if (structuredItems.isNotEmpty) return structuredItems;
+    final list = <LedgerItemDetail>[];
+    for (final str in itemsDetails) {
+      final parsed = LedgerItemDetail.parse(str);
+      if (parsed != null) {
+        list.add(parsed);
+      } else {
+        list.add(
+          LedgerItemDetail(
+            productName: str,
+            quantity: 0,
+            unitPrice: 0,
+            totalPrice: 0,
+          ),
+        );
+      }
+    }
+    return list;
+  }
 
   double get previousBalance => runningBalance - debit + credit;
 
@@ -87,6 +110,7 @@ class LedgerEntry {
     Map<String, dynamic> map, {
     required bool isCustomer,
     List<String> itemsDetails = const [],
+    List<LedgerItemDetail> structuredItems = const [],
     double totalBags = 0.0,
     double? invoicePaidAmount,
     double? invoiceBalanceDue,
@@ -108,6 +132,7 @@ class LedgerEntry {
       runningBalance: (map['running_balance'] as num?)?.toDouble() ?? 0.0,
       createdAt: map['created_at'] as String? ?? '',
       itemsDetails: itemsDetails,
+      structuredItems: structuredItems,
       totalBags: totalBags,
       invoicePaidAmount: invoicePaidAmount,
       invoiceBalanceDue: invoiceBalanceDue,
@@ -130,6 +155,7 @@ class LedgerEntry {
     double? runningBalance,
     String? createdAt,
     List<String>? itemsDetails,
+    List<LedgerItemDetail>? structuredItems,
     double? totalBags,
     double? invoicePaidAmount,
     double? invoiceBalanceDue,
@@ -150,6 +176,7 @@ class LedgerEntry {
       runningBalance: runningBalance ?? this.runningBalance,
       createdAt: createdAt ?? this.createdAt,
       itemsDetails: itemsDetails ?? this.itemsDetails,
+      structuredItems: structuredItems ?? this.structuredItems,
       totalBags: totalBags ?? this.totalBags,
       invoicePaidAmount: invoicePaidAmount ?? this.invoicePaidAmount,
       invoiceBalanceDue: invoiceBalanceDue ?? this.invoiceBalanceDue,
@@ -157,5 +184,108 @@ class LedgerEntry {
       invoiceNotes: invoiceNotes ?? this.invoiceNotes,
       customerName: customerName ?? this.customerName,
     );
+  }
+}
+
+class LedgerItemDetail {
+  final String productName;
+  final double quantity;
+  final String unit;
+  final double unitPrice;
+  final double totalPrice;
+  final String? reason;
+
+  const LedgerItemDetail({
+    required this.productName,
+    required this.quantity,
+    this.unit = 'Bag',
+    required this.unitPrice,
+    required this.totalPrice,
+    this.reason,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'productName': productName,
+    'quantity': quantity,
+    'unit': unit,
+    'unitPrice': unitPrice,
+    'totalPrice': totalPrice,
+    if (reason != null) 'reason': reason,
+  };
+
+  factory LedgerItemDetail.fromMap(Map<String, dynamic> map) =>
+      LedgerItemDetail(
+        productName:
+            map['productName'] as String? ??
+            map['product_name'] as String? ??
+            '',
+        quantity: (map['quantity'] as num?)?.toDouble() ?? 0.0,
+        unit: map['unit'] as String? ?? 'Bag',
+        unitPrice:
+            (map['unitPrice'] as num?)?.toDouble() ??
+            (map['unit_price'] as num?)?.toDouble() ??
+            0.0,
+        totalPrice:
+            (map['totalPrice'] as num?)?.toDouble() ??
+            (map['total_price'] as num?)?.toDouble() ??
+            (map['total_amount'] as num?)?.toDouble() ??
+            0.0,
+        reason: map['reason'] as String?,
+      );
+
+  static LedgerItemDetail? parse(String text) {
+    try {
+      final isReturn = text.startsWith('Returned:');
+      var clean = text;
+      String? reason;
+      if (isReturn) {
+        clean = clean.replaceFirst('Returned:', '').trim();
+      }
+      if (clean.contains('(') && clean.endsWith(')')) {
+        final lastParenOpen = clean.lastIndexOf('(');
+        final lastParenClose = clean.lastIndexOf(')');
+        if (lastParenClose > lastParenOpen) {
+          reason = clean.substring(lastParenOpen + 1, lastParenClose);
+          clean = clean.substring(0, lastParenOpen).trim();
+        }
+      }
+
+      // Expected: "qty unit × name @ ₨rate = ₨total"
+      final parts = clean.split('×');
+      if (parts.length != 2) return null;
+      final left = parts[0].trim();
+      final right = parts[1].trim();
+
+      final leftTokens = left.split(' ');
+      final qty = double.tryParse(leftTokens[0]) ?? 0.0;
+      final unit =
+          leftTokens.length > 1 ? leftTokens.sublist(1).join(' ') : 'Bag';
+
+      final atParts = right.split('@');
+      if (atParts.length != 2) return null;
+      final productName = atParts[0].trim();
+      final rateAndTotal = atParts[1].trim();
+
+      final eqParts = rateAndTotal.split('=');
+      final rateStr = eqParts[0].replaceAll(RegExp(r'[^0-9.]'), '');
+      final totalStr =
+          eqParts.length > 1
+              ? eqParts[1].replaceAll(RegExp(r'[^0-9.]'), '')
+              : '';
+
+      final rate = double.tryParse(rateStr) ?? 0.0;
+      final total = double.tryParse(totalStr) ?? (qty * rate);
+
+      return LedgerItemDetail(
+        productName: productName,
+        quantity: qty,
+        unit: unit,
+        unitPrice: rate,
+        totalPrice: total,
+        reason: reason,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 }
