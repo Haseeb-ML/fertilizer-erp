@@ -313,20 +313,23 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                       final qtyStr = item.quantity == item.quantity.roundToDouble()
                           ? item.quantity.toInt().toString()
                           : item.quantity.toString();
+                      final rateStr = CurrencyFormatter.format(item.unitPrice);
+                      final totalStr = CurrencyFormatter.format(item.totalPrice);
+
                       return Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
-                          vertical: 10,
+                          vertical: 11,
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Product details
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
+                            // Top Row: Product Name & Profit
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
                                     item.productName,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -334,65 +337,97 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                                       color: AppColors.textPrimary,
                                     ),
                                   ),
-                                  const SizedBox(height: 3),
+                                ),
+                                if (item.unitCost > 0)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.success.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Profit: ${CurrencyFormatter.format(itemProfit)}',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.success,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+
+                            // Bottom Row: Table style "2 Bags × Rate = Total Cost"
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
                                   Row(
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 1.5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary
-                                              .withOpacity(0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          'Qty: $qtyStr ${item.unit}',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.primary,
-                                          ),
+                                      Text(
+                                        '$qtyStr ${item.unit}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: AppColors.primary,
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        '@ ${CurrencyFormatter.format(item.unitPrice)}',
-                                        style: const TextStyle(
-                                          fontSize: 11,
+                                      const Text(
+                                        '  ×  ',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
                                           color: AppColors.textSecondary,
-                                          fontWeight: FontWeight.w500,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      Text(
+                                        rateStr,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      const Text(
+                                        '=  ',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textSecondary,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      Text(
+                                        totalStr,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: AppColors.primary,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ],
                               ),
-                            ),
-                            // Price & Profit
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  CurrencyFormatter.format(item.totalPrice),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                if (item.unitCost > 0)
-                                  Text(
-                                    'Profit: ${CurrencyFormatter.format(itemProfit)}',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                              ],
                             ),
                           ],
                         ),
