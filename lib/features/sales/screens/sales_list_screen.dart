@@ -208,79 +208,65 @@ class _SalesListScreenState extends ConsumerState<SalesListScreen> {
                                   color: AppColors.textSecondary,
                                 ),
                               ),
-                              if (s.items.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(
-                                          color: AppColors.primary.withOpacity(0.3),
-                                          width: 0.5,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.shopping_bag_outlined,
-                                            size: 11,
-                                            color: AppColors.primary,
-                                          ),
-                                          const SizedBox(width: 3),
-                                          Text(
-                                            '${s.items.fold<double>(0.0, (acc, item) => acc + item.quantity).toStringAsFixed(0)} Bags',
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.primary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        s.items
-                                            .map((it) =>
-                                                '${it.quantity == it.quantity.roundToDouble() ? it.quantity.toInt() : it.quantity} ${it.unit} ${it.productName}')
-                                            .join(', '),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textPrimary,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 6),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  StatusBadge(
-                                    label: s.isReversed
-                                        ? 'REVERSED'
-                                        : s.paymentStatus,
-                                    isDanger:
-                                        s.isReversed ||
-                                        s.paymentStatus == 'UNPAID',
-                                    isWarning: s.paymentStatus == 'PARTIAL',
-                                    isSuccess:
-                                        !s.isReversed &&
-                                        s.paymentStatus == 'PAID',
-                                  ),
+                                  Row(
+                                    children: [
+                                      StatusBadge(
+                                        label: s.isReversed
+                                            ? 'REVERSED'
+                                            : s.paymentStatus,
+                                        isDanger:
+                                            s.isReversed ||
+                                            s.paymentStatus == 'UNPAID',
+                                        isWarning: s.paymentStatus == 'PARTIAL',
+                                        isSuccess:
+                                            !s.isReversed &&
+                                            s.paymentStatus == 'PAID',
+                                      ),
+                                      if (s.items.isNotEmpty) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 7,
+                                            vertical: 2.5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary
+                                                .withOpacity(0.12),
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                            border: Border.all(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.35),
+                                              width: 0.6,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.shopping_bag_outlined,
+                                                size: 12,
+                                                color: AppColors.primary,
+                                              ),
+                                              const SizedBox(width: 3.5),
+                                              Text(
+                                                '${s.items.fold<double>(0.0, (acc, item) => acc + item.quantity).toStringAsFixed(0)} Bags',
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   if (s.balanceDue > 0)
                                     Text(
                                       'Due: ${CurrencyFormatter.format(s.balanceDue)}',
