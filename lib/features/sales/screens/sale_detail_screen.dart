@@ -257,9 +257,46 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                 const SizedBox(height: 16),
 
                 // Items Table
-                const Text(
-                  'Sold Items',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Sold Items',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 14,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Total Sold: ${sale.items.fold<double>(0.0, (acc, item) => acc + item.quantity).toStringAsFixed(0)} Bags',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
 
@@ -274,12 +311,45 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
                       final itemCostTotal = item.quantity * item.unitCost;
                       final itemProfit = item.totalPrice - itemCostTotal;
                       return ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                item.quantity == item.quantity.roundToDouble()
+                                    ? item.quantity.toInt().toString()
+                                    : item.quantity.toString(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              Text(
+                                item.unit,
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         title: Text(
                           item.productName,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
-                          '${item.quantity.toStringAsFixed(0)} ${item.unit} @ ${CurrencyFormatter.format(item.unitPrice)}'
+                          'Rate: ${CurrencyFormatter.format(item.unitPrice)} / ${item.unit}'
                           '${item.unitCost > 0 ? ' • Cost: ${CurrencyFormatter.format(item.unitCost)}' : ''}',
                         ),
                         trailing: Column(

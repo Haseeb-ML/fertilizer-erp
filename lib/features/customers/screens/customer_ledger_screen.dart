@@ -927,25 +927,42 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                                                 Container(
                                                   padding:
                                                       const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 1.5,
+                                                    horizontal: 8,
+                                                    vertical: 3,
                                                   ),
                                                   decoration: BoxDecoration(
                                                     color: AppColors.primary
-                                                        .withOpacity(0.1),
+                                                        .withOpacity(0.15),
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                      4,
+                                                      6,
+                                                    ),
+                                                    border: Border.all(
+                                                      color: AppColors.primary
+                                                          .withOpacity(0.35),
+                                                      width: 0.8,
                                                     ),
                                                   ),
-                                                  child: Text(
-                                                    '${e.totalBags.toStringAsFixed(0)} Bags Total',
-                                                    style: const TextStyle(
-                                                      fontSize: 10,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: AppColors.primary,
-                                                    ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      const Icon(
+                                                        Icons.shopping_bag,
+                                                        size: 12,
+                                                        color: AppColors.primary,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '${e.totalBags == e.totalBags.roundToDouble() ? e.totalBags.toInt() : e.totalBags} Bags Sold',
+                                                        style: const TextStyle(
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: AppColors.primary,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                             ],
