@@ -267,6 +267,7 @@ class _SalesListScreenState extends ConsumerState<SalesListScreen> {
                                         ),
                                       ],
                                     ],
+                                  ),
                                   if (s.balanceDue > 0)
                                     Text(
                                       'Due: ${CurrencyFormatter.format(s.balanceDue)}',
