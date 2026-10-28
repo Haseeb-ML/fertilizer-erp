@@ -178,6 +178,7 @@ class CustomerRepository {
         );
         for (final ret in returnRows) {
           final qty = (ret['quantity'] as num?)?.toDouble() ?? 0.0;
+          totalBags += qty;
           final name = ret['product_name'] as String? ?? '';
           final rate = (ret['unit_price'] as num?)?.toDouble() ?? 0.0;
           final total = (ret['total_amount'] as num?)?.toDouble() ?? 0.0;

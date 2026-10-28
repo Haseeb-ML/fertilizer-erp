@@ -714,83 +714,176 @@ ${sale.balanceDue > 0 ? "🔴 *بقایا جات (Balance Due):* Rs. ${CurrencyF
             ],
           );
         },
-        build: (context) => [
-          pw.Table(
-            border: pw.TableBorder.all(
-              color: PdfColors.grey300,
-              width: 0.5,
-            ),
-            columnWidths: {
-              0: const pw.FixedColumnWidth(68), // Date e.g. 2026-10-14
-              1: const pw.FlexColumnWidth(3.8), // Description & Items Detail
-              2: const pw.FixedColumnWidth(66), // Debit (Rs.)
-              3: const pw.FixedColumnWidth(66), // Credit (Rs.)
-              4: const pw.FixedColumnWidth(72), // Balance (Rs.)
-            },
-            children: [
-              pw.TableRow(
-                decoration: const pw.BoxDecoration(
-                  color: PdfColors.grey200,
-                ),
-                children: [
-                  _th('Date', fontSize: 8.5),
-                  _th('Description & Items Detail',
-                      align: pw.TextAlign.left, fontSize: 8.5),
-                  _th('Debit (Rs.)', align: pw.TextAlign.right, fontSize: 8.5),
-                  _th('Credit (Rs.)', align: pw.TextAlign.right, fontSize: 8.5),
-                  _th('Balance (Rs.)',
-                      align: pw.TextAlign.right, fontSize: 8.5),
-                ],
-              ),
-              ...entries.map(
-                (e) {
-                  final desc = _cleanPdfText(e.description);
-                  final items = e.itemsDetails
-                      .map((d) => '- ${_cleanPdfText(d)}')
-                      .join('\n');
-                  final fullDesc = items.isNotEmpty ? '$desc\n$items' : desc;
+        build: (context) {
+          final totalBagsSum = entries.fold<double>(0.0, (sum, e) {
+            final count = e.totalBags > 0
+                ? e.totalBags
+                : e.parsedItems.fold<double>(0.0, (s, i) => s + i.quantity);
+            return sum + count;
+          });
+          final totalDebitSum =
+              entries.fold<double>(0.0, (sum, e) => sum + e.debit);
+          final totalCreditSum =
+              entries.fold<double>(0.0, (sum, e) => sum + e.credit);
 
-                  return pw.TableRow(
-                    children: [
-                      _td(e.transactionDate,
-                          align: pw.TextAlign.center, fontSize: 8),
-                      _td(fullDesc, fontSize: 8),
-                      _td(
-                        e.debit > 0
-                            ? CurrencyFormatter.format(
-                                e.debit,
-                                showSymbol: false,
-                              )
-                            : '-',
-                        align: pw.TextAlign.right,
-                        fontSize: 8,
-                      ),
-                      _td(
-                        e.credit > 0
-                            ? CurrencyFormatter.format(
-                                e.credit,
-                                showSymbol: false,
-                              )
-                            : '-',
-                        align: pw.TextAlign.right,
-                        fontSize: 8,
-                      ),
-                      _td(
-                        CurrencyFormatter.format(
-                          e.runningBalance,
-                          showSymbol: false,
-                        ),
-                        align: pw.TextAlign.right,
-                        fontSize: 8,
-                        isBold: true,
-                      ),
-                    ],
-                  );
-                },
+          return [
+            pw.Table(
+              border: pw.TableBorder.all(
+                color: PdfColors.grey300,
+                width: 0.5,
               ),
-            ],
-          ),
-        ],
+              columnWidths: {
+                0: const pw.FixedColumnWidth(62), // Date e.g. 2026-10-14
+                1: const pw.FlexColumnWidth(3.6), // Description & Items Detail
+                2: const pw.FixedColumnWidth(56), // Bags (Qty)
+                3: const pw.FixedColumnWidth(64), // Debit (Rs.)
+                4: const pw.FixedColumnWidth(64), // Credit (Rs.)
+                5: const pw.FixedColumnWidth(68), // Balance (Rs.)
+              },
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(
+                    color: PdfColors.grey200,
+                  ),
+                  children: [
+                    _th('Date', fontSize: 8.5),
+                    _th('Description & Items Detail',
+                        align: pw.TextAlign.left, fontSize: 8.5),
+                    _th('Bags (Qty)',
+                        align: pw.TextAlign.center, fontSize: 8.5),
+                    _th('Debit (Rs.)',
+                        align: pw.TextAlign.right, fontSize: 8.5),
+                    _th('Credit (Rs.)',
+                        align: pw.TextAlign.right, fontSize: 8.5),
+                    _th('Balance (Rs.)',
+                        align: pw.TextAlign.right, fontSize: 8.5),
+                  ],
+                ),
+                ...entries.map(
+                  (e) {
+                    final items = e.itemsDetails
+                        .map((d) => '- ${_cleanPdfText(d)}')
+                        .join('\n');
+                    final cleanDescText =
+                        (items.isNotEmpty && e.description.contains('('))
+                            ? e.description
+                                .substring(0, e.description.indexOf('('))
+                                .trim()
+                            : e.description;
+                    final desc = _cleanPdfText(cleanDescText);
+                    final fullDesc =
+                        items.isNotEmpty ? '$desc\n$items' : desc;
+
+                    final bagsCount = e.totalBags > 0
+                        ? e.totalBags
+                        : e.parsedItems
+                            .fold<double>(0.0, (sum, i) => sum + i.quantity);
+                    final bagsStr = bagsCount > 0
+                        ? (bagsCount == bagsCount.roundToDouble()
+                            ? '${bagsCount.toInt()} Bags'
+                            : '$bagsCount Bags')
+                        : '-';
+
+                    return pw.TableRow(
+                      children: [
+                        _td(e.transactionDate,
+                            align: pw.TextAlign.center, fontSize: 8),
+                        _td(fullDesc, fontSize: 8),
+                        _td(
+                          bagsStr,
+                          align: pw.TextAlign.center,
+                          fontSize: 8,
+                          isBold: bagsCount > 0,
+                        ),
+                        _td(
+                          e.debit > 0
+                              ? CurrencyFormatter.format(
+                                  e.debit,
+                                  showSymbol: false,
+                                )
+                              : '-',
+                          align: pw.TextAlign.right,
+                          fontSize: 8,
+                        ),
+                        _td(
+                          e.credit > 0
+                              ? CurrencyFormatter.format(
+                                  e.credit,
+                                  showSymbol: false,
+                                )
+                              : '-',
+                          align: pw.TextAlign.right,
+                          fontSize: 8,
+                        ),
+                        _td(
+                          CurrencyFormatter.format(
+                            e.runningBalance,
+                            showSymbol: false,
+                          ),
+                          align: pw.TextAlign.right,
+                          fontSize: 8,
+                          isBold: true,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                // Summary Total Row
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(
+                    color: PdfColors.grey100,
+                  ),
+                  children: [
+                    _td('', align: pw.TextAlign.center, fontSize: 8),
+                    _td('Total Summary',
+                        align: pw.TextAlign.left, fontSize: 8, isBold: true),
+                    _td(
+                      totalBagsSum > 0
+                          ? (totalBagsSum == totalBagsSum.roundToDouble()
+                              ? '${totalBagsSum.toInt()} Bags'
+                              : '$totalBagsSum Bags')
+                          : '-',
+                      align: pw.TextAlign.center,
+                      fontSize: 8,
+                      isBold: true,
+                    ),
+                    _td(
+                      totalDebitSum > 0
+                          ? CurrencyFormatter.format(
+                              totalDebitSum,
+                              showSymbol: false,
+                            )
+                          : '-',
+                      align: pw.TextAlign.right,
+                      fontSize: 8,
+                      isBold: true,
+                    ),
+                    _td(
+                      totalCreditSum > 0
+                          ? CurrencyFormatter.format(
+                              totalCreditSum,
+                              showSymbol: false,
+                            )
+                          : '-',
+                      align: pw.TextAlign.right,
+                      fontSize: 8,
+                      isBold: true,
+                    ),
+                    _td(
+                      CurrencyFormatter.format(
+                        currentBalance,
+                        showSymbol: false,
+                      ),
+                      align: pw.TextAlign.right,
+                      fontSize: 8,
+                      isBold: true,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ];
+        },
       ),
     );
 

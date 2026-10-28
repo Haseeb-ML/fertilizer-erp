@@ -376,6 +376,7 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
         'Bill / Ref #',
         'Description',
         'Items Detail',
+        'Bags (Qty)',
         'Debit (PKR)',
         'Credit (PKR)',
         'Running Balance (PKR)',
@@ -384,12 +385,16 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
       // 5. Ledger Entries
       ..._entries.map((e) {
         final itemsStr = e.itemsDetails.join(' ; ');
+        final bagsCount = e.totalBags > 0
+            ? e.totalBags
+            : e.parsedItems.fold<double>(0.0, (sum, i) => sum + i.quantity);
         return [
           e.transactionDate,
           e.transactionType,
           e.referenceNumber ?? '-',
           e.description,
           itemsStr,
+          bagsCount > 0 ? bagsCount : 0,
           e.debit > 0 ? e.debit : 0.0,
           e.credit > 0 ? e.credit : 0.0,
           e.runningBalance,
@@ -397,13 +402,14 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
       }),
 
       // 6. Summary Totals Row
-      ['', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', ''],
       [
         'TOTAL / کل میزان',
         '',
         '',
         'Total Records: ${_entries.length}',
         '',
+        _entries.fold<double>(0.0, (sum, e) => sum + (e.totalBags > 0 ? e.totalBags : e.parsedItems.fold<double>(0.0, (s, i) => s + i.quantity))),
         totalDebit,
         totalCredit,
         _supplier.currentBalance,
