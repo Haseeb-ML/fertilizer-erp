@@ -272,7 +272,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
         _isDirectMode ? _selectedProduct!.name : _selectedItem!.productName;
     final String unit =
         _isDirectMode ? _selectedProduct!.unit : _selectedItem!.unit;
-    final double? maxQty = _isDirectMode
+    final double maxQty = _isDirectMode
         ? _selectedProduct!.currentStock
         : _selectedItem!.quantity;
 
@@ -281,7 +281,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
     final currentListedQty =
         existingIndex >= 0 ? _returnItems[existingIndex].quantity : 0.0;
 
-    if (maxQty != null && (currentListedQty + qty) > maxQty) {
+    if ((currentListedQty + qty) > maxQty) {
       if (showFeedback) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
