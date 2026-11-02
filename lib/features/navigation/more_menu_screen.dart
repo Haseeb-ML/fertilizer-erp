@@ -11,6 +11,7 @@ import '../payments/screens/payment_list_screen.dart';
 import '../expenses/screens/expense_list_screen.dart';
 import '../expenses/screens/cashbook_screen.dart';
 import '../reports/screens/reports_hub_screen.dart';
+import '../returns/screens/returns_list_screen.dart';
 import '../settings/screens/settings_screen.dart';
 import '../settings/screens/backup_restore_screen.dart';
 
@@ -189,6 +190,16 @@ class MoreMenuScreen extends ConsumerWidget {
             title: ref.tr('mod_purchases'),
             subtitle: ref.tr('mod_purchases_sub'),
             destination: const PurchaseListScreen(),
+          ),
+          const SizedBox(height: 10),
+
+          _menuTile(
+            context,
+            icon: Icons.assignment_return_outlined,
+            color: const Color(0xFFC62828),
+            title: ref.tr('mod_returns'),
+            subtitle: ref.tr('mod_returns_sub'),
+            destination: const ReturnsListScreen(),
           ),
           const SizedBox(height: 10),
 

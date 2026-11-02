@@ -9,6 +9,7 @@ import '../repositories/payment_repository.dart';
 import '../repositories/expense_repository.dart';
 import '../repositories/cashbook_repository.dart';
 import '../repositories/report_repository.dart';
+import '../repositories/return_repository.dart';
 import '../repositories/settings_repository.dart';
 import '../repositories/storage_repository.dart';
 import '../models/business_settings.dart';
@@ -61,6 +62,10 @@ final storageRepoProvider = Provider<StorageRepository>((ref) {
   return StorageRepository(ref.watch(databaseHelperProvider));
 });
 
+final returnRepoProvider = Provider<ReturnRepository>((ref) {
+  return ReturnRepository(dbHelper: ref.watch(databaseHelperProvider));
+});
+
 // Settings notifier for live updates
 final businessSettingsProvider = FutureProvider<BusinessSettings>((ref) async {
   final repo = ref.watch(settingsRepoProvider);
@@ -78,4 +83,7 @@ final productsUpdateTriggerProvider = StateProvider<int>((ref) => 0);
 
 /// Reactive signal to notify screens when storage data or transfers have changed
 final storagesUpdateTriggerProvider = StateProvider<int>((ref) => 0);
+
+/// Reactive signal to notify screens when returns have changed
+final returnsUpdateTriggerProvider = StateProvider<int>((ref) => 0);
 

@@ -270,6 +270,7 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
 
       ref.read(purchasesUpdateTriggerProvider.notifier).state++;
       ref.read(productsUpdateTriggerProvider.notifier).state++;
+      ref.read(returnsUpdateTriggerProvider.notifier).state++;
       ref.invalidate(dashboardDataProvider);
 
       if (mounted) {

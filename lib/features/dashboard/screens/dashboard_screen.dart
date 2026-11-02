@@ -21,6 +21,7 @@ import '../../purchases/screens/purchase_detail_screen.dart';
 import '../../purchases/screens/purchase_form_screen.dart';
 import '../../purchases/screens/purchase_list_screen.dart';
 import '../../purchases/screens/purchase_return_screen.dart';
+import '../../returns/screens/returns_list_screen.dart';
 import '../../sales/screens/sales_pos_screen.dart';
 import '../../sales/screens/sales_list_screen.dart';
 import '../../sales/screens/sale_detail_screen.dart';
@@ -283,6 +284,20 @@ class DashboardScreen extends ConsumerWidget {
                                         );
                                     if (res == true)
                                       ref.invalidate(dashboardDataProvider);
+                                  },
+                                ),
+                                QuickActionButton(
+                                  icon: Icons.history,
+                                  label: ref.tr('mod_returns'),
+                                  color: const Color(0xFF5D4037),
+                                  onTap: () async {
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const ReturnsListScreen(),
+                                      ),
+                                    );
+                                    ref.invalidate(dashboardDataProvider);
                                   },
                                 ),
                                 QuickActionButton(

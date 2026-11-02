@@ -11,6 +11,7 @@ import '../../../core/widgets/status_badge.dart';
 import 'sales_pos_screen.dart';
 import 'sale_detail_screen.dart';
 import 'sale_return_screen.dart';
+import '../../returns/screens/returns_list_screen.dart';
 
 class SalesListScreen extends ConsumerStatefulWidget {
   const SalesListScreen({super.key});
@@ -62,15 +63,44 @@ class _SalesListScreenState extends ConsumerState<SalesListScreen> {
             tooltip: ref.tr('refresh'),
             onPressed: _refreshSales,
           ),
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.assignment_return_outlined),
-            tooltip: ref.tr('action_sale_return'),
-            onPressed: () async {
-              await Navigator.of(context).push<bool>(
-                MaterialPageRoute(builder: (_) => const SaleReturnScreen()),
-              );
-              _refreshSales();
+            tooltip: 'Sales Return & History',
+            onSelected: (val) async {
+              if (val == 'new') {
+                await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(builder: (_) => const SaleReturnScreen()),
+                );
+                _refreshSales();
+              } else if (val == 'history') {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ReturnsListScreen()),
+                );
+                _refreshSales();
+              }
             },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'new',
+                child: Row(
+                  children: [
+                    Icon(Icons.add_circle_outline, size: 18, color: Color(0xFFC62828)),
+                    SizedBox(width: 8),
+                    Text('Record Sale Return (گاہک واپسی)'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'history',
+                child: Row(
+                  children: [
+                    Icon(Icons.history, size: 18, color: AppColors.primary),
+                    SizedBox(width: 8),
+                    Text('Returns History (واپسیوں کا ریکارڈ)'),
+                  ],
+                ),
+              ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.point_of_sale),
