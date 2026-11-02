@@ -64237,8 +64237,9 @@ case 10:s=8
 break
 case 9:s=a4==="CASH_REFUND"?11:12
 break
-case 11:s=13
-return A.c(a8.cY(0,"expenses",A.a1(["category","Sales Return Refund","amount",b,"expense_date",o,"payment_method","Cash","notes","Cash Refund for Sales Return: "+A.o(a7)+" x "+n+" to "+a3,"created_at",p],k,j)),$async$$1)
+case 11:a5=B.j.T(a7,0)
+s=13
+return A.c(a8.cY(0,"expenses",A.a1(["title","Sales Return Refund: "+n+" ("+a5+" bags)","category","Sales Return Refund","amount",b,"expense_date",o,"payment_method","Cash","notes","Cash Refund for Sales Return: "+A.o(a7)+" x "+n+" to "+a3,"created_at",p],k,j)),$async$$1)
 case 13:case 12:case 8:return A.k(null,r)}})
 return A.l($async$$1,r)},
 $S:36}
