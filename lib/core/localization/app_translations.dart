@@ -53,7 +53,9 @@ class AppTranslations {
 
       // Quick Actions
       'action_new_sale': 'New Sale',
+      'action_sale_return': 'Sale Return',
       'action_purchase': 'Stock Purchase',
+      'action_purchase_return': 'Purchase Return',
       'action_add_item': 'Add Product',
       'action_new_customer': 'New Customer',
       'action_receive_cash': 'Receive Dues',
@@ -261,7 +263,9 @@ class AppTranslations {
 
       // Quick Actions
       'action_new_sale': 'نئی فروخت',
+      'action_sale_return': 'گاہک واپسی (سیل)',
       'action_purchase': 'کھاد خریداری',
+      'action_purchase_return': 'سپلائر واپسی (پرچیز)',
       'action_add_item': 'پراڈکٹ شامل کریں',
       'action_new_customer': 'نیا گاہک',
       'action_receive_cash': 'وصولی کھاتہ',

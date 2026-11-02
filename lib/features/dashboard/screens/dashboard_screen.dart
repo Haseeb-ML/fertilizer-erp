@@ -20,9 +20,11 @@ import '../../suppliers/screens/supplier_list_screen.dart';
 import '../../purchases/screens/purchase_detail_screen.dart';
 import '../../purchases/screens/purchase_form_screen.dart';
 import '../../purchases/screens/purchase_list_screen.dart';
+import '../../purchases/screens/purchase_return_screen.dart';
 import '../../sales/screens/sales_pos_screen.dart';
 import '../../sales/screens/sales_list_screen.dart';
 import '../../sales/screens/sale_detail_screen.dart';
+import '../../sales/screens/sale_return_screen.dart';
 import '../../payments/screens/receive_payment_screen.dart';
 import '../../payments/screens/make_payment_screen.dart';
 import '../../expenses/screens/expense_form_screen.dart';
@@ -236,17 +238,19 @@ class DashboardScreen extends ConsumerWidget {
                                   },
                                 ),
                                 QuickActionButton(
-                                  icon: Icons.storage_rounded,
-                                  label: ref.tr('action_data_storage'),
-                                  color: const Color(0xFF00796B),
+                                  icon: Icons.assignment_return_outlined,
+                                  label: ref.tr('action_sale_return'),
+                                  color: const Color(0xFFC62828),
                                   onTap: () async {
-                                    await Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const BackupRestoreScreen(),
-                                      ),
-                                    );
-                                    ref.invalidate(dashboardDataProvider);
+                                    final res = await Navigator.of(context)
+                                        .push<bool>(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const SaleReturnScreen(),
+                                          ),
+                                        );
+                                    if (res == true)
+                                      ref.invalidate(dashboardDataProvider);
                                   },
                                 ),
                                 QuickActionButton(
@@ -263,6 +267,36 @@ class DashboardScreen extends ConsumerWidget {
                                         );
                                     if (res == true)
                                       ref.invalidate(dashboardDataProvider);
+                                  },
+                                ),
+                                QuickActionButton(
+                                  icon: Icons.keyboard_return_rounded,
+                                  label: ref.tr('action_purchase_return'),
+                                  color: const Color(0xFFD84315),
+                                  onTap: () async {
+                                    final res = await Navigator.of(context)
+                                        .push<bool>(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const PurchaseReturnScreen(),
+                                          ),
+                                        );
+                                    if (res == true)
+                                      ref.invalidate(dashboardDataProvider);
+                                  },
+                                ),
+                                QuickActionButton(
+                                  icon: Icons.storage_rounded,
+                                  label: ref.tr('action_data_storage'),
+                                  color: const Color(0xFF00796B),
+                                  onTap: () async {
+                                    await Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const BackupRestoreScreen(),
+                                      ),
+                                    );
+                                    ref.invalidate(dashboardDataProvider);
                                   },
                                 ),
                                 QuickActionButton(

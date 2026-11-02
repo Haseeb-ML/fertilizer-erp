@@ -534,15 +534,41 @@ class PurchaseRepository {
     required String reason,
   }) async {
     final db = await _dbHelper.database;
-    await db.transaction((txn) async {
-      final purchaseRows = await txn.query(
-        DatabaseTables.purchases,
-        where: 'id = ?',
-        whereArgs: [purchaseId],
-      );
-      if (purchaseRows.isEmpty) throw Exception('Purchase not found');
-      final purchase = Purchase.fromMap(purchaseRows.first);
+    final purchaseRows = await db.query(
+      DatabaseTables.purchases,
+      where: 'id = ?',
+      whereArgs: [purchaseId],
+    );
+    if (purchaseRows.isEmpty) throw Exception('Purchase not found');
+    final purchase = Purchase.fromMap(purchaseRows.first);
 
+    await processDirectPurchaseReturn(
+      purchaseId: purchase.id,
+      invoiceNumber: purchase.invoiceNumber,
+      supplierId: purchase.supplierId,
+      supplierName: purchase.supplierName,
+      productId: productId,
+      quantity: quantity,
+      unitPrice: unitPrice,
+      refundType: refundType,
+      reason: reason,
+    );
+  }
+
+  Future<void> processDirectPurchaseReturn({
+    int? purchaseId,
+    String? invoiceNumber,
+    required int supplierId,
+    String? supplierName,
+    required int productId,
+    required double quantity,
+    required double unitPrice,
+    required String refundType, // 'LEDGER_ADJUST' or 'CASH_REFUND'
+    String? reason,
+    String? returnDate,
+  }) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
       final prodRows = await txn.query(
         DatabaseTables.products,
         where: 'id = ?',
@@ -557,10 +583,11 @@ class PurchaseRepository {
       }
 
       final now = DateTime.now().toIso8601String();
-      final today = now.substring(0, 10);
+      final date = returnDate ?? now.substring(0, 10);
       final prodName = prodRows.first['name'] as String;
       final newStock = currentStock - quantity;
 
+      // 1. Reduce product stock
       await txn.update(
         DatabaseTables.products,
         {'current_stock': newStock, 'updated_at': now},
@@ -568,57 +595,78 @@ class PurchaseRepository {
         whereArgs: [productId],
       );
 
+      // 2. Consume FIFO stock
       await FifoInventoryService.consumeStockFifo(
         txn,
         productId: productId,
         quantityToConsume: quantity,
       );
 
+      // 3. Stock movement
+      final invRef = invoiceNumber != null && invoiceNumber.isNotEmpty
+          ? 'Inv #$invoiceNumber'
+          : (supplierName != null && supplierName.isNotEmpty ? supplierName : 'Direct');
       await txn.insert(DatabaseTables.stockMovements, {
         'product_id': productId,
         'product_name': prodName,
         'movement_type': 'PURCHASE_RETURN',
         'quantity': -quantity,
         'balance_after': newStock,
-        'reference_id': purchaseId,
+        'reference_id': purchaseId ?? 0,
         'reference_type': 'RETURN',
-        'notes': 'Purchase Return for Inv #${purchase.invoiceNumber}: $reason',
-        'movement_date': today,
+        'notes': 'Purchase Return to $invRef: ${reason ?? ""}'.trim(),
+        'movement_date': date,
         'created_at': now,
       });
 
       final totalReturnAmount = quantity * unitPrice;
 
+      // 4. Record return
       await txn.insert(DatabaseTables.returns, {
         'return_type': 'PURCHASE_RETURN',
-        'original_invoice_id': purchaseId,
-        'original_invoice_number': purchase.invoiceNumber,
-        'party_id': purchase.supplierId,
-        'party_name': purchase.supplierName,
-        'return_date': today,
+        'original_invoice_id': purchaseId ?? 0,
+        'original_invoice_number': invoiceNumber ?? 'DIRECT',
+        'party_id': supplierId,
+        'party_name': supplierName ?? 'Supplier',
+        'return_date': date,
         'product_id': productId,
         'product_name': prodName,
         'quantity': quantity,
         'unit_price': unitPrice,
         'total_amount': totalReturnAmount,
         'refund_type': refundType,
-        'reason': reason,
+        'reason': reason ?? '',
         'created_at': now,
       });
 
-      // Update supplier ledger (Debit reduces what we owe the supplier)
-      await AccountingService.addSupplierLedgerEntry(
-        txn,
-        supplierId: purchase.supplierId,
-        transactionDate: today,
-        transactionType: 'PURCHASE_RETURN',
-        referenceId: purchaseId,
-        referenceNumber: purchase.invoiceNumber,
-        description:
-            'Purchase Return ($quantity x $prodName) from Inv #${purchase.invoiceNumber}',
-        debit: totalReturnAmount,
-        credit: 0.0,
-      );
+      // 5. Update supplier ledger (Debit reduces what we owe the supplier)
+      if (refundType == 'LEDGER_ADJUST') {
+        await AccountingService.addSupplierLedgerEntry(
+          txn,
+          supplierId: supplierId,
+          transactionDate: date,
+          transactionType: 'PURCHASE_RETURN',
+          referenceId: purchaseId,
+          referenceNumber: invoiceNumber ?? 'DIRECT_RETURN',
+          description:
+              'Purchase Return ($quantity x $prodName) ${reason != null && reason.isNotEmpty ? "- $reason" : ""}'.trim(),
+          debit: totalReturnAmount,
+          credit: 0.0,
+        );
+      } else if (refundType == 'CASH_REFUND') {
+        // Cash received from supplier back into business cash
+        await txn.insert(DatabaseTables.payments, {
+          'payment_type': 'CUSTOMER_IN',
+          'party_type': 'Supplier',
+          'party_id': supplierId,
+          'party_name': supplierName ?? 'Supplier',
+          'amount': totalReturnAmount,
+          'payment_date': date,
+          'payment_method': 'Cash',
+          'notes': 'Cash Refund received for Purchase Return: $quantity x $prodName',
+          'created_at': now,
+        });
+      }
     });
   }
 }

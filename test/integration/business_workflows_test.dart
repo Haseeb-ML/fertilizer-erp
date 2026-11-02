@@ -691,6 +691,110 @@ void main() {
       expect(postProducts, isEmpty);
       expect(postCustomers, isEmpty);
     });
+
+    test(
+      'Test 12: Direct Sale Return (without prior invoice) restores stock and credits customer ledger',
+      () async {
+        final now = DateTime.now().toIso8601String();
+        final prodId = await productRepo.insertProduct(
+          Product(
+            name: 'Direct Return Urea',
+            sku: 'DR-UREA',
+            category: 'Fertilizer',
+            brand: 'Sona',
+            bagSize: '50kg',
+            unit: 'Bag',
+            purchasePrice: 3000,
+            sellingPrice: 3500,
+            openingStock: 20,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+        final custId = await customerRepo.insertCustomer(
+          Customer(
+            name: 'Direct Return Farmer',
+            phone: '0300-1112233',
+            openingBalance: 20000, // owes 20,000
+            currentBalance: 20000,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+        // Process Direct Sales Return: 4 bags returned @ 3500 = 14,000
+        await saleRepo.processDirectSaleReturn(
+          customerId: custId,
+          customerName: 'Direct Return Farmer',
+          productId: prodId,
+          quantity: 4,
+          unitPrice: 3500,
+          refundType: 'LEDGER_ADJUST',
+          reason: 'Excess bags returned from farm',
+        );
+
+        // Stock should increase from 20 to 24
+        final prod = await productRepo.getProductById(prodId);
+        expect(prod!.currentStock, 24.0);
+
+        // Customer receivable should reduce from 20,000 to 6,000
+        final cust = await customerRepo.getCustomerById(custId);
+        expect(cust!.currentBalance, 6000.0);
+      },
+    );
+
+    test(
+      'Test 13: Direct Purchase Return (without prior invoice) reduces stock and debits supplier payable',
+      () async {
+        final now = DateTime.now().toIso8601String();
+        final prodId = await productRepo.insertProduct(
+          Product(
+            name: 'Supplier Return DAP',
+            sku: 'SR-DAP',
+            category: 'Fertilizer',
+            brand: 'Engro',
+            bagSize: '50kg',
+            unit: 'Bag',
+            purchasePrice: 9000,
+            sellingPrice: 9500,
+            openingStock: 30,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+        final suppId = await supplierRepo.insertSupplier(
+          Supplier(
+            name: 'National Fertilizer Corp',
+            phone: '042-111222333',
+            openingBalance: 50000, // we owe supplier 50,000
+            currentBalance: 50000,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+        // Process Direct Purchase Return: 3 damaged bags returned to supplier @ 9000 = 27,000
+        await purchaseRepo.processDirectPurchaseReturn(
+          supplierId: suppId,
+          supplierName: 'National Fertilizer Corp',
+          productId: prodId,
+          quantity: 3,
+          unitPrice: 9000,
+          refundType: 'LEDGER_ADJUST',
+          reason: 'Damaged bags sent back to company',
+        );
+
+        // Stock should decrease from 30 to 27
+        final prod = await productRepo.getProductById(prodId);
+        expect(prod!.currentStock, 27.0);
+
+        // Supplier payable should decrease from 50,000 to 23,000
+        final supp = await supplierRepo.getSupplierById(suppId);
+        expect(supp!.currentBalance, 23000.0);
+      },
+    );
   });
 }
 

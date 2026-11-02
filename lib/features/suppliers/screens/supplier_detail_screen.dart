@@ -6,6 +6,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../payments/screens/make_payment_screen.dart';
+import '../../purchases/screens/purchase_return_screen.dart';
 import 'supplier_form_screen.dart';
 import 'supplier_ledger_screen.dart';
 
@@ -155,6 +156,27 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
                   label: const Text('Make Payment to Supplier'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.secondary,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final returned = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => PurchaseReturnScreen(
+                          preselectedSupplier: supplier,
+                        ),
+                      ),
+                    );
+                    if (returned == true) setState(() {});
+                  },
+                  icon: const Icon(Icons.assignment_return_outlined),
+                  label: const Text('Return Stock to Supplier (سپلائر واپسی)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00796B),
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 13),
                   ),
                 ),

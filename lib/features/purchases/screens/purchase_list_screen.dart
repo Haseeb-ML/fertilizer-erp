@@ -9,6 +9,7 @@ import '../../../core/widgets/search_bar_widget.dart';
 import '../../../core/widgets/status_badge.dart';
 import 'purchase_form_screen.dart';
 import 'purchase_detail_screen.dart';
+import 'purchase_return_screen.dart';
 
 class PurchaseListScreen extends ConsumerStatefulWidget {
   const PurchaseListScreen({super.key});
@@ -41,6 +42,18 @@ class _PurchaseListScreenState extends ConsumerState<PurchaseListScreen> {
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
             onPressed: () => setState(() {}),
+          ),
+          IconButton(
+            icon: const Icon(Icons.keyboard_return_rounded),
+            tooltip: 'Purchase Return (سپلائر واپسی)',
+            onPressed: () async {
+              final done = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (_) => const PurchaseReturnScreen(),
+                ),
+              );
+              if (done == true) setState(() {});
+            },
           ),
           IconButton(
             icon: const Icon(Icons.add),

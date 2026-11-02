@@ -70,6 +70,9 @@ final businessSettingsProvider = FutureProvider<BusinessSettings>((ref) async {
 /// Reactive signal to notify screens when sales data has changed
 final salesUpdateTriggerProvider = StateProvider<int>((ref) => 0);
 
+/// Reactive signal to notify screens when purchases data has changed
+final purchasesUpdateTriggerProvider = StateProvider<int>((ref) => 0);
+
 /// Reactive signal to notify screens when products or stock data has changed
 final productsUpdateTriggerProvider = StateProvider<int>((ref) => 0);
 

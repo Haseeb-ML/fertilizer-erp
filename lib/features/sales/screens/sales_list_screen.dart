@@ -10,6 +10,7 @@ import '../../../core/widgets/search_bar_widget.dart';
 import '../../../core/widgets/status_badge.dart';
 import 'sales_pos_screen.dart';
 import 'sale_detail_screen.dart';
+import 'sale_return_screen.dart';
 
 class SalesListScreen extends ConsumerStatefulWidget {
   const SalesListScreen({super.key});
@@ -60,6 +61,16 @@ class _SalesListScreenState extends ConsumerState<SalesListScreen> {
             icon: const Icon(Icons.refresh),
             tooltip: ref.tr('refresh'),
             onPressed: _refreshSales,
+          ),
+          IconButton(
+            icon: const Icon(Icons.assignment_return_outlined),
+            tooltip: ref.tr('action_sale_return'),
+            onPressed: () async {
+              await Navigator.of(context).push<bool>(
+                MaterialPageRoute(builder: (_) => const SaleReturnScreen()),
+              );
+              _refreshSales();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.point_of_sale),

@@ -6,6 +6,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../payments/screens/receive_payment_screen.dart';
+import '../../sales/screens/sale_return_screen.dart';
 import 'customer_form_screen.dart';
 import 'customer_ledger_screen.dart';
 
@@ -180,6 +181,27 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                   label: const Text('Receive Payment From Customer'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final returned = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => SaleReturnScreen(
+                          preselectedCustomer: customer,
+                        ),
+                      ),
+                    );
+                    if (returned == true) setState(() {});
+                  },
+                  icon: const Icon(Icons.assignment_return_outlined),
+                  label: const Text('Return Item from Customer (گاہک واپسی)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFC62828),
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 13),
                   ),
                 ),

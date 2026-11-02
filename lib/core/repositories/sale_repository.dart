@@ -631,15 +631,43 @@ class SaleRepository {
     required String reason,
   }) async {
     final db = await _dbHelper.database;
-    await db.transaction((txn) async {
-      final saleRows = await txn.query(
-        DatabaseTables.sales,
-        where: 'id = ?',
-        whereArgs: [saleId],
-      );
-      if (saleRows.isEmpty) throw Exception('Sale not found');
-      final sale = Sale.fromMap(saleRows.first);
+    final saleRows = await db.query(
+      DatabaseTables.sales,
+      where: 'id = ?',
+      whereArgs: [saleId],
+    );
+    if (saleRows.isEmpty) throw Exception('Sale not found');
+    final sale = Sale.fromMap(saleRows.first);
 
+    await processDirectSaleReturn(
+      saleId: sale.id,
+      invoiceNumber: sale.invoiceNumber,
+      customerId: sale.customerId,
+      customerName: sale.customerName,
+      productId: productId,
+      quantity: quantity,
+      unitPrice: unitPrice,
+      unitCost: unitCost,
+      refundType: refundType,
+      reason: reason,
+    );
+  }
+
+  Future<void> processDirectSaleReturn({
+    int? saleId,
+    String? invoiceNumber,
+    int? customerId,
+    String? customerName,
+    required int productId,
+    required double quantity,
+    required double unitPrice,
+    double? unitCost,
+    required String refundType, // 'LEDGER_ADJUST' or 'CASH_REFUND'
+    String? reason,
+    String? returnDate,
+  }) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
       final prodRows = await txn.query(
         DatabaseTables.products,
         where: 'id = ?',
@@ -648,12 +676,13 @@ class SaleRepository {
       if (prodRows.isEmpty) throw Exception('Product not found');
 
       final now = DateTime.now().toIso8601String();
-      final today = now.substring(0, 10);
+      final date = returnDate ?? now.substring(0, 10);
       final prodName = prodRows.first['name'] as String;
       final currentStock = (prodRows.first['current_stock'] as num).toDouble();
+      final cost = unitCost ?? (prodRows.first['purchase_price'] as num?)?.toDouble() ?? 0.0;
       final newStock = currentStock + quantity;
 
-      // Restore product stock
+      // 1. Restore product stock
       await txn.update(
         DatabaseTables.products,
         {'current_stock': newStock, 'updated_at': now},
@@ -661,62 +690,76 @@ class SaleRepository {
         whereArgs: [productId],
       );
 
-      // Restore FIFO layer
+      // 2. Restore FIFO layer
       await FifoInventoryService.restoreStockLayer(
         txn,
         productId: productId,
         quantity: quantity,
-        unitCost: unitCost,
-        returnDate: today,
+        unitCost: cost,
+        returnDate: date,
       );
 
-      // Stock movement
+      // 3. Stock movement
+      final invRef = invoiceNumber != null && invoiceNumber.isNotEmpty
+          ? 'Inv #$invoiceNumber'
+          : (customerName != null && customerName.isNotEmpty ? customerName : 'Direct');
       await txn.insert(DatabaseTables.stockMovements, {
         'product_id': productId,
         'product_name': prodName,
         'movement_type': 'SALE_RETURN',
         'quantity': quantity,
         'balance_after': newStock,
-        'reference_id': saleId,
+        'reference_id': saleId ?? 0,
         'reference_type': 'RETURN',
-        'notes': 'Sale Return for Inv #${sale.invoiceNumber}: $reason',
-        'movement_date': today,
+        'notes': 'Sale Return for $invRef: ${reason ?? ""}'.trim(),
+        'movement_date': date,
         'created_at': now,
       });
 
       final totalReturnAmount = quantity * unitPrice;
 
+      // 4. Record return
       await txn.insert(DatabaseTables.returns, {
         'return_type': 'SALE_RETURN',
-        'original_invoice_id': saleId,
-        'original_invoice_number': sale.invoiceNumber,
-        'party_id': sale.customerId ?? 0,
-        'party_name': sale.customerName,
-        'return_date': today,
+        'original_invoice_id': saleId ?? 0,
+        'original_invoice_number': invoiceNumber ?? 'DIRECT',
+        'party_id': customerId ?? 0,
+        'party_name': customerName ?? 'Walk-in Customer',
+        'return_date': date,
         'product_id': productId,
         'product_name': prodName,
         'quantity': quantity,
         'unit_price': unitPrice,
         'total_amount': totalReturnAmount,
         'refund_type': refundType,
-        'reason': reason,
+        'reason': reason ?? '',
         'created_at': now,
       });
 
-      // Update customer ledger if customer exists (Credit reduces receivable)
-      if (sale.customerId != null && sale.customerId! > 0) {
+      // 5. Update customer ledger if customer exists and Ledger Adjust chosen
+      if (refundType == 'LEDGER_ADJUST' && customerId != null && customerId > 0) {
         await AccountingService.addCustomerLedgerEntry(
           txn,
-          customerId: sale.customerId!,
-          transactionDate: today,
+          customerId: customerId,
+          transactionDate: date,
           transactionType: 'SALE_RETURN',
           referenceId: saleId,
-          referenceNumber: sale.invoiceNumber,
+          referenceNumber: invoiceNumber ?? 'DIRECT_RETURN',
           description:
-              'Sales Return ($quantity x $prodName) from Inv #${sale.invoiceNumber}',
+              'Sales Return ($quantity x $prodName) ${reason != null && reason.isNotEmpty ? "- $reason" : ""}'.trim(),
           debit: 0.0,
           credit: totalReturnAmount,
         );
+      } else if (refundType == 'CASH_REFUND') {
+        // Record cash outflow for cash refund
+        await txn.insert(DatabaseTables.expenses, {
+          'category': 'Sales Return Refund',
+          'amount': totalReturnAmount,
+          'expense_date': date,
+          'payment_method': 'Cash',
+          'notes': 'Cash Refund for Sales Return: $quantity x $prodName to ${customerName ?? "Customer"}',
+          'created_at': now,
+        });
       }
     });
   }
