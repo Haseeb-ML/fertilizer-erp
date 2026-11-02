@@ -11,6 +11,26 @@ import '../../../core/widgets/search_bar_widget.dart';
 import '../../purchases/screens/purchase_return_screen.dart';
 import '../../sales/screens/sale_return_screen.dart';
 
+class _ReturnSlipGroup {
+  final List<ReturnRecord> items;
+
+  _ReturnSlipGroup(this.items);
+
+  ReturnRecord get first => items.first;
+  String get returnType => first.returnType;
+  String get partyName => first.partyName;
+  String get returnDate => first.returnDate;
+  String get originalInvoiceNumber => first.originalInvoiceNumber;
+  String get refundType => first.refundType;
+  String get reason => first.reason;
+
+  double get totalAmount =>
+      items.fold<double>(0.0, (sum, r) => sum + r.totalAmount);
+
+  double get totalQty =>
+      items.fold<double>(0.0, (sum, r) => sum + r.quantity);
+}
+
 class ReturnsListScreen extends ConsumerStatefulWidget {
   const ReturnsListScreen({super.key});
 
@@ -208,13 +228,15 @@ class _ReturnsListScreenState extends ConsumerState<ReturnsListScreen>
                   );
                 }
 
+                final grouped = _groupReturns(filtered);
+
                 return ListView.separated(
                   padding: const EdgeInsets.all(12),
-                  itemCount: filtered.length,
+                  itemCount: grouped.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
-                    final item = filtered[index];
-                    return _buildReturnCard(item);
+                    final group = grouped[index];
+                    return _buildReturnCard(group);
                   },
                 );
               },
@@ -360,10 +382,44 @@ class _ReturnsListScreenState extends ConsumerState<ReturnsListScreen>
     );
   }
 
-  Widget _buildReturnCard(ReturnRecord r) {
-    final isCustomerReturn = r.returnType == 'SALE_RETURN';
-    final cardColor = isCustomerReturn ? const Color(0xFFC62828) : const Color(0xFF00796B);
-    final badgeLabel = isCustomerReturn ? 'Customer Return (گاہک)' : 'Supplier Return (سپلائر)';
+  List<_ReturnSlipGroup> _groupReturns(List<ReturnRecord> records) {
+    final List<_ReturnSlipGroup> groups = [];
+    for (final r in records) {
+      final rTime = DateTime.tryParse(r.createdAt);
+      bool addedToExisting = false;
+      for (final g in groups) {
+        final gFirst = g.first;
+        final gTime = DateTime.tryParse(gFirst.createdAt);
+        final bool closeInTime = (rTime != null && gTime != null)
+            ? rTime.difference(gTime).inSeconds.abs() <= 60
+            : r.createdAt == gFirst.createdAt;
+        if (gFirst.returnType == r.returnType &&
+            gFirst.partyName == r.partyName &&
+            gFirst.returnDate == r.returnDate &&
+            gFirst.refundType == r.refundType &&
+            gFirst.originalInvoiceNumber == r.originalInvoiceNumber &&
+            closeInTime) {
+          g.items.add(r);
+          addedToExisting = true;
+          break;
+        }
+      }
+      if (!addedToExisting) {
+        groups.add(_ReturnSlipGroup([r]));
+      }
+    }
+    return groups;
+  }
+
+  Widget _buildReturnCard(_ReturnSlipGroup group) {
+    final isCustomerReturn = group.returnType == 'SALE_RETURN';
+    final cardColor = isCustomerReturn
+        ? const Color(0xFFC62828)
+        : const Color(0xFF00796B);
+    final badgeLabel = isCustomerReturn
+        ? 'Customer Return (گاہک)'
+        : 'Supplier Return (سپلائر)';
+    final items = group.items;
 
     return Card(
       elevation: 1,
@@ -380,36 +436,61 @@ class _ReturnsListScreenState extends ConsumerState<ReturnsListScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: cardColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isCustomerReturn
-                            ? Icons.assignment_return_outlined
-                            : Icons.keyboard_return_rounded,
-                        size: 13,
-                        color: cardColor,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: cardColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        badgeLabel,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: cardColor,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isCustomerReturn
+                                ? Icons.assignment_return_outlined
+                                : Icons.keyboard_return_rounded,
+                            size: 13,
+                            color: cardColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            badgeLabel,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: cardColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (items.length > 1) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${items.length} Products',
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
                 Text(
-                  DateFormatter.formatDate(DateTime.tryParse(r.returnDate) ?? DateTime.now()),
+                  DateFormatter.formatDate(
+                      DateTime.tryParse(group.returnDate) ?? DateTime.now()),
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.textSecondary,
@@ -431,7 +512,7 @@ class _ReturnsListScreenState extends ConsumerState<ReturnsListScreen>
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    r.partyName,
+                    group.partyName,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -439,23 +520,26 @@ class _ReturnsListScreenState extends ConsumerState<ReturnsListScreen>
                     ),
                   ),
                 ),
-                if (r.originalInvoiceNumber.isNotEmpty &&
-                    r.originalInvoiceNumber != 'DIRECT')
+                if (group.originalInvoiceNumber.isNotEmpty &&
+                    group.originalInvoiceNumber != 'DIRECT')
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Text(
-                      'Inv: ${r.originalInvoiceNumber}',
-                      style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+                      'Inv: ${group.originalInvoiceNumber}',
+                      style:
+                          TextStyle(fontSize: 10, color: Colors.grey.shade700),
                     ),
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFF3E0),
                       borderRadius: BorderRadius.circular(4),
@@ -463,38 +547,81 @@ class _ReturnsListScreenState extends ConsumerState<ReturnsListScreen>
                     ),
                     child: const Text(
                       'Direct Return',
-                      style: TextStyle(fontSize: 10, color: Color(0xFFE65100), fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFFE65100),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
               ],
             ),
             const SizedBox(height: 6),
 
-            // Product Details and Qty
+            // Product Details (All returned products in this slip grouped together)
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: const Color(0xFFFAFAFA),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: const Color(0xFFEEEEEE)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Text(
-                      '${r.quantity.toStringAsFixed(0)}x ${r.productName} (@ ${CurrencyFormatter.format(r.unitPrice)})',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  for (int i = 0; i < items.length; i++) ...[
+                    if (i > 0) const Divider(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${items[i].quantity.toStringAsFixed(0)}x ${items[i].productName} (@ ${CurrencyFormatter.format(items[i].unitPrice)})',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          CurrencyFormatter.format(items[i].totalAmount),
+                          style: TextStyle(
+                            fontWeight: items.length > 1
+                                ? FontWeight.w600
+                                : FontWeight.bold,
+                            fontSize: items.length > 1 ? 13 : 14,
+                            color: items.length > 1
+                                ? AppColors.textPrimary
+                                : cardColor,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  Text(
-                    CurrencyFormatter.format(r.totalAmount),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: cardColor,
+                  ],
+                  if (items.length > 1) ...[
+                    const Divider(height: 14, thickness: 1),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total Return (${items.length} Products, ${group.totalQty.toStringAsFixed(0)} Bags):',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          CurrencyFormatter.format(group.totalAmount),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: cardColor,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -505,32 +632,33 @@ class _ReturnsListScreenState extends ConsumerState<ReturnsListScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: r.refundType == 'LEDGER_ADJUST'
+                    color: group.refundType == 'LEDGER_ADJUST'
                         ? const Color(0xFFE8F5E9)
                         : const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    r.refundType == 'LEDGER_ADJUST'
+                    group.refundType == 'LEDGER_ADJUST'
                         ? 'Ledger Adjusted (کھاتے میں)'
                         : 'Cash Refunded (نقد)',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: r.refundType == 'LEDGER_ADJUST'
+                      color: group.refundType == 'LEDGER_ADJUST'
                           ? const Color(0xFF2E7D32)
                           : const Color(0xFF1565C0),
                     ),
                   ),
                 ),
-                if (r.reason.isNotEmpty)
+                if (group.reason.isNotEmpty)
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 8.0),
                       child: Text(
-                        r.reason,
+                        group.reason,
                         style: const TextStyle(
                           fontSize: 11,
                           fontStyle: FontStyle.italic,
