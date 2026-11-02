@@ -741,6 +741,19 @@ void main() {
         // Customer receivable should reduce from 20,000 to 6,000
         final cust = await customerRepo.getCustomerById(custId);
         expect(cust!.currentBalance, 6000.0);
+
+        // Also verify Cash Refund mode (inserts expense with title and restores stock)
+        await saleRepo.processDirectSaleReturn(
+          customerId: null,
+          customerName: 'Walk-in Farmer',
+          productId: prodId,
+          quantity: 1,
+          unitPrice: 3500,
+          refundType: 'CASH_REFUND',
+          reason: 'Cash refund for returned bag',
+        );
+        final prodAfterCashRefund = await productRepo.getProductById(prodId);
+        expect(prodAfterCashRefund!.currentStock, 25.0);
       },
     );
 

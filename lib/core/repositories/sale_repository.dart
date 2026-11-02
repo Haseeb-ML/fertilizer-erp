@@ -753,11 +753,14 @@ class SaleRepository {
       } else if (refundType == 'CASH_REFUND') {
         // Record cash outflow for cash refund
         await txn.insert(DatabaseTables.expenses, {
+          'title':
+              'Sales Return Refund: $prodName (${quantity.toStringAsFixed(0)} bags)',
           'category': 'Sales Return Refund',
           'amount': totalReturnAmount,
           'expense_date': date,
           'payment_method': 'Cash',
-          'notes': 'Cash Refund for Sales Return: $quantity x $prodName to ${customerName ?? "Customer"}',
+          'notes':
+              'Cash Refund for Sales Return: $quantity x $prodName to ${customerName ?? "Customer"}',
           'created_at': now,
         });
       }
