@@ -12,6 +12,26 @@ import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/validators.dart';
 import '../../dashboard/controllers/dashboard_controller.dart';
 
+class _PurchaseReturnLineItem {
+  final int productId;
+  final String productName;
+  final String unit;
+  double quantity;
+  double unitPrice;
+  final double? maxQty;
+
+  _PurchaseReturnLineItem({
+    required this.productId,
+    required this.productName,
+    required this.unit,
+    required this.quantity,
+    required this.unitPrice,
+    this.maxQty,
+  });
+
+  double get total => quantity * unitPrice;
+}
+
 class PurchaseReturnScreen extends ConsumerStatefulWidget {
   final Purchase? purchase;
   final Supplier? preselectedSupplier;
@@ -41,6 +61,9 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
   List<Purchase> _supplierPreviousPurchases = [];
   bool _isLoadingPurchases = false;
   bool _isLoadingData = false;
+
+  // Multi-item return list
+  final List<_PurchaseReturnLineItem> _returnItems = [];
 
   final _qtyController = TextEditingController(text: '1');
   final _unitPriceController = TextEditingController();
@@ -120,10 +143,20 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
     super.dispose();
   }
 
-  double get _totalAmount {
+  double get _currentInputTotal {
+    final hasSelection =
+        _isDirectMode ? _selectedProduct != null : _selectedItem != null;
+    if (!hasSelection) return 0.0;
     final qty = double.tryParse(_qtyController.text.trim()) ?? 0.0;
     final price = double.tryParse(_unitPriceController.text.trim()) ?? 0.0;
+    if (qty <= 0 || price <= 0) return 0.0;
     return qty * price;
+  }
+
+  double get _totalAmount {
+    final listTotal =
+        _returnItems.fold<double>(0.0, (sum, item) => sum + item.total);
+    return listTotal + _currentInputTotal;
   }
 
   Future<void> _selectDate() async {
@@ -163,13 +196,15 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       _selectedProduct = prod;
       _unitPriceController.text = item.unitPrice.toStringAsFixed(0);
       _qtyController.text = '1';
-      _reasonController.text = 'Return from Inv #$invoiceNo';
+      if (_reasonController.text.trim().isEmpty) {
+        _reasonController.text = 'Return from Inv #$invoiceNo';
+      }
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Selected "${item.productName}" (Purchased @ Rs. ${item.unitPrice.toStringAsFixed(0)} on Inv #$invoiceNo)',
+          'Selected "${item.productName}" (@ Rs. ${item.unitPrice.toStringAsFixed(0)}). Tap "+ Add Product" to add more items!',
         ),
         duration: const Duration(seconds: 2),
         backgroundColor: const Color(0xFF00796B),
@@ -177,67 +212,156 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
     );
   }
 
-  Future<void> _submitReturn() async {
-    if (!_formKey.currentState!.validate()) return;
-
+  bool _addCurrentItemToList({bool showFeedback = true}) {
     final qty = double.tryParse(_qtyController.text.trim()) ?? 0.0;
-    if (qty <= 0) return;
-
     final unitPrice = double.tryParse(_unitPriceController.text.trim()) ?? 0.0;
+
+    if (_isDirectMode) {
+      if (_selectedProduct == null) {
+        if (showFeedback) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please select a product first (پہلے پراڈکٹ منتخب کریں)'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+        return false;
+      }
+    } else {
+      if (_selectedItem == null) {
+        if (showFeedback) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please select a product from invoice'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+        return false;
+      }
+    }
+
+    if (qty <= 0) {
+      if (showFeedback) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid return quantity (درست تعداد لکھیں)'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+      return false;
+    }
+
     if (unitPrice <= 0) {
+      if (showFeedback) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid return rate (درست ریٹ لکھیں)'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+      return false;
+    }
+
+    final int prodId =
+        _isDirectMode ? _selectedProduct!.id! : _selectedItem!.productId;
+    final String prodName =
+        _isDirectMode ? _selectedProduct!.name : _selectedItem!.productName;
+    final String unit =
+        _isDirectMode ? _selectedProduct!.unit : _selectedItem!.unit;
+    final double? maxQty = _isDirectMode
+        ? _selectedProduct!.currentStock
+        : _selectedItem!.quantity;
+
+    final existingIndex =
+        _returnItems.indexWhere((e) => e.productId == prodId);
+    final currentListedQty =
+        existingIndex >= 0 ? _returnItems[existingIndex].quantity : 0.0;
+
+    if (maxQty != null && (currentListedQty + qty) > maxQty) {
+      if (showFeedback) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isDirectMode
+                  ? 'Not enough stock to return (${maxQty.toStringAsFixed(0)} available, ${(currentListedQty + qty).toStringAsFixed(0)} requested)'
+                  : 'Cannot return ${currentListedQty + qty}. Only $maxQty was purchased on this invoice.',
+            ),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+      return false;
+    }
+
+    setState(() {
+      if (existingIndex >= 0) {
+        _returnItems[existingIndex].quantity += qty;
+        _returnItems[existingIndex].unitPrice = unitPrice;
+      } else {
+        _returnItems.add(
+          _PurchaseReturnLineItem(
+            productId: prodId,
+            productName: prodName,
+            unit: unit,
+            quantity: qty,
+            unitPrice: unitPrice,
+            maxQty: maxQty,
+          ),
+        );
+      }
+      _selectedProduct = null;
+      _selectedItem = null;
+      _qtyController.text = '1';
+      _unitPriceController.clear();
+    });
+
+    if (showFeedback) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Added "$prodName" (${qty.toStringAsFixed(0)} $unit) to return list',
+          ),
+          duration: const Duration(seconds: 2),
+          backgroundColor: const Color(0xFF00796B),
+        ),
+      );
+    }
+    return true;
+  }
+
+  Future<void> _submitReturn() async {
+    if (_isDirectMode && _selectedSupplier == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter a valid return unit price'),
+          content: Text('Please select a supplier / company'),
           backgroundColor: AppColors.danger,
         ),
       );
       return;
     }
 
-    if (!_isDirectMode && _selectedItem != null) {
-      if (qty > _selectedItem!.quantity) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Cannot return $qty. Only ${_selectedItem!.quantity} was purchased on this invoice.',
-            ),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-        return;
-      }
+    // If user currently has a product selected in the inputs, add it to the list first
+    final hasPendingSelection =
+        _isDirectMode ? _selectedProduct != null : _selectedItem != null;
+    if (hasPendingSelection) {
+      final ok = _addCurrentItemToList(showFeedback: _returnItems.isEmpty);
+      if (!ok && _returnItems.isEmpty) return;
     }
 
-    if (_isDirectMode) {
-      if (_selectedSupplier == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a supplier / company'),
-            backgroundColor: AppColors.danger,
+    if (_returnItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select at least 1 product to return (کم از کم ایک پراڈکٹ منتخب کریں)',
           ),
-        );
-        return;
-      }
-      if (_selectedProduct == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select a product to return'),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-        return;
-      }
-      if (qty > _selectedProduct!.currentStock) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Not enough stock to return (${_selectedProduct!.currentStock.toStringAsFixed(0)} available, $qty requested)',
-            ),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-        return;
-      }
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
     }
 
     setState(() => _isLoading = true);
@@ -246,26 +370,28 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       final repo = ref.read(purchaseRepoProvider);
       final returnDateStr = _returnDate.toIso8601String().substring(0, 10);
 
-      if (_isDirectMode) {
-        await repo.processDirectPurchaseReturn(
-          supplierId: _selectedSupplier!.id!,
-          supplierName: _selectedSupplier!.name,
-          productId: _selectedProduct!.id!,
-          quantity: qty,
-          unitPrice: unitPrice,
-          refundType: _refundType,
-          reason: _reasonController.text.trim(),
-          returnDate: returnDateStr,
-        );
-      } else {
-        await repo.returnPurchaseItem(
-          purchaseId: widget.purchase!.id!,
-          productId: _selectedItem!.productId,
-          quantity: qty,
-          unitPrice: unitPrice,
-          refundType: _refundType,
-          reason: _reasonController.text.trim(),
-        );
+      for (final item in _returnItems) {
+        if (_isDirectMode) {
+          await repo.processDirectPurchaseReturn(
+            supplierId: _selectedSupplier!.id!,
+            supplierName: _selectedSupplier!.name,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            refundType: _refundType,
+            reason: _reasonController.text.trim(),
+            returnDate: returnDateStr,
+          );
+        } else {
+          await repo.returnPurchaseItem(
+            purchaseId: widget.purchase!.id!,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            refundType: _refundType,
+            reason: _reasonController.text.trim(),
+          );
+        }
       }
 
       ref.read(purchasesUpdateTriggerProvider.notifier).state++;
@@ -276,9 +402,9 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
       if (mounted) {
         Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Purchase return processed and stock adjusted successfully',
+              'Purchase return (${_returnItems.length} item(s)) processed and stock adjusted successfully',
             ),
             backgroundColor: AppColors.success,
           ),
@@ -537,7 +663,9 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                             }
                           },
                           validator: (v) =>
-                              v == null ? 'Please select a product' : null,
+                              (v == null && _returnItems.isEmpty)
+                                  ? 'Please select a product'
+                                  : null,
                         ),
                         const SizedBox(height: 14),
                       ] else ...[
@@ -612,10 +740,12 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                 ),
                               ),
                               onChanged: (_) => setState(() {}),
-                              validator: (v) => Validators.positiveNumber(
-                                v,
-                                'Enter valid quantity',
-                              ),
+                              validator: (v) => _returnItems.isNotEmpty
+                                  ? null
+                                  : Validators.positiveNumber(
+                                      v,
+                                      'Enter valid quantity',
+                                    ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -633,15 +763,219 @@ class _PurchaseReturnScreenState extends ConsumerState<PurchaseReturnScreen> {
                                 ),
                               ),
                               onChanged: (_) => setState(() {}),
-                              validator: (v) => Validators.positiveNumber(
-                                v,
-                                'Enter valid rate',
-                              ),
+                              validator: (v) => _returnItems.isNotEmpty
+                                  ? null
+                                  : Validators.positiveNumber(
+                                      v,
+                                      'Enter valid rate',
+                                    ),
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 10),
+
+                      // "+ Add Product to Return List" Button
+                      OutlinedButton.icon(
+                        onPressed: () => _addCurrentItemToList(showFeedback: true),
+                        icon: const Icon(Icons.add_circle_outline, size: 20),
+                        label: const Text(
+                          '+ Add Product to Return List (لسٹ میں شامل کریں / مزید پراڈکٹ)',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF00796B),
+                          backgroundColor: const Color(0xFFE0F2F1),
+                          side: const BorderSide(
+                            color: Color(0xFF00796B),
+                            width: 1.4,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 14),
+
+                      // Return Items Cart / List
+                      if (_returnItems.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(0xFF00796B)
+                                  .withValues(alpha: 0.35),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.shopping_bag_outlined,
+                                        size: 18,
+                                        color: Color(0xFF00796B),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Return Products List (${_returnItems.length} آئٹمز)',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: Color(0xFF00796B),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  TextButton.icon(
+                                    onPressed: () =>
+                                        setState(() => _returnItems.clear()),
+                                    icon: const Icon(
+                                      Icons.clear_all,
+                                      size: 16,
+                                      color: AppColors.danger,
+                                    ),
+                                    label: const Text(
+                                      'Clear All',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.danger,
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 12),
+                              for (int i = 0; i < _returnItems.length; i++) ...[
+                                if (i > 0) const Divider(height: 10),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${i + 1}. ${_returnItems[i].productName}',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${_returnItems[i].quantity.toStringAsFixed(0)} ${_returnItems[i].unit} × ${CurrencyFormatter.format(_returnItems[i].unitPrice)} = ${CurrencyFormatter.format(_returnItems[i].total)}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.textSecondary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // - Qty button
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        size: 20,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: () {
+                                        setState(() {
+                                          if (_returnItems[i].quantity > 1) {
+                                            _returnItems[i].quantity -= 1;
+                                          } else {
+                                            _returnItems.removeAt(i);
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    Text(
+                                      _returnItems[i]
+                                          .quantity
+                                          .toStringAsFixed(0),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    // + Qty button
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.add_circle_outline,
+                                        size: 20,
+                                        color: Color(0xFF00796B),
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: () {
+                                        final maxQ = _returnItems[i].maxQty;
+                                        if (maxQ != null &&
+                                            _returnItems[i].quantity + 1 >
+                                                maxQ) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Max available is ${maxQ.toStringAsFixed(0)}',
+                                              ),
+                                              backgroundColor: AppColors.danger,
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                        setState(() {
+                                          _returnItems[i].quantity += 1;
+                                        });
+                                      },
+                                    ),
+                                    // Delete button
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        size: 20,
+                                        color: AppColors.danger,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: () {
+                                        setState(() {
+                                          _returnItems.removeAt(i);
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
 
                       // Total Amount Card
                       Container(
