@@ -669,4 +669,100 @@ class PurchaseRepository {
       }
     });
   }
+
+  /// Completely and permanently deletes a purchase invoice (e.g. entered by mistake).
+  /// Reverts added stock, deletes FIFO cost layers, removes supplier ledger entries,
+  /// recalculates supplier balance, and deletes the purchase records.
+  Future<void> deletePurchase(int purchaseId) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final purchaseRows = await txn.query(
+        DatabaseTables.purchases,
+        where: 'id = ?',
+        whereArgs: [purchaseId],
+      );
+      if (purchaseRows.isEmpty) throw Exception('Purchase invoice not found');
+      final purchase = Purchase.fromMap(purchaseRows.first);
+
+      final now = DateTime.now().toIso8601String();
+      final today = now.substring(0, 10);
+
+      // 1. Revert stock
+      final items = await txn.query(
+        DatabaseTables.purchaseItems,
+        where: 'purchase_id = ?',
+        whereArgs: [purchaseId],
+      );
+      for (final m in items) {
+        final prodId = m['product_id'] as int;
+        final qty = (m['quantity'] as num).toDouble();
+        final prodRows = await txn.query(
+          DatabaseTables.products,
+          where: 'id = ?',
+          whereArgs: [prodId],
+        );
+        if (prodRows.isNotEmpty) {
+          final curStock = (prodRows.first['current_stock'] as num).toDouble();
+          final newStock = curStock - qty;
+          await txn.update(
+            DatabaseTables.products,
+            {'current_stock': newStock, 'updated_at': now},
+            where: 'id = ?',
+            whereArgs: [prodId],
+          );
+
+          await txn.insert(DatabaseTables.stockMovements, {
+            'product_id': prodId,
+            'product_name': m['product_name'],
+            'movement_type': 'PURCHASE_DELETED',
+            'quantity': -qty,
+            'balance_after': newStock,
+            'reference_id': purchaseId,
+            'reference_type': 'PURCHASE',
+            'notes': 'Deleted Purchase Inv #${purchase.invoiceNumber}',
+            'movement_date': today,
+            'created_at': now,
+          });
+        }
+      }
+
+      // 2. Delete purchase items & FIFO cost layers
+      await txn.delete(
+        DatabaseTables.purchaseItems,
+        where: 'purchase_id = ?',
+        whereArgs: [purchaseId],
+      );
+      await txn.delete(
+        DatabaseTables.stockCostLayers,
+        where: 'purchase_id = ?',
+        whereArgs: [purchaseId],
+      );
+
+      // 3. Delete supplier ledger entries
+      await txn.delete(
+        DatabaseTables.supplierLedger,
+        where: 'supplier_id = ? AND reference_number = ?',
+        whereArgs: [purchase.supplierId, purchase.invoiceNumber],
+      );
+      await txn.delete(
+        DatabaseTables.supplierLedger,
+        where:
+            "supplier_id = ? AND reference_id = ? AND transaction_type IN ('PURCHASE', 'PURCHASE_REVERSAL', 'PAYMENT_PAID', 'PURCHASE_REVERSAL_REFUND')",
+        whereArgs: [purchase.supplierId, purchaseId],
+      );
+
+      // 4. Recalculate supplier balance
+      await SupplierRepository.reconcileSupplierLedger(
+        txn,
+        purchase.supplierId,
+      );
+
+      // 5. Delete purchase record
+      await txn.delete(
+        DatabaseTables.purchases,
+        where: 'id = ?',
+        whereArgs: [purchaseId],
+      );
+    });
+  }
 }

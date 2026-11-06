@@ -34,6 +34,73 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
     await PdfService.shareSaleInvoice(sale: sale, settings: settings);
   }
 
+  Future<void> _deleteSale(Sale sale) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Sales Invoice?'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete sales invoice #${sale.invoiceNumber}?\n\n'
+          '• Deducted stock will be restored back to inventory.\n'
+          '• Customer ledger entry will be removed.\n'
+          '• Customer balance will be recalculated.\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete Permanently (مکمل ڈیلیٹ کریں)'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await ref.read(saleRepoProvider).deleteSale(sale.id!);
+        ref.read(salesUpdateTriggerProvider.notifier).state++;
+        ref.read(productsUpdateTriggerProvider.notifier).state++;
+        ref.read(returnsUpdateTriggerProvider.notifier).state++;
+        ref.invalidate(dashboardDataProvider);
+
+        if (mounted) {
+          Navigator.of(context).pop(true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Sales invoice #${sale.invoiceNumber} deleted successfully',
+              ),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cannot delete sales invoice: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _reverseSale(Sale sale) async {
     final reasonController = TextEditingController();
     final confirm = await showDialog<bool>(
@@ -174,6 +241,14 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
             onPressed: () async {
               final sale = await _fetchSale();
               if (sale != null) _printInvoice(sale);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Delete Invoice (مکمل ڈیلیٹ کریں)',
+            onPressed: () async {
+              final sale = await _fetchSale();
+              if (sale != null) _deleteSale(sale);
             },
           ),
         ],
@@ -536,14 +611,26 @@ class _SaleDetailScreenState extends ConsumerState<SaleDetailScreen> {
 
                   OutlinedButton.icon(
                     onPressed: () => _reverseSale(sale),
-                    icon: const Icon(Icons.undo, color: AppColors.danger),
+                    icon: const Icon(Icons.undo, color: AppColors.warning),
                     label: const Text('Reverse Sales Invoice'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.danger,
-                      side: const BorderSide(color: AppColors.danger),
+                      foregroundColor: AppColors.warning,
+                      side: const BorderSide(color: AppColors.warning),
                     ),
                   ),
+                  const SizedBox(height: 10),
                 ],
+
+                OutlinedButton.icon(
+                  onPressed: () => _deleteSale(sale),
+                  icon: const Icon(Icons.delete_forever, color: AppColors.danger),
+                  label: const Text('Delete Sales Invoice (مکمل ڈیلیٹ کریں)'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.danger,
+                    side: const BorderSide(color: AppColors.danger, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ],
             ),
           );

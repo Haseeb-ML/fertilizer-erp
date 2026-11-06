@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/purchase.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/confirmation_dialog.dart';
 import '../../../core/widgets/status_badge.dart';
@@ -22,6 +23,102 @@ class PurchaseDetailScreen extends ConsumerStatefulWidget {
 class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
   Future<Purchase?> _fetchPurchase() async {
     return ref.read(purchaseRepoProvider).getPurchaseById(widget.purchaseId);
+  }
+
+  Future<void> _sharePurchasePdf(Purchase purchase) async {
+    final settings =
+        await ref.read(settingsRepoProvider).getSettings();
+    await PdfService.sharePurchaseInvoice(
+      purchase: purchase,
+      settings: settings,
+    );
+  }
+
+  Future<void> _sharePurchaseWhatsApp(Purchase purchase) async {
+    final settings =
+        await ref.read(settingsRepoProvider).getSettings();
+    final supplier =
+        await ref.read(supplierRepoProvider).getSupplierById(purchase.supplierId);
+    await PdfService.sharePurchaseInvoiceWhatsApp(
+      purchase: purchase,
+      settings: settings,
+      supplierPhone: supplier?.phone,
+    );
+  }
+
+  Future<void> _printPurchase(Purchase purchase) async {
+    final settings =
+        await ref.read(settingsRepoProvider).getSettings();
+    await PdfService.printPurchaseInvoice(
+      purchase: purchase,
+      settings: settings,
+    );
+  }
+
+  Future<void> _deleteInvoice(Purchase purchase) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Purchase Invoice?'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete purchase invoice #${purchase.invoiceNumber}?\n\n'
+          '• Added stock will be deducted back.\n'
+          '• Supplier ledger entry will be removed.\n'
+          '• Supplier balance will be recalculated.\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete Permanently (مکمل ڈیلیٹ کریں)'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await ref.read(purchaseRepoProvider).deletePurchase(purchase.id!);
+        ref.read(purchasesUpdateTriggerProvider.notifier).state++;
+        ref.read(productsUpdateTriggerProvider.notifier).state++;
+        ref.read(returnsUpdateTriggerProvider.notifier).state++;
+
+        if (mounted) {
+          Navigator.of(context).pop(true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Purchase invoice #${purchase.invoiceNumber} deleted successfully',
+              ),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cannot delete purchase invoice: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _reverseInvoice(Purchase purchase) async {
@@ -102,6 +199,14 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
         title: const Text('Purchase Invoice Details'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Share Invoice (PDF)',
+            onPressed: () async {
+              final p = await _fetchPurchase();
+              if (p != null && mounted) _sharePurchasePdf(p);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.edit),
             tooltip: 'Edit Purchase Invoice',
             onPressed: () async {
@@ -125,6 +230,14 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
               if (updated == true && mounted) {
                 setState(() {});
               }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Delete Invoice (مکمل ڈیلیٹ کریں)',
+            onPressed: () async {
+              final p = await _fetchPurchase();
+              if (p != null && mounted) _deleteInvoice(p);
             },
           ),
         ],
@@ -256,8 +369,9 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                           ),
                         if (p.freightCharges > 0)
                           _row(
-                            'Freight / Transport:',
-                            '+ ${CurrencyFormatter.format(p.freightCharges)}',
+                            'Freight Deduction (کرایہ کٹوتی):',
+                            '- ${CurrencyFormatter.format(p.freightCharges)}',
+                            color: AppColors.danger,
                           ),
                         const Divider(height: 20),
                         _row(
@@ -283,7 +397,42 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+
+                // Share Buttons
+                ElevatedButton.icon(
+                  onPressed: () => _sharePurchasePdf(p),
+                  icon: const Icon(Icons.share),
+                  label: const Text('Share PDF (پی ڈی ایف شیئر کریں)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                ElevatedButton.icon(
+                  onPressed: () => _sharePurchaseWhatsApp(p),
+                  icon: const Icon(Icons.send),
+                  label: const Text('Share on WhatsApp (واٹس ایپ پر بھیجیں)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                OutlinedButton.icon(
+                  onPressed: () => _printPurchase(p),
+                  icon: const Icon(Icons.print),
+                  label: const Text('Print Invoice (پرنٹ کریں)'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
                 if (!p.isReversed) ...[
                   ElevatedButton.icon(
@@ -305,14 +454,26 @@ class _PurchaseDetailScreenState extends ConsumerState<PurchaseDetailScreen> {
 
                   OutlinedButton.icon(
                     onPressed: () => _reverseInvoice(p),
-                    icon: const Icon(Icons.undo, color: AppColors.danger),
+                    icon: const Icon(Icons.undo, color: AppColors.warning),
                     label: const Text('Reverse Purchase Invoice'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.danger,
-                      side: const BorderSide(color: AppColors.danger),
+                      foregroundColor: AppColors.warning,
+                      side: const BorderSide(color: AppColors.warning),
                     ),
                   ),
+                  const SizedBox(height: 10),
                 ],
+
+                OutlinedButton.icon(
+                  onPressed: () => _deleteInvoice(p),
+                  icon: const Icon(Icons.delete_forever, color: AppColors.danger),
+                  label: const Text('Delete Purchase Invoice (مکمل ڈیلیٹ کریں)'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.danger,
+                    side: const BorderSide(color: AppColors.danger, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ],
             ),
           );

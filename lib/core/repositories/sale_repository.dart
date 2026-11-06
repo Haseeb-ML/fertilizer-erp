@@ -852,4 +852,109 @@ class SaleRepository {
       await recalculateSingleSale(db, saleId);
     }
   }
+
+  /// Completely and permanently deletes a sales invoice (e.g. entered by mistake).
+  /// Restores product stocks and FIFO layers, removes customer ledger entries,
+  /// recalculates customer balance, and deletes the sale records.
+  Future<void> deleteSale(int saleId) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final saleRows = await txn.query(
+        DatabaseTables.sales,
+        where: 'id = ?',
+        whereArgs: [saleId],
+      );
+      if (saleRows.isEmpty) throw Exception('Sales invoice not found');
+      final sale = Sale.fromMap(saleRows.first);
+
+      final now = DateTime.now().toIso8601String();
+      final today = now.substring(0, 10);
+
+      // 1. Restore stock & FIFO layers
+      final items = await txn.query(
+        DatabaseTables.saleItems,
+        where: 'sale_id = ?',
+        whereArgs: [saleId],
+      );
+      for (final m in items) {
+        final prodId = m['product_id'] as int;
+        final qty = (m['quantity'] as num).toDouble();
+        final unitCost = (m['unit_cost'] as num?)?.toDouble() ?? 0.0;
+
+        final prodRows = await txn.query(
+          DatabaseTables.products,
+          where: 'id = ?',
+          whereArgs: [prodId],
+        );
+        final curStock = prodRows.isNotEmpty
+            ? ((prodRows.first['current_stock'] as num?)?.toDouble() ?? 0.0)
+            : 0.0;
+        final newStock = curStock + qty;
+
+        await txn.update(
+          DatabaseTables.products,
+          {'current_stock': newStock, 'updated_at': now},
+          where: 'id = ?',
+          whereArgs: [prodId],
+        );
+
+        // Restore FIFO cost layer
+        await FifoInventoryService.addStockLayer(
+          txn,
+          productId: prodId,
+          purchaseId: 0,
+          purchaseDate: today,
+          unitCost: unitCost,
+          quantity: qty,
+        );
+
+        // Record stock movement
+        await txn.insert(DatabaseTables.stockMovements, {
+          'product_id': prodId,
+          'product_name': m['product_name'],
+          'movement_type': 'SALE_DELETED',
+          'quantity': qty,
+          'balance_after': newStock,
+          'reference_id': saleId,
+          'reference_type': 'SALE',
+          'notes': 'Deleted Sale Inv #${sale.invoiceNumber}',
+          'movement_date': today,
+          'created_at': now,
+        });
+      }
+
+      // 2. Delete sale items
+      await txn.delete(
+        DatabaseTables.saleItems,
+        where: 'sale_id = ?',
+        whereArgs: [saleId],
+      );
+
+      // 3. Delete customer ledger entries
+      if (sale.customerId != null && sale.customerId! > 0) {
+        await txn.delete(
+          DatabaseTables.customerLedger,
+          where: 'customer_id = ? AND reference_number = ?',
+          whereArgs: [sale.customerId, sale.invoiceNumber],
+        );
+        await txn.delete(
+          DatabaseTables.customerLedger,
+          where:
+              "customer_id = ? AND reference_id = ? AND transaction_type IN ('SALE', 'SALE_REVERSAL', 'PAYMENT_RECEIVED', 'SALE_REVERSAL_REFUND')",
+          whereArgs: [sale.customerId, saleId],
+        );
+        await CustomerRepository.reconcileCustomerLedger(
+          txn,
+          sale.customerId!,
+        );
+      }
+
+      // 4. Delete sale record
+      await txn.delete(
+        DatabaseTables.sales,
+        where: 'id = ?',
+        whereArgs: [saleId],
+      );
+    });
+  }
 }

@@ -19,12 +19,12 @@ void main() {
         const double discount = 10000;
         const double freight = 25000;
 
-        final grandTotal = subtotal - discount + freight;
-        expect(grandTotal, 925000.0);
+        final grandTotal = subtotal - discount - freight;
+        expect(grandTotal, 875000.0);
 
         const double paidAmount = 500000;
         final balanceDue = grandTotal - paidAmount;
-        expect(balanceDue, 425000.0);
+        expect(balanceDue, 375000.0);
       },
     );
 

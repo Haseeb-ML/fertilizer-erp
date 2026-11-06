@@ -86,7 +86,7 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
       double.tryParse(_discountController.text.trim()) ?? 0.0;
   double get freight => double.tryParse(_freightController.text.trim()) ?? 0.0;
   double get grandTotal =>
-      (subtotal - discount + freight).clamp(0.0, double.infinity);
+      (subtotal - discount - freight).clamp(0.0, double.infinity);
   double get paidAmount =>
       double.tryParse(_paidAmountController.text.trim()) ?? 0.0;
   double get balanceDue =>
@@ -512,7 +512,9 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                                       decimal: true,
                                     ),
                                 decoration: const InputDecoration(
-                                  labelText: 'Freight / Kiraya (PKR)',
+                                  labelText:
+                                      'Freight / Kiraya (کرایہ کٹوتی) (PKR)',
+                                  helperText: 'Deducted from bill (بل سے منہا)',
                                   prefixIcon: Icon(
                                     Icons.local_shipping_outlined,
                                   ),
@@ -579,8 +581,9 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                           ),
                         if (freight > 0)
                           _summaryRow(
-                            'Freight Charges:',
-                            '+ ${CurrencyFormatter.format(freight)}',
+                            'Freight Deduction (کرایہ کٹوتی):',
+                            '- ${CurrencyFormatter.format(freight)}',
+                            color: AppColors.danger,
                           ),
                         const Divider(height: 16),
                         _summaryRow(
