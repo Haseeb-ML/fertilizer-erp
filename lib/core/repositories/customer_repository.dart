@@ -279,7 +279,65 @@ class CustomerRepository {
       }
     }
 
-    return entries;
+    return _groupConsecutiveReturns(entries);
+  }
+
+  /// Groups consecutive return entries on the same date into a single unified row
+  static List<LedgerEntry> _groupConsecutiveReturns(List<LedgerEntry> list) {
+    if (list.length <= 1) return list;
+    final result = <LedgerEntry>[];
+
+    for (int i = 0; i < list.length; i++) {
+      final cur = list[i];
+      if (cur.isReturn) {
+        final group = <LedgerEntry>[cur];
+        while (i + 1 < list.length &&
+            list[i + 1].isReturn &&
+            list[i + 1].transactionDate == cur.transactionDate) {
+          group.add(list[i + 1]);
+          i++;
+        }
+
+        if (group.length > 1) {
+          double sumBags = 0.0;
+          double sumDebit = 0.0;
+          double sumCredit = 0.0;
+          final allItems = <String>[];
+          final allStructured = <LedgerItemDetail>[];
+
+          for (final g in group) {
+            sumBags += g.totalBags;
+            sumDebit += g.debit;
+            sumCredit += g.credit;
+            allItems.addAll(g.itemsDetails);
+            allStructured.addAll(g.parsedItems);
+          }
+
+          final last = group.last;
+          final bagsCountStr = sumBags == sumBags.roundToDouble()
+              ? sumBags.toInt().toString()
+              : sumBags.toString();
+
+          result.add(
+            last.copyWith(
+              description: 'Sales Return (Total $bagsCountStr Bags)',
+              itemsDetails: allItems,
+              structuredItems: allStructured,
+              totalBags: sumBags,
+              debit: sumDebit,
+              credit: sumCredit,
+              runningBalance: last.runningBalance,
+            ),
+          );
+        } else {
+          result.add(cur);
+        }
+      } else {
+        result.add(cur);
+      }
+    }
+
+    return result;
   }
 
   /// Reconciles all transactions and recomputes the exact running balance for a customer
@@ -547,8 +605,7 @@ class CustomerRepository {
       final prodName = ret['product_name'] as String? ?? '';
       final qty = (ret['quantity'] as num?)?.toDouble() ?? 0.0;
 
-      // Cash refunds never touch the customer ledger
-      if ((ret['refund_type'] as String?) == 'CASH_REFUND') continue;
+      final isCashRefund = (ret['refund_type'] as String?) == 'CASH_REFUND';
 
       bool sameAmount(Map<String, Object?> e) =>
           (((e['credit'] as num?)?.toDouble() ?? 0.0) - totalAmount).abs() <
@@ -588,20 +645,45 @@ class CustomerRepository {
         claimed.add(match['id'] as int);
         continue;
       }
-      {
-        await db.insert(DatabaseTables.customerLedger, {
-          'customer_id': customerId,
-          'transaction_date': retDate,
-          'transaction_type': 'SALE_RETURN',
-          'reference_id': retId,
-          'reference_number': invNum,
-          'description':
-              'Sales Return (${qty.toStringAsFixed(0)} x $prodName) from Inv #$invNum',
-          'debit': 0.0,
-          'credit': totalAmount,
-          'running_balance': 0.0,
-          'created_at': ret['created_at'] ?? DateTime.now().toIso8601String(),
-        });
+
+      // 1. Record the Return entry in ledger (so bags and items are documented)
+      await db.insert(DatabaseTables.customerLedger, {
+        'customer_id': customerId,
+        'transaction_date': retDate,
+        'transaction_type': 'SALE_RETURN',
+        'reference_id': retId,
+        'reference_number': invNum,
+        'description':
+            'Sales Return${isCashRefund ? " (Cash Refunded)" : ""} (${qty.toStringAsFixed(0)} x $prodName) from Inv #$invNum',
+        'debit': 0.0,
+        'credit': totalAmount,
+        'running_balance': 0.0,
+        'created_at': ret['created_at'] ?? DateTime.now().toIso8601String(),
+      });
+
+      // 2. If it was refunded in cash, balance was paid out to customer on the spot
+      if (isCashRefund) {
+        final existingCashRefund = await db.query(
+          DatabaseTables.customerLedger,
+          where:
+              "customer_id = ? AND reference_id = ? AND transaction_type = 'CASH_REFUND'",
+          whereArgs: [customerId, retId],
+        );
+        if (existingCashRefund.isEmpty) {
+          await db.insert(DatabaseTables.customerLedger, {
+            'customer_id': customerId,
+            'transaction_date': retDate,
+            'transaction_type': 'CASH_REFUND',
+            'reference_id': retId,
+            'reference_number': invNum,
+            'description':
+                'Cash Refund for Return (${qty.toStringAsFixed(0)} x $prodName)',
+            'debit': totalAmount,
+            'credit': 0.0,
+            'running_balance': 0.0,
+            'created_at': ret['created_at'] ?? DateTime.now().toIso8601String(),
+          });
+        }
       }
     }
 

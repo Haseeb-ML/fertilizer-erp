@@ -459,6 +459,12 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
         label = 'Sales Return';
         icon = Icons.assignment_return;
         break;
+      case 'CASH_REFUND':
+        bg = const Color(0xFFFFF3E0);
+        fg = const Color(0xFFE65100);
+        label = 'Cash Refund (نقد واپسی)';
+        icon = Icons.payments_outlined;
+        break;
       case 'SALE_REVERSAL':
       case 'SALE_REVERSAL_REFUND':
         bg = const Color(0xFFFFCDD2);

@@ -189,6 +189,66 @@ class SupplierRepository {
             ),
           );
         }
+      } else if (entry.isReturn) {
+        // Query return record or parse from description
+        final returnRows = await db.query(
+          DatabaseTables.returns,
+          where:
+              'return_type = "PURCHASE_RETURN" AND (id = ? OR original_invoice_id = ?)',
+          whereArgs: [entry.referenceId, entry.referenceId],
+        );
+        if (returnRows.isNotEmpty) {
+          for (final ret in returnRows) {
+            final qty = (ret['quantity'] as num?)?.toDouble() ?? 0.0;
+            totalBags += qty;
+            final name = ret['product_name'] as String? ?? '';
+            final rate = (ret['unit_price'] as num?)?.toDouble() ?? 0.0;
+            final total = (ret['total_amount'] as num?)?.toDouble() ?? 0.0;
+            final qtyStr = qty == qty.roundToDouble()
+                ? qty.toInt().toString()
+                : qty.toString();
+            itemsDetails.add(
+              'Returned: $qtyStr Bag × $name @ ₨${rate.toStringAsFixed(0)} = ₨${total.toStringAsFixed(0)}',
+            );
+            structuredItems.add(
+              LedgerItemDetail(
+                productName: name,
+                quantity: qty,
+                unit: 'Bag',
+                unitPrice: rate,
+                totalPrice: total,
+              ),
+            );
+          }
+        } else {
+          // Parse quantity and product name from description:
+          // e.g. "Purchase Return (1 x Kissan Dairy Gold (Pellet No. 32))"
+          final match = RegExp(r'Purchase Return\s*\(([0-9.]+)\s*x\s*(.+)\)',
+                  caseSensitive: false)
+              .firstMatch(entry.description);
+          if (match != null) {
+            final qty = double.tryParse(match.group(1)!) ?? 1.0;
+            final name = match.group(2)!.trim();
+            final total = entry.debit > 0 ? entry.debit : entry.credit;
+            final rate = qty > 0 ? total / qty : total;
+            totalBags += qty;
+            final qtyStr = qty == qty.roundToDouble()
+                ? qty.toInt().toString()
+                : qty.toString();
+            itemsDetails.add(
+              'Returned: $qtyStr Bag × $name @ ₨${rate.toStringAsFixed(0)} = ₨${total.toStringAsFixed(0)}',
+            );
+            structuredItems.add(
+              LedgerItemDetail(
+                productName: name,
+                quantity: qty,
+                unit: 'Bag',
+                unitPrice: rate,
+                totalPrice: total,
+              ),
+            );
+          }
+        }
       }
 
       entries.add(
@@ -200,7 +260,70 @@ class SupplierRepository {
       );
     }
 
-    return entries;
+    // Group multiple consecutive returns on the same date into a single statement row
+    return _groupConsecutiveReturns(entries, isCustomer: false);
+  }
+
+  /// Groups consecutive return entries on the same date into a single unified row
+  static List<LedgerEntry> _groupConsecutiveReturns(
+    List<LedgerEntry> list, {
+    required bool isCustomer,
+  }) {
+    if (list.length <= 1) return list;
+    final result = <LedgerEntry>[];
+
+    for (int i = 0; i < list.length; i++) {
+      final cur = list[i];
+      if (cur.isReturn) {
+        final group = <LedgerEntry>[cur];
+        while (i + 1 < list.length &&
+            list[i + 1].isReturn &&
+            list[i + 1].transactionDate == cur.transactionDate) {
+          group.add(list[i + 1]);
+          i++;
+        }
+
+        if (group.length > 1) {
+          double sumBags = 0.0;
+          double sumDebit = 0.0;
+          double sumCredit = 0.0;
+          final allItems = <String>[];
+          final allStructured = <LedgerItemDetail>[];
+
+          for (final g in group) {
+            sumBags += g.totalBags;
+            sumDebit += g.debit;
+            sumCredit += g.credit;
+            allItems.addAll(g.itemsDetails);
+            allStructured.addAll(g.parsedItems);
+          }
+
+          final last = group.last;
+          final bagsCountStr = sumBags == sumBags.roundToDouble()
+              ? sumBags.toInt().toString()
+              : sumBags.toString();
+          final typeName = isCustomer ? 'Sales Return' : 'Purchase Return';
+
+          result.add(
+            last.copyWith(
+              description: '$typeName (Total $bagsCountStr Bags)',
+              itemsDetails: allItems,
+              structuredItems: allStructured,
+              totalBags: sumBags,
+              debit: sumDebit,
+              credit: sumCredit,
+              runningBalance: last.runningBalance,
+            ),
+          );
+        } else {
+          result.add(cur);
+        }
+      } else {
+        result.add(cur);
+      }
+    }
+
+    return result;
   }
 
   static Future<void> reconcileSupplierLedger(
