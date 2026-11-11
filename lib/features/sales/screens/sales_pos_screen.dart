@@ -880,52 +880,9 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.all(12),
-                      itemCount: _cart.length + 1,
+                      itemCount: _cart.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (itemCtx, index) {
-                        if (index == _cart.length) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: InkWell(
-                              onTap: _showProductPicker,
-                              borderRadius: BorderRadius.circular(10),
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 13),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.06),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: AppColors.primary,
-                                    width: 1.2,
-                                  ),
-                                ),
-                                child: const FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.add_circle,
-                                        color: AppColors.primary,
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        '+ Add Another Product (دوسرا پراڈکٹ شامل کریں)',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }
                         final item = _cart[index];
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -1146,38 +1103,6 @@ class _SalesPosScreenState extends ConsumerState<SalesPosScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (_cart.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _showProductPicker,
-                              icon: const Icon(
-                                Icons.add_circle_outline,
-                                size: 18,
-                              ),
-                              label: const Text(
-                                'Add More Products (مزید پراڈکٹ)',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
-                                side:
-                                    const BorderSide(color: AppColors.primary),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
                   // Discount, Payment Method & Paid Amount
                   Row(
                     children: [
