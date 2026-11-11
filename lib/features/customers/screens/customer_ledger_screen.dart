@@ -373,13 +373,16 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
         final bagsCount = e.totalBags > 0
             ? e.totalBags
             : e.parsedItems.fold<double>(0.0, (sum, i) => sum + i.quantity);
+        final effectiveBags = bagsCount > 0
+            ? (e.isReturn ? -bagsCount : bagsCount)
+            : 0;
         return [
           e.transactionDate,
           e.transactionType,
           e.referenceNumber ?? '-',
           e.description,
           itemsStr,
-          bagsCount > 0 ? bagsCount : 0,
+          effectiveBags,
           e.debit > 0 ? e.debit : 0.0,
           e.credit > 0 ? e.credit : 0.0,
           e.runningBalance,
@@ -394,7 +397,12 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
         '',
         'Total Records: ${_entries.length}',
         '',
-        _entries.fold<double>(0.0, (sum, e) => sum + (e.totalBags > 0 ? e.totalBags : e.parsedItems.fold<double>(0.0, (s, i) => s + i.quantity))),
+        _entries.fold<double>(0.0, (sum, e) {
+          final count = e.totalBags > 0
+              ? e.totalBags
+              : e.parsedItems.fold<double>(0.0, (s, i) => s + i.quantity);
+          return sum + (e.isReturn ? -count : count);
+        }),
         totalDebit,
         totalCredit,
         _customer.currentBalance,
@@ -498,6 +506,16 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final totalNetBags = _entries.fold<double>(0.0, (sum, e) {
+      final count = e.totalBags > 0
+          ? e.totalBags
+          : e.parsedItems.fold<double>(0.0, (s, i) => s + i.quantity);
+      return sum + (e.isReturn ? -count : count);
+    });
+    final netBagsStr = totalNetBags == totalNetBags.roundToDouble()
+        ? totalNetBags.toInt().toString()
+        : totalNetBags.toStringAsFixed(1);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('${_customer.name} - کھاتہ / Ledger'),
@@ -669,6 +687,43 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    Container(
+                      constraints: const BoxConstraints(minWidth: 70),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFCBD5E1),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text(
+                            'کل بیگز (Bags)',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF475569),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$netBagsStr Bags',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
                     Container(
                       constraints: const BoxConstraints(minWidth: 80),
                       padding: const EdgeInsets.symmetric(
@@ -1338,11 +1393,11 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                           ),
                         ),
                         child: Text(
-                          '$itemQtyStr ${item.unit}',
-                          style: const TextStyle(
+                          '${isReturn ? "-" : ""}$itemQtyStr ${item.unit}',
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1E293B),
+                            color: isReturn ? AppColors.danger : const Color(0xFF1E293B),
                           ),
                         ),
                       ),
@@ -1398,7 +1453,7 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                 Expanded(
                   flex: 2,
                   child: Text(
-                    '$qtyStr Bags',
+                    '${isReturn ? "-" : ""}$qtyStr Bags',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 10.5,

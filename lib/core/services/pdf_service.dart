@@ -1078,7 +1078,7 @@ ${purchase.balanceDue > 0 ? "🔴 *بقایا جات (Balance Due):* Rs. ${Curre
             final count = e.totalBags > 0
                 ? e.totalBags
                 : e.parsedItems.fold<double>(0.0, (s, i) => s + i.quantity);
-            return sum + count;
+            return sum + (e.isReturn ? -count : count);
           });
           final totalDebitSum =
               entries.fold<double>(0.0, (sum, e) => sum + e.debit);
@@ -1137,10 +1137,11 @@ ${purchase.balanceDue > 0 ? "🔴 *بقایا جات (Balance Due):* Rs. ${Curre
                         ? e.totalBags
                         : e.parsedItems
                             .fold<double>(0.0, (sum, i) => sum + i.quantity);
+                    final formattedBags = bagsCount == bagsCount.roundToDouble()
+                        ? '${bagsCount.toInt()} Bags'
+                        : '$bagsCount Bags';
                     final bagsStr = bagsCount > 0
-                        ? (bagsCount == bagsCount.roundToDouble()
-                            ? '${bagsCount.toInt()} Bags'
-                            : '$bagsCount Bags')
+                        ? (e.isReturn ? '-$formattedBags' : formattedBags)
                         : '-';
 
                     return pw.TableRow(
