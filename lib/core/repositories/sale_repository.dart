@@ -736,23 +736,56 @@ class SaleRepository {
         'created_at': now,
       });
 
-      // 5. Update customer ledger if customer exists and Ledger Adjust chosen
-      if (refundType == 'LEDGER_ADJUST' && customerId != null && customerId > 0) {
-        await AccountingService.addCustomerLedgerEntry(
-          txn,
-          customerId: customerId,
-          transactionDate: date,
-          transactionType: 'SALE_RETURN',
-          // Reference the return record itself so reconcile can match it
-          // and never create a duplicate ledger entry.
-          referenceId: returnId,
-          referenceNumber: invoiceNumber ?? 'DIRECT',
-          description:
-              'Sales Return ($quantity x $prodName) ${reason != null && reason.isNotEmpty ? "- $reason" : ""}'.trim(),
-          debit: 0.0,
-          credit: totalReturnAmount,
-        );
-      } else if (refundType == 'CASH_REFUND') {
+      // 5. Update customer ledger if customer exists
+      if (customerId != null && customerId > 0) {
+        if (refundType == 'LEDGER_ADJUST') {
+          await AccountingService.addCustomerLedgerEntry(
+            txn,
+            customerId: customerId,
+            transactionDate: date,
+            transactionType: 'SALE_RETURN',
+            // Reference the return record itself so reconcile can match it
+            // and never create a duplicate ledger entry.
+            referenceId: returnId,
+            referenceNumber: invoiceNumber ?? 'DIRECT',
+            description:
+                'Sales Return ($quantity x $prodName) ${reason != null && reason.isNotEmpty ? "- $reason" : ""}'.trim(),
+            debit: 0.0,
+            credit: totalReturnAmount,
+          );
+        } else if (refundType == 'CASH_REFUND') {
+          // Both SALE_RETURN (credit) and CASH_REFUND (debit) entries so:
+          // 1) The return is documented in the customer ledger and statement
+          // 2) The bags are correctly deducted from customer totals
+          // 3) The net financial balance remains unchanged (customer received cash)
+          await AccountingService.addCustomerLedgerEntry(
+            txn,
+            customerId: customerId,
+            transactionDate: date,
+            transactionType: 'SALE_RETURN',
+            referenceId: returnId,
+            referenceNumber: invoiceNumber ?? 'DIRECT',
+            description:
+                'Sales Return (Cash Refunded) ($quantity x $prodName) ${reason != null && reason.isNotEmpty ? "- $reason" : ""}'.trim(),
+            debit: 0.0,
+            credit: totalReturnAmount,
+          );
+          await AccountingService.addCustomerLedgerEntry(
+            txn,
+            customerId: customerId,
+            transactionDate: date,
+            transactionType: 'CASH_REFUND',
+            referenceId: returnId,
+            referenceNumber: invoiceNumber ?? 'DIRECT',
+            description:
+                'Cash Refund for Return ($quantity x $prodName)',
+            debit: totalReturnAmount,
+            credit: 0.0,
+          );
+        }
+      }
+
+      if (refundType == 'CASH_REFUND') {
         // Record cash outflow for cash refund
         await txn.insert(DatabaseTables.expenses, {
           'title':

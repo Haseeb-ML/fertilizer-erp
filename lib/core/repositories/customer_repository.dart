@@ -176,36 +176,66 @@ class CustomerRepository {
           where: 'original_invoice_id = ? OR id = ?',
           whereArgs: [entry.referenceId, entry.referenceId],
         );
-        for (final ret in returnRows) {
-          final qty = (ret['quantity'] as num?)?.toDouble() ?? 0.0;
-          totalBags += qty;
-          final name = ret['product_name'] as String? ?? '';
-          final rate = (ret['unit_price'] as num?)?.toDouble() ?? 0.0;
-          final total = (ret['total_amount'] as num?)?.toDouble() ?? 0.0;
-          final reason = ret['reason'] as String? ?? '';
-          final reasonStr = reason.isNotEmpty ? ' ($reason)' : '';
-          final qtyStr = qty == qty.roundToDouble()
-              ? qty.toInt().toString()
-              : qty.toString();
-          final rateStr = rate == rate.roundToDouble()
-              ? rate.toInt().toString()
-              : rate.toStringAsFixed(0);
-          final totalStr = total == total.roundToDouble()
-              ? total.toInt().toString()
-              : total.toStringAsFixed(0);
-          itemsDetails.add(
-            'Returned: $qtyStr Bag × $name @ ₨$rateStr = ₨$totalStr$reasonStr',
-          );
-          structuredItems.add(
-            LedgerItemDetail(
-              productName: name,
-              quantity: qty,
-              unit: 'Bag',
-              unitPrice: rate,
-              totalPrice: total,
-              reason: reason.isNotEmpty ? reason : null,
-            ),
-          );
+        if (returnRows.isNotEmpty) {
+          for (final ret in returnRows) {
+            final qty = (ret['quantity'] as num?)?.toDouble() ?? 0.0;
+            totalBags += qty;
+            final name = ret['product_name'] as String? ?? '';
+            final rate = (ret['unit_price'] as num?)?.toDouble() ?? 0.0;
+            final total = (ret['total_amount'] as num?)?.toDouble() ?? 0.0;
+            final reason = ret['reason'] as String? ?? '';
+            final reasonStr = reason.isNotEmpty ? ' ($reason)' : '';
+            final qtyStr = qty == qty.roundToDouble()
+                ? qty.toInt().toString()
+                : qty.toString();
+            final rateStr = rate == rate.roundToDouble()
+                ? rate.toInt().toString()
+                : rate.toStringAsFixed(0);
+            final totalStr = total == total.roundToDouble()
+                ? total.toInt().toString()
+                : total.toStringAsFixed(0);
+            itemsDetails.add(
+              'Returned: $qtyStr Bag × $name @ ₨$rateStr = ₨$totalStr$reasonStr',
+            );
+            structuredItems.add(
+              LedgerItemDetail(
+                productName: name,
+                quantity: qty,
+                unit: 'Bag',
+                unitPrice: rate,
+                totalPrice: total,
+                reason: reason.isNotEmpty ? reason : null,
+              ),
+            );
+          }
+        } else {
+          // Fallback: parse quantity and product name from description
+          // e.g. "Sales Return (9 x Sona Urea)" or "Sales Return (Cash Refunded) (9 x Sona Urea)"
+          final match = RegExp(r'Sales Return.*?\((\d+(?:\.\d+)?)\s*x\s*([^\)]+)\)',
+                  caseSensitive: false)
+              .firstMatch(entry.description);
+          if (match != null) {
+            final qty = double.tryParse(match.group(1)!) ?? 1.0;
+            final name = match.group(2)!.trim();
+            final total = entry.credit > 0 ? entry.credit : entry.debit;
+            final rate = qty > 0 ? total / qty : total;
+            totalBags += qty;
+            final qtyStr = qty == qty.roundToDouble()
+                ? qty.toInt().toString()
+                : qty.toString();
+            itemsDetails.add(
+              'Returned: $qtyStr Bag × $name @ ₨${rate.toStringAsFixed(0)} = ₨${total.toStringAsFixed(0)}',
+            );
+            structuredItems.add(
+              LedgerItemDetail(
+                productName: name,
+                quantity: qty,
+                unit: 'Bag',
+                unitPrice: rate,
+                totalPrice: total,
+              ),
+            );
+          }
         }
         entries.add(
           entry.copyWith(
@@ -279,65 +309,141 @@ class CustomerRepository {
       }
     }
 
-    return _groupConsecutiveReturns(entries);
+    return _groupReturns(entries);
   }
 
-  /// Groups consecutive return entries on the same date into a single unified row
-  static List<LedgerEntry> _groupConsecutiveReturns(List<LedgerEntry> list) {
+  /// Groups return entries and refund entries on the same date/batch
+  /// into a single clean grouped entry so customer statements stay neat and concise,
+  /// just like multi-item purchases and sales.
+  static List<LedgerEntry> _groupReturns(List<LedgerEntry> list) {
     if (list.length <= 1) return list;
-    final result = <LedgerEntry>[];
 
+    // Check if there are returns or cash refunds on the same date to group
+    final dateGroups = <String, List<int>>{}; // date -> indices of SALE_RETURN / CASH_REFUND
     for (int i = 0; i < list.length; i++) {
-      final cur = list[i];
-      if (cur.isReturn) {
-        final group = <LedgerEntry>[cur];
-        while (i + 1 < list.length &&
-            list[i + 1].isReturn &&
-            list[i + 1].transactionDate == cur.transactionDate) {
-          group.add(list[i + 1]);
-          i++;
-        }
-
-        if (group.length > 1) {
-          double sumBags = 0.0;
-          double sumDebit = 0.0;
-          double sumCredit = 0.0;
-          final allItems = <String>[];
-          final allStructured = <LedgerItemDetail>[];
-
-          for (final g in group) {
-            sumBags += g.totalBags;
-            sumDebit += g.debit;
-            sumCredit += g.credit;
-            allItems.addAll(g.itemsDetails);
-            allStructured.addAll(g.parsedItems);
-          }
-
-          final last = group.last;
-          final bagsCountStr = sumBags == sumBags.roundToDouble()
-              ? sumBags.toInt().toString()
-              : sumBags.toString();
-
-          result.add(
-            last.copyWith(
-              description: 'Sales Return (Total $bagsCountStr Bags)',
-              itemsDetails: allItems,
-              structuredItems: allStructured,
-              totalBags: sumBags,
-              debit: sumDebit,
-              credit: sumCredit,
-              runningBalance: last.runningBalance,
-            ),
-          );
-        } else {
-          result.add(cur);
-        }
-      } else {
-        result.add(cur);
+      final e = list[i];
+      if (e.isReturn || e.transactionType == 'CASH_REFUND') {
+        dateGroups.putIfAbsent(e.transactionDate, () => []).add(i);
       }
     }
 
-    return result;
+    final toSkip = <int>{};
+    final replacements = <int, List<LedgerEntry>>{}; // index -> replacement entries
+
+    for (final entry in dateGroups.entries) {
+      final indices = entry.value;
+      final returnIndices = indices.where((idx) => list[idx].isReturn).toList();
+      final refundIndices =
+          indices.where((idx) => list[idx].transactionType == 'CASH_REFUND').toList();
+
+      // If multiple return entries exist on the same date, merge them into 1 single row
+      if (returnIndices.length > 1) {
+        double sumBags = 0.0;
+        double sumDebit = 0.0;
+        double sumCredit = 0.0;
+        final allItems = <String>[];
+        final allStructured = <LedgerItemDetail>[];
+        bool anyCashRefund = false;
+
+        for (final idx in returnIndices) {
+          final g = list[idx];
+          sumBags += g.totalBags;
+          sumDebit += g.debit;
+          sumCredit += g.credit;
+          allItems.addAll(g.itemsDetails);
+          allStructured.addAll(g.parsedItems);
+          if (g.description.toLowerCase().contains('cash refund')) {
+            anyCashRefund = true;
+          }
+        }
+
+        final firstReturn = list[returnIndices.first];
+        final bagsCountStr = sumBags == sumBags.roundToDouble()
+            ? sumBags.toInt().toString()
+            : sumBags.toString();
+        final refundLabel = anyCashRefund ? ' (Cash Refunded)' : '';
+
+        final mergedReturn = firstReturn.copyWith(
+          description: 'Sales Return$refundLabel (Total $bagsCountStr Bags)',
+          itemsDetails: allItems,
+          structuredItems: allStructured,
+          totalBags: sumBags,
+          debit: sumDebit,
+          credit: sumCredit,
+          runningBalance: firstReturn.runningBalance,
+        );
+
+        // Mark all other return indices to be skipped
+        for (int k = 1; k < returnIndices.length; k++) {
+          toSkip.add(returnIndices[k]);
+        }
+
+        // Handle CASH_REFUND entries on the same date
+        if (refundIndices.isNotEmpty) {
+          double sumRefundDebit = 0.0;
+          for (final idx in refundIndices) {
+            sumRefundDebit += list[idx].debit;
+          }
+          final firstRefund = list[refundIndices.first];
+          final mergedRefund = firstRefund.copyWith(
+            description:
+                'Cash Refund for Sales Return (Total $bagsCountStr Bags)',
+            debit: sumRefundDebit,
+            credit: 0.0,
+            runningBalance: firstRefund.runningBalance,
+          );
+
+          // Skip all refund indices
+          toSkip.addAll(refundIndices);
+
+          // Place mergedReturn followed immediately by mergedRefund
+          replacements[returnIndices.first] = [mergedReturn, mergedRefund];
+        } else {
+          replacements[returnIndices.first] = [mergedReturn];
+        }
+      } else if (refundIndices.length > 1) {
+        // Multiple cash refunds without multiple returns
+        double sumRefundDebit = 0.0;
+        for (final idx in refundIndices) {
+          sumRefundDebit += list[idx].debit;
+        }
+        final firstRefund = list[refundIndices.first];
+        final mergedRefund = firstRefund.copyWith(
+          description: 'Cash Refund for Returns (${refundIndices.length} items)',
+          debit: sumRefundDebit,
+          credit: 0.0,
+        );
+        for (int k = 1; k < refundIndices.length; k++) {
+          toSkip.add(refundIndices[k]);
+        }
+        replacements[refundIndices.first] = [mergedRefund];
+      }
+    }
+
+    final result = <LedgerEntry>[];
+    for (int i = 0; i < list.length; i++) {
+      if (toSkip.contains(i)) continue;
+      if (replacements.containsKey(i)) {
+        result.addAll(replacements[i]!);
+      } else {
+        result.add(list[i]);
+      }
+    }
+
+    // Recalculate running balance smoothly from top to bottom
+    double running = 0.0;
+    final finalResult = <LedgerEntry>[];
+    for (final e in result) {
+      if (e.isOpeningBalance) {
+        running = e.runningBalance;
+        finalResult.add(e);
+      } else {
+        running = running + e.debit - e.credit;
+        finalResult.add(e.copyWith(runningBalance: running));
+      }
+    }
+
+    return finalResult;
   }
 
   /// Reconciles all transactions and recomputes the exact running balance for a customer
@@ -643,6 +749,30 @@ class CustomerRepository {
 
       if (match != null) {
         claimed.add(match['id'] as int);
+        // Even if the SALE_RETURN entry exists, ensure corresponding CASH_REFUND entry exists if needed
+        if (isCashRefund) {
+          final existingCashRefund = await db.query(
+            DatabaseTables.customerLedger,
+            where:
+                "customer_id = ? AND reference_id = ? AND transaction_type = 'CASH_REFUND'",
+            whereArgs: [customerId, retId],
+          );
+          if (existingCashRefund.isEmpty) {
+            await db.insert(DatabaseTables.customerLedger, {
+              'customer_id': customerId,
+              'transaction_date': retDate,
+              'transaction_type': 'CASH_REFUND',
+              'reference_id': retId,
+              'reference_number': invNum,
+              'description':
+                  'Cash Refund for Return (${qty.toStringAsFixed(0)} x $prodName)',
+              'debit': totalAmount,
+              'credit': 0.0,
+              'running_balance': 0.0,
+              'created_at': ret['created_at'] ?? DateTime.now().toIso8601String(),
+            });
+          }
+        }
         continue;
       }
 
