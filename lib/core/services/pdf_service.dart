@@ -1390,51 +1390,57 @@ ${lines.isEmpty ? "کوئی ٹرانزیکشن موجود نہیں" : lines.join
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Row(
-                    children: [
-                      if (logoImage != null)
-                        pw.Container(
-                          width: 44,
-                          height: 44,
-                          margin: const pw.EdgeInsets.only(right: 12),
-                          child: pw.ClipRRect(
-                            horizontalRadius: 6,
-                            verticalRadius: 6,
-                            child: pw.Image(logoImage),
+                  pw.Expanded(
+                    child: pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        if (logoImage != null)
+                          pw.Container(
+                            width: 44,
+                            height: 44,
+                            margin: const pw.EdgeInsets.only(right: 12),
+                            child: pw.ClipRRect(
+                              horizontalRadius: 6,
+                              verticalRadius: 6,
+                              child: pw.Image(logoImage),
+                            ),
+                          ),
+                        pw.Expanded(
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                settings.businessName,
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: pw.FontWeight.bold,
+                                  color: PdfColors.green900,
+                                ),
+                              ),
+                              if (settings.phone.isNotEmpty)
+                                pw.Text(
+                                  'Phone: ${settings.phone}',
+                                  style: const pw.TextStyle(fontSize: 9),
+                                ),
+                              if (settings.address.isNotEmpty)
+                                pw.Text(
+                                  settings.address,
+                                  style: const pw.TextStyle(fontSize: 8.5),
+                                ),
+                            ],
                           ),
                         ),
-                      pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text(
-                            settings.businessName,
-                            style: pw.TextStyle(
-                              fontSize: 18,
-                              fontWeight: pw.FontWeight.bold,
-                              color: PdfColors.green900,
-                            ),
-                          ),
-                          if (settings.phone.isNotEmpty)
-                            pw.Text(
-                              'Phone: ${settings.phone}',
-                              style: const pw.TextStyle(fontSize: 10),
-                            ),
-                          if (settings.address.isNotEmpty)
-                            pw.Text(
-                              settings.address,
-                              style: const pw.TextStyle(fontSize: 10),
-                            ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  pw.SizedBox(width: 12),
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
                       pw.Text(
                         'PROFIT & LOSS STATEMENT',
                         style: pw.TextStyle(
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: pw.FontWeight.bold,
                           color: PdfColors.green900,
                         ),
@@ -1442,12 +1448,12 @@ ${lines.isEmpty ? "کوئی ٹرانزیکشن موجود نہیں" : lines.join
                       pw.SizedBox(height: 2),
                       pw.Text(
                         'Period: $periodText',
-                        style: const pw.TextStyle(fontSize: 9),
+                        style: const pw.TextStyle(fontSize: 8.5),
                       ),
                       pw.Text(
                         'Generated: ${DateTime.now().toLocal().toString().substring(0, 16)}',
                         style: const pw.TextStyle(
-                          fontSize: 8,
+                          fontSize: 7.5,
                           color: PdfColors.grey700,
                         ),
                       ),
@@ -1609,6 +1615,67 @@ ${lines.isEmpty ? "کوئی ٹرانزیکشن موجود نہیں" : lines.join
                     ],
                   );
                 }),
+                // Total Summary Row for Product Breakdown
+                () {
+                  final totalQtySold = report.productBreakdown.fold<double>(
+                    0.0,
+                    (sum, i) => sum + i.quantitySold,
+                  );
+                  final totalRevenueSum = report.productBreakdown.fold<double>(
+                    0.0,
+                    (sum, i) => sum + i.totalRevenue,
+                  );
+                  final totalCostSum = report.productBreakdown.fold<double>(
+                    0.0,
+                    (sum, i) => sum + i.totalCost,
+                  );
+                  final totalGrossProfitSum = report.productBreakdown.fold<double>(
+                    0.0,
+                    (sum, i) => sum + i.grossProfit,
+                  );
+                  final overallMargin = totalRevenueSum > 0
+                      ? (totalGrossProfitSum / totalRevenueSum) * 100
+                      : 0.0;
+                  final totalQtyStr =
+                      totalQtySold == totalQtySold.roundToDouble()
+                          ? '${totalQtySold.toInt()} Bags'
+                          : '$totalQtySold Bags';
+
+                  return pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                    children: [
+                      _td('', align: pw.TextAlign.center, isBold: true),
+                      _td('Total Summary / کل میزان',
+                          align: pw.TextAlign.left, isBold: true),
+                      _td(
+                        '${report.productBreakdown.length} Products',
+                        align: pw.TextAlign.center,
+                        isBold: true,
+                      ),
+                      _td(totalQtyStr, align: pw.TextAlign.center, isBold: true),
+                      _td(
+                        CurrencyFormatter.formatPdf(totalRevenueSum),
+                        align: pw.TextAlign.right,
+                        isBold: true,
+                      ),
+                      _td(
+                        CurrencyFormatter.formatPdf(totalCostSum),
+                        align: pw.TextAlign.right,
+                        isBold: true,
+                      ),
+                      _td(
+                        CurrencyFormatter.formatPdf(totalGrossProfitSum),
+                        align: pw.TextAlign.right,
+                        isBold: true,
+                      ),
+                      _td(
+                        '${overallMargin.toStringAsFixed(1)}%',
+                        align: pw.TextAlign.center,
+                        isBold: true,
+                      ),
+                    ],
+                  );
+                }(),
               ],
             ),
             pw.SizedBox(height: 18),
