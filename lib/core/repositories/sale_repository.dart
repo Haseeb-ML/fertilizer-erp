@@ -719,7 +719,7 @@ class SaleRepository {
       final totalReturnAmount = quantity * unitPrice;
 
       // 4. Record return
-      await txn.insert(DatabaseTables.returns, {
+      final returnId = await txn.insert(DatabaseTables.returns, {
         'return_type': 'SALE_RETURN',
         'original_invoice_id': saleId ?? 0,
         'original_invoice_number': invoiceNumber ?? 'DIRECT',
@@ -743,8 +743,10 @@ class SaleRepository {
           customerId: customerId,
           transactionDate: date,
           transactionType: 'SALE_RETURN',
-          referenceId: saleId,
-          referenceNumber: invoiceNumber ?? 'DIRECT_RETURN',
+          // Reference the return record itself so reconcile can match it
+          // and never create a duplicate ledger entry.
+          referenceId: returnId,
+          referenceNumber: invoiceNumber ?? 'DIRECT',
           description:
               'Sales Return ($quantity x $prodName) ${reason != null && reason.isNotEmpty ? "- $reason" : ""}'.trim(),
           debit: 0.0,

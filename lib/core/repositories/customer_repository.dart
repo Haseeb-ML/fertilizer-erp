@@ -532,6 +532,13 @@ class CustomerRepository {
       where: "party_id = ? AND return_type = 'SALE_RETURN'",
       whereArgs: [customerId],
     );
+    final existingReturnEntries = await db.query(
+      DatabaseTables.customerLedger,
+      where: "customer_id = ? AND transaction_type = 'SALE_RETURN'",
+      whereArgs: [customerId],
+    );
+    // Ledger rows already linked to a return (each can be claimed only once)
+    final claimed = <int>{};
     for (final ret in returns) {
       final retId = ret['id'] as int;
       final invNum = ret['original_invoice_number'] as String?;
@@ -540,13 +547,48 @@ class CustomerRepository {
       final prodName = ret['product_name'] as String? ?? '';
       final qty = (ret['quantity'] as num?)?.toDouble() ?? 0.0;
 
-      final existing = await db.query(
-        DatabaseTables.customerLedger,
-        where:
-            "customer_id = ? AND (reference_id = ? OR (reference_number = ? AND transaction_type = 'SALE_RETURN'))",
-        whereArgs: [customerId, retId, invNum],
-      );
-      if (existing.isEmpty) {
+      // Cash refunds never touch the customer ledger
+      if ((ret['refund_type'] as String?) == 'CASH_REFUND') continue;
+
+      bool sameAmount(Map<String, Object?> e) =>
+          (((e['credit'] as num?)?.toDouble() ?? 0.0) - totalAmount).abs() <
+          0.005;
+      bool legacyRef(Map<String, Object?> e) {
+        final n = e['reference_number'] as String?;
+        final isDirect = invNum == null || invNum == 'DIRECT';
+        return isDirect ? (n == 'DIRECT' || n == 'DIRECT_RETURN') : n == invNum;
+      }
+
+      // Prefer exact link by return id, then fall back to legacy entries
+      Map<String, Object?>? match;
+      for (final e in existingReturnEntries) {
+        final id = e['id'] as int;
+        if (!claimed.contains(id) &&
+            e['reference_id'] == retId &&
+            legacyRef(e) &&
+            sameAmount(e)) {
+          match = e;
+          break;
+        }
+      }
+      match ??= () {
+        for (final e in existingReturnEntries) {
+          final id = e['id'] as int;
+          if (!claimed.contains(id) &&
+              legacyRef(e) &&
+              sameAmount(e) &&
+              e['transaction_date'] == retDate) {
+            return e;
+          }
+        }
+        return null;
+      }();
+
+      if (match != null) {
+        claimed.add(match['id'] as int);
+        continue;
+      }
+      {
         await db.insert(DatabaseTables.customerLedger, {
           'customer_id': customerId,
           'transaction_date': retDate,
@@ -560,6 +602,20 @@ class CustomerRepository {
           'running_balance': 0.0,
           'created_at': ret['created_at'] ?? DateTime.now().toIso8601String(),
         });
+      }
+    }
+
+    // Remove legacy duplicate direct-return ledger entries that no longer
+    // correspond to any return record (caused by the old double-entry bug).
+    for (final e in existingReturnEntries) {
+      final id = e['id'] as int;
+      final n = e['reference_number'] as String?;
+      if (!claimed.contains(id) && (n == 'DIRECT_RETURN' || n == 'DIRECT')) {
+        await db.delete(
+          DatabaseTables.customerLedger,
+          where: 'id = ?',
+          whereArgs: [id],
+        );
       }
     }
 
