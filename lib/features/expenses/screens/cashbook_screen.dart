@@ -6,6 +6,7 @@ import '../../../core/providers/app_providers.dart';
 import '../../../core/repositories/cashbook_repository.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/services/pdf_service.dart';
 import '../../../core/widgets/empty_state_view.dart';
 
 class CashbookScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,29 @@ class CashbookScreen extends ConsumerStatefulWidget {
 class _CashbookScreenState extends ConsumerState<CashbookScreen> {
   DateTime _selectedDate = DateTime.now();
 
+  Future<void> _exportCashbookPdf() async {
+    try {
+      final repo = ref.read(cashbookRepoProvider);
+      final dateStr = DateFormatter.toSqlDate(_selectedDate);
+      final summary = await repo.getDailyCashbookSummary(dateStr);
+      final items = await repo.getDailyCashbookItems(dateStr);
+      final settings = await ref.read(settingsRepoProvider).getSettings();
+
+      await PdfService.shareCashbook(
+        summary: summary,
+        items: items,
+        date: DateFormatter.formatDate(_selectedDate),
+        settings: settings,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate Cashbook PDF: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final repo = ref.watch(cashbookRepoProvider);
@@ -27,6 +51,11 @@ class _CashbookScreenState extends ConsumerState<CashbookScreen> {
       appBar: AppBar(
         title: const Text('Daily Cashbook (Rokarr)'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Export Cashbook PDF',
+            onPressed: _exportCashbookPdf,
+          ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
             tooltip: 'Select Date',

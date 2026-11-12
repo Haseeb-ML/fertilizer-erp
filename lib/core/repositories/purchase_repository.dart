@@ -685,7 +685,7 @@ class PurchaseRepository {
         // Cash received from supplier back into business cash
         await txn.insert(DatabaseTables.payments, {
           'payment_type': 'CUSTOMER_IN',
-          'party_type': 'Supplier',
+          'party_type': 'SUPPLIER',
           'party_id': supplierId,
           'party_name': supplierName ?? 'Supplier',
           'amount': totalReturnAmount,

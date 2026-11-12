@@ -13,6 +13,9 @@ import '../models/ledger_entry.dart';
 import '../models/report_models.dart';
 import '../models/product.dart';
 import '../models/expense.dart';
+import '../models/payment.dart';
+import '../models/return_record.dart';
+import '../repositories/cashbook_repository.dart';
 import '../utils/currency_formatter.dart';
 
 class PdfService {
@@ -2845,6 +2848,475 @@ ${lines.isEmpty ? "کوئی ٹرانزیکشن موجود نہیں" : lines.join
       bytes: bytes,
       filename: '${partyType}_Balance_Report.pdf',
       shareText: reportTitle,
+    );
+  }
+
+  /// Builds a PDF Document for Daily Cashbook (Rokarr)
+  static Future<pw.Document> buildCashbookDocument({
+    required CashbookSummary summary,
+    required List<CashbookItem> items,
+    required String date,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        header: (context) => pw.Column(
+          children: [
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      _cleanPdfText(settings.businessName),
+                      style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.green900,
+                      ),
+                    ),
+                    if (settings.phone.isNotEmpty)
+                      pw.Text('Phone: ${settings.phone}',
+                          style: const pw.TextStyle(fontSize: 10)),
+                    if (settings.address.isNotEmpty)
+                      pw.Text(_cleanPdfText(settings.address),
+                          style: const pw.TextStyle(fontSize: 10)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text(
+                      'DAILY CASHBOOK / ROKARR',
+                      style: pw.TextStyle(
+                        fontSize: 14,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.green900,
+                      ),
+                    ),
+                    pw.Text('Date: $date', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      'Generated: ${DateTime.now().toLocal().toString().substring(0, 16)}',
+                      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 8),
+            pw.Divider(thickness: 1.5, color: PdfColors.green900),
+            pw.SizedBox(height: 8),
+          ],
+        ),
+        build: (context) => [
+          // Cash Summary Block
+          pw.Container(
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+              border: pw.Border.all(color: PdfColors.grey300),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Opening Cash:', style: const pw.TextStyle(fontSize: 9)),
+                    pw.Text(
+                      CurrencyFormatter.formatPdf(summary.openingCash),
+                      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                    ),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    pw.Text('Total Cash In (+):', style: const pw.TextStyle(fontSize: 9, color: PdfColors.green800)),
+                    pw.Text(
+                      CurrencyFormatter.formatPdf(summary.totalCashIn),
+                      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.green800),
+                    ),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    pw.Text('Total Cash Out (-):', style: const pw.TextStyle(fontSize: 9, color: PdfColors.red800)),
+                    pw.Text(
+                      CurrencyFormatter.formatPdf(summary.totalCashOut),
+                      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.red800),
+                    ),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text('Closing Cash:', style: const pw.TextStyle(fontSize: 9, color: PdfColors.green900)),
+                    pw.Text(
+                      CurrencyFormatter.formatPdf(summary.closingCash),
+                      style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.green900),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 12),
+
+          // Items Table
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+            columnWidths: {
+              0: const pw.FixedColumnWidth(24),
+              1: const pw.FixedColumnWidth(70),
+              2: const pw.FlexColumnWidth(2),
+              3: const pw.FlexColumnWidth(3.5),
+              4: const pw.FixedColumnWidth(70),
+              5: const pw.FixedColumnWidth(70),
+            },
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                children: [
+                  _th('#', fontSize: 8),
+                  _th('Ref #', fontSize: 8),
+                  _th('Type', align: pw.TextAlign.left, fontSize: 8),
+                  _th('Description', align: pw.TextAlign.left, fontSize: 8),
+                  _th('Cash In (Rs.)', align: pw.TextAlign.right, fontSize: 8),
+                  _th('Cash Out (Rs.)', align: pw.TextAlign.right, fontSize: 8),
+                ],
+              ),
+              if (items.isEmpty)
+                pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(12),
+                      child: pw.Text('No transactions recorded on this date', textAlign: pw.TextAlign.center),
+                    ),
+                    pw.Container(), pw.Container(), pw.Container(), pw.Container(), pw.Container(),
+                  ],
+                )
+              else
+                ...items.asMap().entries.map((entry) {
+                  final idx = entry.key + 1;
+                  final item = entry.value;
+                  return pw.TableRow(
+                    decoration: pw.BoxDecoration(
+                      color: idx.isEven ? PdfColors.grey50 : PdfColors.white,
+                    ),
+                    children: [
+                      _td('$idx', align: pw.TextAlign.center, fontSize: 8),
+                      _td(item.timeOrId, fontSize: 8),
+                      _td(item.type, fontSize: 8),
+                      _td(item.description, fontSize: 8),
+                      _td(
+                        item.cashIn > 0 ? CurrencyFormatter.format(item.cashIn, showSymbol: false) : '-',
+                        align: pw.TextAlign.right,
+                        fontSize: 8,
+                        isBold: item.cashIn > 0,
+                      ),
+                      _td(
+                        item.cashOut > 0 ? CurrencyFormatter.format(item.cashOut, showSymbol: false) : '-',
+                        align: pw.TextAlign.right,
+                        fontSize: 8,
+                        isBold: item.cashOut > 0,
+                      ),
+                    ],
+                  );
+                }),
+              // Table Total Row
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                children: [
+                  _th(''),
+                  _th(''),
+                  _th('TOTALS', align: pw.TextAlign.left, fontSize: 8.5),
+                  _th('${items.length} Transactions', align: pw.TextAlign.left, fontSize: 8),
+                  _th(CurrencyFormatter.format(summary.totalCashIn, showSymbol: false), align: pw.TextAlign.right, fontSize: 8.5),
+                  _th(CurrencyFormatter.format(summary.totalCashOut, showSymbol: false), align: pw.TextAlign.right, fontSize: 8.5),
+                ],
+              ),
+            ],
+          ),
+
+          pw.SizedBox(height: 24),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Prepared By: __________________', style: const pw.TextStyle(fontSize: 9)),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text('Cashier / Manager Signature: __________________', style: const pw.TextStyle(fontSize: 9)),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return pdf;
+  }
+
+  static Future<void> printCashbook({
+    required CashbookSummary summary,
+    required List<CashbookItem> items,
+    required String date,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildCashbookDocument(
+      summary: summary,
+      items: items,
+      date: date,
+      settings: settings,
+    );
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Cashbook_$date.pdf',
+    );
+  }
+
+  static Future<void> shareCashbook({
+    required CashbookSummary summary,
+    required List<CashbookItem> items,
+    required String date,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildCashbookDocument(
+      summary: summary,
+      items: items,
+      date: date,
+      settings: settings,
+    );
+    final bytes = await pdf.save();
+    await _safeShareOrDownloadPdf(
+      bytes: bytes,
+      filename: 'Cashbook_$date.pdf',
+      shareText: 'Daily Cashbook - $date',
+    );
+  }
+
+  /// Builds a PDF Document for Goods Return Slip (Customer or Supplier return)
+  static Future<pw.Document> buildReturnSlipDocument({
+    required List<ReturnRecord> items,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = pw.Document();
+    if (items.isEmpty) return pdf;
+
+    final first = items.first;
+    final isCustomerReturn = first.returnType == 'SALE_RETURN';
+    final totalQty = items.fold<double>(0, (s, i) => s + i.quantity);
+    final totalAmount = items.fold<double>(0, (s, i) => s + i.totalAmount);
+    final partyType = isCustomerReturn ? 'Customer' : 'Supplier';
+    final title = isCustomerReturn ? 'CUSTOMER SALES RETURN SLIP' : 'SUPPLIER PURCHASE RETURN SLIP';
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      _cleanPdfText(settings.businessName),
+                      style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.green900,
+                      ),
+                    ),
+                    if (settings.phone.isNotEmpty)
+                      pw.Text('Phone: ${settings.phone}',
+                          style: const pw.TextStyle(fontSize: 10)),
+                    if (settings.address.isNotEmpty)
+                      pw.Text(_cleanPdfText(settings.address),
+                          style: const pw.TextStyle(fontSize: 10)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text(
+                      title,
+                      style: pw.TextStyle(
+                        fontSize: 13,
+                        fontWeight: pw.FontWeight.bold,
+                        color: isCustomerReturn ? PdfColors.red800 : PdfColors.teal800,
+                      ),
+                    ),
+                    pw.Text('Return Date: ${first.returnDate}', style: const pw.TextStyle(fontSize: 10)),
+                    if (first.originalInvoiceNumber != 'DIRECT' && first.originalInvoiceNumber.isNotEmpty)
+                      pw.Text('Invoice Ref: #${first.originalInvoiceNumber}', style: const pw.TextStyle(fontSize: 9)),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 8),
+            pw.Divider(thickness: 1.5, color: isCustomerReturn ? PdfColors.red800 : PdfColors.teal800),
+            pw.SizedBox(height: 8),
+
+            // Party Info Box
+            pw.Container(
+              padding: const pw.EdgeInsets.all(10),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                border: pw.Border.all(color: PdfColors.grey300),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('$partyType Name: ${_cleanPdfText(first.partyName)}',
+                          style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                      if (first.reason.isNotEmpty)
+                        pw.Text('Return Reason: ${_cleanPdfText(first.reason)}',
+                            style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey800)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(
+                        'Refund Mode: ${first.refundType == "CASH_REFUND" ? "Cash Refunded" : "Ledger Adjusted"}',
+                        style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 12),
+
+            // Return Items Table
+            pw.Table(
+              border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+              columnWidths: {
+                0: const pw.FixedColumnWidth(28),
+                1: const pw.FlexColumnWidth(4),
+                2: const pw.FixedColumnWidth(70),
+                3: const pw.FixedColumnWidth(80),
+                4: const pw.FixedColumnWidth(90),
+              },
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  children: [
+                    _th('#', fontSize: 8.5),
+                    _th('Product Name', align: pw.TextAlign.left, fontSize: 8.5),
+                    _th('Returned Qty', align: pw.TextAlign.center, fontSize: 8.5),
+                    _th('Rate (Rs.)', align: pw.TextAlign.right, fontSize: 8.5),
+                    _th('Total Amount (Rs.)', align: pw.TextAlign.right, fontSize: 8.5),
+                  ],
+                ),
+                ...items.asMap().entries.map((entry) {
+                  final idx = entry.key + 1;
+                  final item = entry.value;
+                  final qtyStr = item.quantity == item.quantity.roundToDouble()
+                      ? item.quantity.toInt().toString()
+                      : item.quantity.toString();
+                  return pw.TableRow(
+                    children: [
+                      _td('$idx', align: pw.TextAlign.center, fontSize: 8.5),
+                      _td(item.productName, fontSize: 8.5),
+                      _td('$qtyStr Bags', align: pw.TextAlign.center, fontSize: 8.5, isBold: true),
+                      _td(CurrencyFormatter.format(item.unitPrice, showSymbol: false), align: pw.TextAlign.right, fontSize: 8.5),
+                      _td(CurrencyFormatter.format(item.totalAmount, showSymbol: false), align: pw.TextAlign.right, fontSize: 8.5, isBold: true),
+                    ],
+                  );
+                }),
+                // Total Summary Row
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                  children: [
+                    _th(''),
+                    _th('TOTAL RETURNED', align: pw.TextAlign.left, fontSize: 9),
+                    _th('${totalQty == totalQty.roundToDouble() ? totalQty.toInt() : totalQty} Bags', align: pw.TextAlign.center, fontSize: 9),
+                    _th(''),
+                    _th(CurrencyFormatter.format(totalAmount, showSymbol: false), align: pw.TextAlign.right, fontSize: 9.5),
+                  ],
+                ),
+              ],
+            ),
+
+            pw.Spacer(),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Party Signature: __________________', style: const pw.TextStyle(fontSize: 9)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text('Authorized Signature: __________________', style: const pw.TextStyle(fontSize: 9)),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return pdf;
+  }
+
+  static Future<void> printReturnSlip({
+    required List<ReturnRecord> items,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildReturnSlipDocument(
+      items: items,
+      settings: settings,
+    );
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Return_Slip_${items.first.id}.pdf',
+    );
+  }
+
+  static Future<void> shareReturnSlip({
+    required List<ReturnRecord> items,
+    required BusinessSettings settings,
+  }) async {
+    final pdf = await buildReturnSlipDocument(
+      items: items,
+      settings: settings,
+    );
+    final bytes = await pdf.save();
+    await _safeShareOrDownloadPdf(
+      bytes: bytes,
+      filename: 'Return_Slip_${items.first.id}.pdf',
+      shareText: 'Goods Return Voucher Slip',
     );
   }
 }

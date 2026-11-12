@@ -6,6 +6,7 @@ import '../../../core/models/return_record.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/services/pdf_service.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/search_bar_widget.dart';
 import '../../purchases/screens/purchase_return_screen.dart';
@@ -561,6 +562,33 @@ class _ReturnsListScreenState extends ConsumerState<ReturnsListScreen>
                         fontSize: 11,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    InkWell(
+                      onTap: () async {
+                        try {
+                          final settings = await ref.read(settingsRepoProvider).getSettings();
+                          await PdfService.shareReturnSlip(
+                            items: group.items,
+                            settings: settings,
+                          );
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to generate PDF: $e')),
+                            );
+                          }
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(4),
+                      child: const Padding(
+                        padding: EdgeInsets.all(2.0),
+                        child: Icon(
+                          Icons.picture_as_pdf,
+                          size: 16,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),

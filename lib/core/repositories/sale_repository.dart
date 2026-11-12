@@ -790,7 +790,7 @@ class SaleRepository {
         // but DO NOT add to business expenses table as sales return is contra-revenue, not a shop expense).
         await txn.insert(DatabaseTables.payments, {
           'payment_type': 'SUPPLIER_OUT',
-          'payment_number': 'REF-$now',
+          'reference_number': 'REF-$now',
           'party_type': 'CUSTOMER',
           'party_id': customerId ?? 0,
           'party_name': customerName ?? 'Walk-in Customer',

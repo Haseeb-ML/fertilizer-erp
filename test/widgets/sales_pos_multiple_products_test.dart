@@ -116,8 +116,8 @@ void main() {
     expect(find.text('Kisaan Dairy Gold (Pellet No. 32)'), findsOneWidget);
     expect(find.text('Urea Sona'), findsOneWidget);
 
-    // Both products are listed, and "+ Add Another Product" button is visible
-    expect(find.text('+ Add Another Product (دوسرا پراڈکٹ شامل کریں)'), findsOneWidget);
+    // Both products are listed, and "Add Another Product" button is visible
+    expect(find.text('Add Another Product'), findsOneWidget);
 
     // Total: 4325 + 4938 = 9263
     expect(find.textContaining('9,263'), findsWidgets);
@@ -135,8 +135,8 @@ void main() {
     // Total = 8650 + 4938 = 13588
     expect(find.textContaining('13,588'), findsWidgets);
 
-    // 7. Verify "+ Add Another Product" button opens the picker again
-    await tester.tap(find.text('+ Add Another Product (دوسرا پراڈکٹ شامل کریں)'));
+    // 7. Verify "Add Another Product" button opens the picker again
+    await tester.tap(find.text('Add Another Product'));
     await tester.runAsync(() async {
       await Future.delayed(const Duration(milliseconds: 300));
     });
