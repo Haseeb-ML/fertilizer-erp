@@ -243,7 +243,10 @@ class ReportRepository {
     final grossProfit = netRevenue - effectiveCogs;
 
     // 4. Operating Expenses & Category Breakdown
-    final expWhere = <String>[];
+    final expWhere = <String>[
+      "category != 'Sales Return Refund'",
+      "category NOT LIKE '%Sales Return%'",
+    ];
     final expArgs = <dynamic>[];
     if (cleanFrom != null) {
       expWhere.add('SUBSTR(expense_date, 1, 10) >= ?');

@@ -14,8 +14,21 @@ class ExpenseRepository {
     String? toDate,
   }) async {
     final db = await _dbHelper.database;
+
+    // Purge any mistakenly recorded sales return refund records from expenses table
+    try {
+      await db.delete(
+        DatabaseTables.expenses,
+        where:
+            "category = 'Sales Return Refund' OR category LIKE '%Sales Return%' OR title LIKE 'Sales Return Refund%'",
+      );
+    } catch (_) {}
+
     final whereClauses = <String>[];
     final whereArgs = <dynamic>[];
+
+    // Always exclude any sales return refund from expense queries
+    whereClauses.add("category != 'Sales Return Refund' AND category NOT LIKE '%Sales Return%'");
 
     if (category != null && category.isNotEmpty && category != 'All') {
       whereClauses.add('category = ?');
@@ -74,7 +87,7 @@ class ExpenseRepository {
   Future<double> getTotalExpensesForDate(String date) async {
     final db = await _dbHelper.database;
     final res = await db.rawQuery(
-      'SELECT COALESCE(SUM(amount), 0) as total FROM ${DatabaseTables.expenses} WHERE expense_date = ?',
+      "SELECT COALESCE(SUM(amount), 0) as total FROM ${DatabaseTables.expenses} WHERE expense_date = ? AND category != 'Sales Return Refund' AND category NOT LIKE '%Sales Return%'",
       [date],
     );
     return (res.first['total'] as num?)?.toDouble() ?? 0.0;

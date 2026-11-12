@@ -786,16 +786,20 @@ class SaleRepository {
       }
 
       if (refundType == 'CASH_REFUND') {
-        // Record cash outflow for cash refund
-        await txn.insert(DatabaseTables.expenses, {
-          'title':
-              'Sales Return Refund: $prodName (${quantity.toStringAsFixed(0)} bags)',
-          'category': 'Sales Return Refund',
+        // Record cash outflow in payments table (so cashbook reflects cash out,
+        // but DO NOT add to business expenses table as sales return is contra-revenue, not a shop expense).
+        await txn.insert(DatabaseTables.payments, {
+          'payment_type': 'SUPPLIER_OUT',
+          'payment_number': 'REF-$now',
+          'party_type': 'CUSTOMER',
+          'party_id': customerId ?? 0,
+          'party_name': customerName ?? 'Walk-in Customer',
           'amount': totalReturnAmount,
-          'expense_date': date,
+          'payment_date': date,
           'payment_method': 'Cash',
-          'notes':
-              'Cash Refund for Sales Return: $quantity x $prodName to ${customerName ?? "Customer"}',
+          'reference_invoice_id': saleId,
+          'reference_invoice_number': invoiceNumber ?? 'DIRECT',
+          'notes': 'Cash Refund for Sales Return: $quantity x $prodName',
           'created_at': now,
         });
       }

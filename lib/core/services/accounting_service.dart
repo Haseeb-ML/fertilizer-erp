@@ -168,6 +168,8 @@ class AccountingService {
       SELECT COALESCE(SUM(amount), 0) as total_expenses
       FROM ${DatabaseTables.expenses}
       WHERE payment_method = 'Cash'
+        AND category != 'Sales Return Refund'
+        AND category NOT LIKE '%Sales Return%'
     ''');
     final double cashPaidExpenses =
         (expensesResult.first['total_expenses'] as num?)?.toDouble() ?? 0.0;
