@@ -622,7 +622,7 @@ class PurchaseRepository {
       final totalReturnAmount = quantity * unitPrice;
 
       // 4. Record return
-      await txn.insert(DatabaseTables.returns, {
+      final returnId = await txn.insert(DatabaseTables.returns, {
         'return_type': 'PURCHASE_RETURN',
         'original_invoice_id': purchaseId ?? 0,
         'original_invoice_number': invoiceNumber ?? 'DIRECT',
@@ -646,7 +646,7 @@ class PurchaseRepository {
           supplierId: supplierId,
           transactionDate: date,
           transactionType: 'PURCHASE_RETURN',
-          referenceId: purchaseId,
+          referenceId: returnId,
           referenceNumber: invoiceNumber ?? 'DIRECT_RETURN',
           description:
               'Purchase Return ($quantity x $prodName) ${reason != null && reason.isNotEmpty ? "- $reason" : ""}'.trim(),
@@ -663,7 +663,7 @@ class PurchaseRepository {
             supplierId: supplierId,
             transactionDate: date,
             transactionType: 'PURCHASE_RETURN',
-            referenceId: purchaseId,
+            referenceId: returnId,
             referenceNumber: invoiceNumber ?? 'DIRECT_RETURN',
             description:
                 'Purchase Return (Cash Refunded) ($quantity x $prodName) ${reason != null && reason.isNotEmpty ? "- $reason" : ""}'.trim(),
@@ -675,7 +675,7 @@ class PurchaseRepository {
             supplierId: supplierId,
             transactionDate: date,
             transactionType: 'CASH_REFUND',
-            referenceId: purchaseId,
+            referenceId: returnId,
             referenceNumber: invoiceNumber ?? 'DIRECT_RETURN',
             description: 'Cash Refund for Return ($quantity x $prodName)',
             debit: 0.0,

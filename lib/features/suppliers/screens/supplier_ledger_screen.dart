@@ -597,18 +597,18 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: widget.supplier.currentBalance > 0
+                          color: _supplier.currentBalance > 0
                               ? AppColors.warning
                               : AppColors.success,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        CurrencyFormatter.format(widget.supplier.currentBalance),
+                        CurrencyFormatter.format(_supplier.currentBalance),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
-                          color: widget.supplier.currentBalance > 0
+                          color: _supplier.currentBalance > 0
                               ? AppColors.warning
                               : AppColors.success,
                         ),
@@ -667,7 +667,9 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: AppColors.secondary
+                                          color: (e.isReturn
+                                                  ? AppColors.warning
+                                                  : AppColors.secondary)
                                               .withOpacity(0.12),
                                           borderRadius: BorderRadius.circular(
                                             6,
@@ -676,18 +678,24 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Icon(
-                                              Icons.inventory_2,
+                                            Icon(
+                                              e.isReturn
+                                                  ? Icons.assignment_return_outlined
+                                                  : Icons.inventory_2,
                                               size: 12,
-                                              color: AppColors.secondary,
+                                              color: e.isReturn
+                                                  ? AppColors.warning
+                                                  : AppColors.secondary,
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              '${e.totalBags.toStringAsFixed(0)} Bags',
-                                              style: const TextStyle(
+                                              '${e.isReturn ? "-" : ""}${e.totalBags.toStringAsFixed(0)} Bags',
+                                              style: TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,
-                                                color: AppColors.secondary,
+                                                color: e.isReturn
+                                                    ? AppColors.warning
+                                                    : AppColors.secondary,
                                               ),
                                             ),
                                           ],
@@ -758,11 +766,22 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                                 // Description (clean up repetitive bracketed items)
                                 Builder(
                                   builder: (context) {
-                                    final cleanTitle = e.description.contains('(')
-                                        ? e.description
-                                            .substring(
-                                                0, e.description.indexOf('('))
-                                            .trim()
+                                    final cleanTitle = (e.isReturn ||
+                                                e.transactionType == 'PURCHASE') &&
+                                            e.description.contains('(')
+                                        ? (e.isReturn &&
+                                                e.description
+                                                    .toLowerCase()
+                                                    .contains('cash refund')
+                                            ? 'Purchase Return (Cash Refunded)'
+                                            : (e.isReturn
+                                                ? 'Purchase Return'
+                                                : e.description
+                                                    .substring(
+                                                        0,
+                                                        e.description
+                                                            .indexOf('('))
+                                                    .trim()))
                                         : e.description;
                                     return Text(
                                       cleanTitle,
@@ -775,7 +794,19 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                                   },
                                 ),
                                 if (e.parsedItems.isNotEmpty)
-                                  _buildItemsTable(e),
+                                  _buildItemsTable(e)
+                                else if (e.isReturn &&
+                                    !e.description.toLowerCase().startsWith('purchase return'))
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      e.description,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
                                 const SizedBox(height: 6),
                                 Row(
                                   mainAxisAlignment:
@@ -783,10 +814,14 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                                   children: [
                                     if (e.credit > 0)
                                       Text(
-                                        'Credit (Purchased): +${CurrencyFormatter.format(e.credit)}',
-                                        style: const TextStyle(
+                                        e.transactionType == 'CASH_REFUND'
+                                            ? 'Credit (Cash Refunded): +${CurrencyFormatter.format(e.credit)}'
+                                            : 'Credit (Purchased): +${CurrencyFormatter.format(e.credit)}',
+                                        style: TextStyle(
                                           fontSize: 12,
-                                          color: AppColors.warning,
+                                          color: e.transactionType == 'CASH_REFUND'
+                                              ? AppColors.primary
+                                              : AppColors.warning,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       )
@@ -794,10 +829,14 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                                       const SizedBox.shrink(),
                                     if (e.debit > 0)
                                       Text(
-                                        'Debit (Paid): -${CurrencyFormatter.format(e.debit)}',
-                                        style: const TextStyle(
+                                        e.isReturn
+                                            ? 'Debit (Returned): -${CurrencyFormatter.format(e.debit)}'
+                                            : 'Debit (Paid): -${CurrencyFormatter.format(e.debit)}',
+                                        style: TextStyle(
                                           fontSize: 12,
-                                          color: AppColors.success,
+                                          color: e.isReturn
+                                              ? AppColors.warning
+                                              : AppColors.success,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       )
@@ -830,6 +869,10 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
         ? totalItemsQty.toInt().toString()
         : totalItemsQty.toString();
 
+    final isReturn = e.isReturn;
+    final primaryThemeColor =
+        isReturn ? AppColors.warning : AppColors.secondary;
+
     return Container(
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
@@ -853,20 +896,24 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(
-                      Icons.inventory_2_outlined,
+                      isReturn
+                          ? Icons.assignment_return_outlined
+                          : Icons.inventory_2_outlined,
                       size: 14,
-                      color: AppColors.secondary,
+                      color: primaryThemeColor,
                     ),
-                    SizedBox(width: 5),
+                    const SizedBox(width: 5),
                     Text(
-                      'Purchased Product Details:',
+                      isReturn
+                          ? 'Returned Product Details:'
+                          : 'Purchased Product Details:',
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.secondary,
+                        color: primaryThemeColor,
                       ),
                     ),
                   ],
@@ -878,28 +925,28 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                       vertical: 2.5,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(0.12),
+                      color: primaryThemeColor.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: AppColors.secondary.withOpacity(0.35),
+                        color: primaryThemeColor.withOpacity(0.35),
                         width: 0.8,
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.shopping_bag,
                           size: 11,
-                          color: AppColors.secondary,
+                          color: primaryThemeColor,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '$qtyStr Bags Purchased',
-                          style: const TextStyle(
+                          '$qtyStr Bags ${isReturn ? 'Returned' : 'Purchased'}',
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.secondary,
+                            color: primaryThemeColor,
                           ),
                         ),
                       ],
@@ -1020,11 +1067,13 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                           ),
                         ),
                         child: Text(
-                          '$itemQtyStr ${item.unit}',
-                          style: const TextStyle(
+                          '${isReturn ? "-" : ""}$itemQtyStr ${item.unit}',
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1E293B),
+                            color: isReturn
+                                ? AppColors.danger
+                                : const Color(0xFF1E293B),
                           ),
                         ),
                       ),
@@ -1047,10 +1096,10 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                     child: Text(
                       'Rs $itemTotalStr',
                       textAlign: TextAlign.right,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: isReturn ? AppColors.warning : AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -1080,12 +1129,12 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                 Expanded(
                   flex: 2,
                   child: Text(
-                    '$qtyStr Bags',
+                    '${isReturn ? "-" : ""}$qtyStr Bags',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.secondary,
+                      color: primaryThemeColor,
                     ),
                   ),
                 ),
@@ -1098,10 +1147,10 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
                   child: Text(
                     'Rs ${totalItemsAmount == totalItemsAmount.roundToDouble() ? totalItemsAmount.toInt().toString() : totalItemsAmount.toStringAsFixed(0)}',
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.secondary,
+                      color: primaryThemeColor,
                     ),
                   ),
                 ),

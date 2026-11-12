@@ -134,6 +134,15 @@ class SupplierRepository {
     String? toDate,
   }) async {
     final db = await _dbHelper.database;
+
+    // Automatically reconcile supplier ledger so all purchase returns, opening balances
+    // and running balances are completely synchronized before query.
+    try {
+      await reconcileSupplierLedger(db, supplierId);
+    } catch (e) {
+      // Don't block ledger loading if reconcile has a transient issue
+    }
+
     final whereClauses = <String>['supplier_id = ?'];
     final whereArgs = <dynamic>[supplierId];
 
@@ -190,18 +199,33 @@ class SupplierRepository {
           );
         }
       } else if (entry.isReturn) {
-        // Query return record or parse from description
-        // NOTE: string literal must be a bound parameter - double-quoted
-        // literals are treated as column names by SQLite on web/new builds,
-        // which threw an exception and left the ledger spinner stuck forever.
+        // Query return record by id/original_invoice_id or fallback by date & party
         List<Map<String, Object?>> returnRows = const [];
         try {
-          returnRows = await db.query(
-            DatabaseTables.returns,
-            where:
-                'return_type = ? AND (id = ? OR original_invoice_id = ?)',
-            whereArgs: ['PURCHASE_RETURN', entry.referenceId, entry.referenceId],
-          );
+          if (entry.referenceId != null && entry.referenceId! > 0) {
+            returnRows = await db.query(
+              DatabaseTables.returns,
+              where:
+                  'return_type = ? AND (id = ? OR original_invoice_id = ?)',
+              whereArgs: [
+                'PURCHASE_RETURN',
+                entry.referenceId,
+                entry.referenceId
+              ],
+            );
+          }
+          if (returnRows.isEmpty) {
+            returnRows = await db.query(
+              DatabaseTables.returns,
+              where:
+                  'return_type = ? AND party_id = ? AND return_date = ?',
+              whereArgs: [
+                'PURCHASE_RETURN',
+                supplierId,
+                entry.transactionDate
+              ],
+            );
+          }
         } catch (_) {
           returnRows = const [];
         }
@@ -230,8 +254,8 @@ class SupplierRepository {
           }
         } else {
           // Parse quantity and product name from description:
-          // e.g. "Purchase Return (1 x Kissan Dairy Gold (Pellet No. 32))"
-          final match = RegExp(r'Purchase Return\s*\(([0-9.]+)\s*x\s*(.+)\)',
+          // e.g. "Purchase Return (1 x Kissan Dairy Gold)" or "Purchase Return (Cash Refunded) (5 x Urea)"
+          final match = RegExp(r'\(([0-9.]+)\s*x\s*([^\)]+)\)',
                   caseSensitive: false)
               .firstMatch(entry.description);
           if (match != null) {
@@ -252,6 +276,18 @@ class SupplierRepository {
                 quantity: qty,
                 unit: 'Bag',
                 unitPrice: rate,
+                totalPrice: total,
+              ),
+            );
+          } else {
+            // General fallback so return items are never empty
+            final total = entry.debit > 0 ? entry.debit : entry.credit;
+            structuredItems.add(
+              LedgerItemDetail(
+                productName: entry.description,
+                quantity: 1,
+                unit: 'Bag',
+                unitPrice: total,
                 totalPrice: total,
               ),
             );
@@ -401,7 +437,154 @@ class SupplierRepository {
       }
     }
 
-    // 2. Recompute running balance chronologically (credit increases payable, debit decreases payable)
+    // 2. Reconcile purchase returns from returns table
+    final returns = await db.query(
+      DatabaseTables.returns,
+      where: "party_id = ? AND return_type = 'PURCHASE_RETURN'",
+      whereArgs: [supplierId],
+    );
+    final existingReturnEntries = await db.query(
+      DatabaseTables.supplierLedger,
+      where: "supplier_id = ? AND transaction_type = 'PURCHASE_RETURN'",
+      whereArgs: [supplierId],
+    );
+    final claimed = <int>{};
+    for (final ret in returns) {
+      final retId = ret['id'] as int;
+      final invNum = ret['original_invoice_number'] as String?;
+      final retDate = ret['return_date'] as String;
+      final totalAmount = (ret['total_amount'] as num?)?.toDouble() ?? 0.0;
+      final prodName = ret['product_name'] as String? ?? '';
+      final qty = (ret['quantity'] as num?)?.toDouble() ?? 0.0;
+      final isCashRefund = (ret['refund_type'] as String?) == 'CASH_REFUND';
+
+      bool sameAmount(Map<String, Object?> e) =>
+          (((e['debit'] as num?)?.toDouble() ?? 0.0) - totalAmount).abs() < 0.005;
+      bool legacyRef(Map<String, Object?> e) {
+        final n = e['reference_number'] as String?;
+        final isDirect = invNum == null || invNum == 'DIRECT';
+        return isDirect
+            ? (n == 'DIRECT' || n == 'DIRECT_RETURN' || n == null)
+            : n == invNum;
+      }
+
+      Map<String, Object?>? match;
+      for (final e in existingReturnEntries) {
+        final id = e['id'] as int;
+        if (!claimed.contains(id) &&
+            (e['reference_id'] == retId ||
+                (e['reference_id'] == ret['original_invoice_id'] &&
+                    ret['original_invoice_id'] != 0)) &&
+            sameAmount(e)) {
+          match = e;
+          break;
+        }
+      }
+      match ??= () {
+        for (final e in existingReturnEntries) {
+          final id = e['id'] as int;
+          if (!claimed.contains(id) &&
+              legacyRef(e) &&
+              sameAmount(e) &&
+              e['transaction_date'] == retDate) {
+            return e;
+          }
+        }
+        return null;
+      }();
+
+      if (match != null) {
+        claimed.add(match['id'] as int);
+        if (match['reference_id'] == null || match['reference_id'] != retId) {
+          await db.update(
+            DatabaseTables.supplierLedger,
+            {'reference_id': retId},
+            where: 'id = ?',
+            whereArgs: [match['id']],
+          );
+        }
+        if (isCashRefund) {
+          final existingCashRefund = await db.query(
+            DatabaseTables.supplierLedger,
+            where:
+                "supplier_id = ? AND reference_id = ? AND transaction_type = 'CASH_REFUND'",
+            whereArgs: [supplierId, retId],
+          );
+          if (existingCashRefund.isEmpty) {
+            await db.insert(DatabaseTables.supplierLedger, {
+              'supplier_id': supplierId,
+              'transaction_date': retDate,
+              'transaction_type': 'CASH_REFUND',
+              'reference_id': retId,
+              'reference_number': invNum ?? 'DIRECT_RETURN',
+              'description':
+                  'Cash Refund for Return (${qty.toStringAsFixed(0)} x $prodName)',
+              'debit': 0.0,
+              'credit': totalAmount,
+              'running_balance': 0.0,
+              'created_at': ret['created_at'] ?? DateTime.now().toIso8601String(),
+            });
+          }
+        }
+        continue;
+      }
+
+      // Not found in supplier ledger - insert missing return entry
+      await db.insert(DatabaseTables.supplierLedger, {
+        'supplier_id': supplierId,
+        'transaction_date': retDate,
+        'transaction_type': 'PURCHASE_RETURN',
+        'reference_id': retId,
+        'reference_number': invNum ?? 'DIRECT_RETURN',
+        'description':
+            'Purchase Return${isCashRefund ? " (Cash Refunded)" : ""} (${qty.toStringAsFixed(0)} x $prodName) ${invNum != null && invNum != "DIRECT" ? "from Inv #$invNum" : ""}'.trim(),
+        'debit': totalAmount,
+        'credit': 0.0,
+        'running_balance': 0.0,
+        'created_at': ret['created_at'] ?? DateTime.now().toIso8601String(),
+      });
+
+      if (isCashRefund) {
+        final existingCashRefund = await db.query(
+          DatabaseTables.supplierLedger,
+          where:
+              "supplier_id = ? AND reference_id = ? AND transaction_type = 'CASH_REFUND'",
+          whereArgs: [supplierId, retId],
+        );
+        if (existingCashRefund.isEmpty) {
+          await db.insert(DatabaseTables.supplierLedger, {
+            'supplier_id': supplierId,
+            'transaction_date': retDate,
+            'transaction_type': 'CASH_REFUND',
+            'reference_id': retId,
+            'reference_number': invNum ?? 'DIRECT_RETURN',
+            'description':
+                'Cash Refund for Return (${qty.toStringAsFixed(0)} x $prodName)',
+            'debit': 0.0,
+            'credit': totalAmount,
+            'running_balance': 0.0,
+            'created_at': ret['created_at'] ?? DateTime.now().toIso8601String(),
+          });
+        }
+      }
+    }
+
+    // Remove legacy duplicate direct-return ledger entries if needed
+    if (returns.isNotEmpty) {
+      for (final e in existingReturnEntries) {
+        final id = e['id'] as int;
+        final n = e['reference_number'] as String?;
+        if (!claimed.contains(id) && (n == 'DIRECT_RETURN' || n == 'DIRECT')) {
+          await db.delete(
+            DatabaseTables.supplierLedger,
+            where: 'id = ?',
+            whereArgs: [id],
+          );
+        }
+      }
+    }
+
+    // 3. Recompute running balance chronologically (credit increases payable, debit decreases payable)
     final allEntries = await db.query(
       DatabaseTables.supplierLedger,
       where: 'supplier_id = ?',
