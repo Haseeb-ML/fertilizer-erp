@@ -659,6 +659,85 @@ class _ProfitLossReportScreenState
                                     ),
                                   );
                                 }),
+                              if (report.productBreakdown.isNotEmpty)
+                                Builder(builder: (context) {
+                                  final items = report.productBreakdown;
+                                  final tQty = items.fold<double>(
+                                      0, (s, i) => s + i.quantitySold);
+                                  final tRev = items.fold<double>(
+                                      0, (s, i) => s + i.totalRevenue);
+                                  final tCost = items.fold<double>(
+                                      0, (s, i) => s + i.totalCost);
+                                  final tProfit = items.fold<double>(
+                                      0, (s, i) => s + i.grossProfit);
+                                  final tMargin =
+                                      tRev > 0 ? (tProfit / tRev) * 100 : 0.0;
+                                  return Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppColors.primary
+                                            .withOpacity(0.4),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text(
+                                              'TOTAL / کل میزان',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Profit: ${CurrencyFormatter.format(tProfit)} (${tMargin.toStringAsFixed(1)}%)',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: tProfit >= 0
+                                                    ? AppColors.success
+                                                    : AppColors.danger,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Sold: ${tQty == tQty.roundToDouble() ? tQty.toInt() : tQty.toStringAsFixed(1)} Bags',
+                                              style: const TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                            Text(
+                                              'Revenue: ${CurrencyFormatter.format(tRev)}',
+                                              style: const TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                            Text(
+                                              'Cost: ${CurrencyFormatter.format(tCost)}',
+                                              style: const TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
                             ],
                           ),
                         ),

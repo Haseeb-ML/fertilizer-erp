@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/database/database_helper.dart';
 import '../../../core/models/supplier.dart';
 import '../../../core/models/purchase.dart';
 import '../../../core/models/ledger_entry.dart';
 import '../../../core/providers/app_providers.dart';
-import '../../../core/repositories/supplier_repository.dart';
 import '../../../core/services/csv_service.dart';
 import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -39,13 +37,22 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
 
   Future<void> _loadLedger() async {
     setState(() => _isLoading = true);
-    final db = await DatabaseHelper.instance.database;
-    try {
-      await SupplierRepository.reconcileSupplierLedger(db, widget.supplier.id!);
-    } catch (_) {}
     final repo = ref.read(supplierRepoProvider);
-    final updated = await repo.getSupplierById(widget.supplier.id!);
-    final list = await repo.getSupplierLedger(widget.supplier.id!);
+    Supplier? updated;
+    List<LedgerEntry> list = [];
+    try {
+      updated = await repo.getSupplierById(widget.supplier.id!);
+      list = await repo.getSupplierLedger(widget.supplier.id!);
+    } catch (err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ledger load nahi hua: $err'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
     if (!mounted) return;
     setState(() {
       if (updated != null) _supplier = updated;
@@ -434,26 +441,6 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
       appBar: AppBar(
         title: Text('${_supplier.name} - کھاتہ / Ledger'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.sync),
-            tooltip: 'کھاتہ ری کنسل کریں (Reconcile Ledger)',
-            onPressed: () async {
-              final db = await DatabaseHelper.instance.database;
-              await SupplierRepository.reconcileSupplierLedger(
-                db,
-                widget.supplier.id!,
-              );
-              await _loadLedger();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Supplier ledger reconciled successfully'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'سپلائر ایڈٹ کریں (Edit Supplier)',

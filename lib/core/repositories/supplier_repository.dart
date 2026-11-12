@@ -191,12 +191,20 @@ class SupplierRepository {
         }
       } else if (entry.isReturn) {
         // Query return record or parse from description
-        final returnRows = await db.query(
-          DatabaseTables.returns,
-          where:
-              'return_type = "PURCHASE_RETURN" AND (id = ? OR original_invoice_id = ?)',
-          whereArgs: [entry.referenceId, entry.referenceId],
-        );
+        // NOTE: string literal must be a bound parameter - double-quoted
+        // literals are treated as column names by SQLite on web/new builds,
+        // which threw an exception and left the ledger spinner stuck forever.
+        List<Map<String, Object?>> returnRows = const [];
+        try {
+          returnRows = await db.query(
+            DatabaseTables.returns,
+            where:
+                'return_type = ? AND (id = ? OR original_invoice_id = ?)',
+            whereArgs: ['PURCHASE_RETURN', entry.referenceId, entry.referenceId],
+          );
+        } catch (_) {
+          returnRows = const [];
+        }
         if (returnRows.isNotEmpty) {
           for (final ret in returnRows) {
             final qty = (ret['quantity'] as num?)?.toDouble() ?? 0.0;
