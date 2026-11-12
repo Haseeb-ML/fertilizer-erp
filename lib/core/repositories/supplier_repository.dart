@@ -620,6 +620,74 @@ class SupplierRepository {
     );
   }
 
+  /// Delete supplier and optionally cascade delete their transactions
+  Future<void> deleteSupplier(int supplierId, {bool force = false}) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final purchCount = Sqflite.firstIntValue(await txn.rawQuery(
+        'SELECT COUNT(*) FROM ${DatabaseTables.purchases} WHERE supplier_id = ?',
+        [supplierId],
+      )) ?? 0;
+
+      if (purchCount > 0 && !force) {
+        throw Exception(
+          'Supplier has $purchCount purchase invoice(s). Please delete invoices first or choose force delete.',
+        );
+      }
+
+      // If force, delete purchase items and purchases
+      if (purchCount > 0) {
+        final purchases = await txn.query(
+          DatabaseTables.purchases,
+          columns: ['id'],
+          where: 'supplier_id = ?',
+          whereArgs: [supplierId],
+        );
+        for (final p in purchases) {
+          final pId = p['id'] as int;
+          await txn.delete(
+            DatabaseTables.purchaseItems,
+            where: 'purchase_id = ?',
+            whereArgs: [pId],
+          );
+        }
+        await txn.delete(
+          DatabaseTables.purchases,
+          where: 'supplier_id = ?',
+          whereArgs: [supplierId],
+        );
+      }
+
+      // Delete payments
+      await txn.delete(
+        DatabaseTables.payments,
+        where: "party_id = ? AND (party_type = 'SUPPLIER' OR payment_type = 'SUPPLIER_OUT')",
+        whereArgs: [supplierId],
+      );
+
+      // Delete returns
+      await txn.delete(
+        DatabaseTables.returns,
+        where: "party_id = ? AND return_type = 'PURCHASE_RETURN'",
+        whereArgs: [supplierId],
+      );
+
+      // Delete supplier ledger
+      await txn.delete(
+        DatabaseTables.supplierLedger,
+        where: 'supplier_id = ?',
+        whereArgs: [supplierId],
+      );
+
+      // Delete supplier profile
+      await txn.delete(
+        DatabaseTables.suppliers,
+        where: 'id = ?',
+        whereArgs: [supplierId],
+      );
+    });
+  }
+
   Future<double> getTotalPayables() async {
     final db = await _dbHelper.database;
     final res = await db.rawQuery(

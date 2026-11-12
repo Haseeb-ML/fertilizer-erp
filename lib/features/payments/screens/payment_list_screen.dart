@@ -37,6 +37,176 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen>
     return repo.getPayments(partyType: partyType);
   }
 
+  Future<void> _editOrDeletePayment(Payment p) async {
+    if (p.id == null) return;
+    final payRepo = ref.read(paymentRepoProvider);
+    final amountCtrl = TextEditingController(text: p.amount.toStringAsFixed(0));
+    final dateCtrl = TextEditingController(text: p.paymentDate);
+    final notesCtrl = TextEditingController(text: p.notes);
+    String method = p.paymentMethod;
+    const methods = ['Cash', 'Bank Transfer', 'Cheque', 'Online'];
+    if (!methods.contains(method)) method = 'Cash';
+
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: Text(
+            p.paymentType == 'CUSTOMER_IN'
+                ? 'Edit Customer Receipt'
+                : 'Edit Supplier Payment',
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Amount (PKR)'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: dateCtrl,
+                  decoration: const InputDecoration(labelText: 'Date (YYYY-MM-DD)'),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: method,
+                  decoration: const InputDecoration(labelText: 'Payment Method'),
+                  items: methods
+                      .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                      .toList(),
+                  onChanged: (v) => setD(() => method = v ?? method),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: notesCtrl,
+                  decoration: const InputDecoration(labelText: 'Notes / Remarks'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () => Navigator.pop(ctx, 'delete'),
+              icon: const Icon(Icons.delete_forever, color: AppColors.danger, size: 18),
+              label: const Text(
+                'Delete',
+                style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'cancel'),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, 'update'),
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (action == null || action == 'cancel' || !mounted) return;
+
+    if (action == 'delete') {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Delete Payment Voucher?'),
+          content: Text(
+            'Are you sure you want to permanently delete this voucher of ${CurrencyFormatter.format(p.amount)}?\n(یہ واؤچر مکمل ڈیلیٹ ہو جائے گا اور کھاتہ درست ہو جائے گا)',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete Permanently'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true || !mounted) return;
+      try {
+        if (p.paymentType == 'CUSTOMER_IN') {
+          await payRepo.deleteCustomerPayment(p.id!);
+        } else {
+          await payRepo.deleteSupplierPayment(p.id!);
+        }
+        setState(() {});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment deleted successfully / واؤچر حذف ہو گیا'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cannot delete: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    // Update
+    final amount = double.tryParse(amountCtrl.text.trim()) ?? 0;
+    try {
+      if (p.paymentType == 'CUSTOMER_IN') {
+        await payRepo.updateCustomerPayment(
+          paymentId: p.id!,
+          amount: amount,
+          paymentDate:
+              dateCtrl.text.trim().isEmpty ? p.paymentDate : dateCtrl.text.trim(),
+          paymentMethod: method,
+          notes: notesCtrl.text.trim(),
+        );
+      } else {
+        await payRepo.updateSupplierPayment(
+          paymentId: p.id!,
+          amount: amount,
+          paymentDate:
+              dateCtrl.text.trim().isEmpty ? p.paymentDate : dateCtrl.text.trim(),
+          paymentMethod: method,
+          notes: notesCtrl.text.trim(),
+        );
+      }
+      setState(() {});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment updated successfully / واؤچر اپڈیٹ ہو گیا'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cannot update: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -199,6 +369,15 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen>
                       ),
                     ],
                   ],
+                ),
+                trailing: IconButton(
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 20,
+                    color: AppColors.textSecondary,
+                  ),
+                  tooltip: 'Edit / Delete Payment',
+                  onPressed: () => _editOrDeletePayment(p),
                 ),
               ),
             );

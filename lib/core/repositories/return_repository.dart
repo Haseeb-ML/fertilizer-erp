@@ -1,6 +1,8 @@
 import '../database/database_helper.dart';
 import '../database/database_tables.dart';
 import '../models/return_record.dart';
+import 'customer_repository.dart';
+import 'supplier_repository.dart';
 
 class ReturnRepository {
   final DatabaseHelper _dbHelper;
@@ -87,6 +89,81 @@ class ReturnRepository {
       'totalSupplierReturns': purAmount,
       'totalSupplierReturnQty': purQty,
     };
+  }
+
+  /// Delete a return record, restore inventory stock, and reconcile ledgers
+  Future<void> deleteReturn(int returnId) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        DatabaseTables.returns,
+        where: 'id = ?',
+        whereArgs: [returnId],
+      );
+      if (rows.isEmpty) throw Exception('Return record not found');
+      final r = rows.first;
+      final returnType = r['return_type'] as String;
+      final productId = r['product_id'] as int;
+      final quantity = (r['quantity'] as num).toDouble();
+      final partyId = (r['party_id'] as int?) ?? 0;
+
+      // 1. Stock Adjustment
+      final prodRows = await txn.query(
+        DatabaseTables.products,
+        where: 'id = ?',
+        whereArgs: [productId],
+      );
+      if (prodRows.isNotEmpty) {
+        final currentStock = (prodRows.first['current_stock'] as num).toDouble();
+        final newStock = returnType == 'SALE_RETURN'
+            ? currentStock - quantity
+            : currentStock + quantity;
+        await txn.update(
+          DatabaseTables.products,
+          {
+            'current_stock': newStock,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: [productId],
+        );
+      }
+
+      // 2. Ledger Cleanup & Reconcile
+      if (returnType == 'SALE_RETURN') {
+        await txn.delete(
+          DatabaseTables.customerLedger,
+          where: 'reference_id = ? AND (transaction_type = ? OR transaction_type = ?)',
+          whereArgs: [returnId, 'SALE_RETURN', 'CASH_REFUND'],
+        );
+        if (partyId > 0) {
+          await CustomerRepository.reconcileCustomerLedger(txn, partyId);
+        }
+      } else {
+        await txn.delete(
+          DatabaseTables.supplierLedger,
+          where: 'reference_id = ? AND (transaction_type = ? OR transaction_type = ?)',
+          whereArgs: [returnId, 'PURCHASE_RETURN', 'CASH_REFUND'],
+        );
+        if (partyId > 0) {
+          await SupplierRepository.reconcileSupplierLedger(txn, partyId);
+        }
+      }
+
+      // 3. Delete Stock movement
+      await txn.delete(
+        DatabaseTables.stockMovements,
+        where: 'reference_id = ? AND reference_type = ?',
+        whereArgs: [returnId, 'RETURN'],
+      );
+
+      // 4. Delete the return record
+      await txn.delete(
+        DatabaseTables.returns,
+        where: 'id = ?',
+        whereArgs: [returnId],
+      );
+    });
   }
 }
 

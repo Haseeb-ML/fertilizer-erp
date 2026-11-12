@@ -876,6 +876,74 @@ class CustomerRepository {
     }
   }
 
+  /// Delete customer and optionally cascade delete their transactions
+  Future<void> deleteCustomer(int customerId, {bool force = false}) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final salesCount = Sqflite.firstIntValue(await txn.rawQuery(
+        'SELECT COUNT(*) FROM ${DatabaseTables.sales} WHERE customer_id = ?',
+        [customerId],
+      )) ?? 0;
+
+      if (salesCount > 0 && !force) {
+        throw Exception(
+          'Customer has $salesCount sales invoice(s). Please delete invoices first or choose force delete.',
+        );
+      }
+
+      // If force, delete sales items and sales
+      if (salesCount > 0) {
+        final sales = await txn.query(
+          DatabaseTables.sales,
+          columns: ['id'],
+          where: 'customer_id = ?',
+          whereArgs: [customerId],
+        );
+        for (final s in sales) {
+          final sId = s['id'] as int;
+          await txn.delete(
+            DatabaseTables.saleItems,
+            where: 'sale_id = ?',
+            whereArgs: [sId],
+          );
+        }
+        await txn.delete(
+          DatabaseTables.sales,
+          where: 'customer_id = ?',
+          whereArgs: [customerId],
+        );
+      }
+
+      // Delete payments
+      await txn.delete(
+        DatabaseTables.payments,
+        where: "party_id = ? AND (party_type = 'CUSTOMER' OR payment_type = 'CUSTOMER_IN')",
+        whereArgs: [customerId],
+      );
+
+      // Delete returns
+      await txn.delete(
+        DatabaseTables.returns,
+        where: "party_id = ? AND return_type = 'SALE_RETURN'",
+        whereArgs: [customerId],
+      );
+
+      // Delete customer ledger
+      await txn.delete(
+        DatabaseTables.customerLedger,
+        where: 'customer_id = ?',
+        whereArgs: [customerId],
+      );
+
+      // Delete customer profile
+      await txn.delete(
+        DatabaseTables.customers,
+        where: 'id = ?',
+        whereArgs: [customerId],
+      );
+    });
+  }
+
   Future<double> getTotalReceivables() async {
     final db = await _dbHelper.database;
     final res = await db.rawQuery(

@@ -148,6 +148,39 @@ class PaymentRepository {
     });
   }
 
+  /// Permanently delete a standalone customer payment voucher.
+  Future<void> deleteCustomerPayment(int paymentId) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        DatabaseTables.payments,
+        where: 'id = ?',
+        whereArgs: [paymentId],
+      );
+      if (rows.isEmpty) throw Exception('Payment not found');
+      final p = rows.first;
+      if (p['reference_invoice_id'] != null) {
+        throw Exception('This payment belongs to a bill. Edit or delete the bill instead.');
+      }
+      final customerId = p['party_id'] as int;
+
+      await txn.delete(
+        DatabaseTables.payments,
+        where: 'id = ?',
+        whereArgs: [paymentId],
+      );
+
+      await txn.delete(
+        DatabaseTables.customerLedger,
+        where:
+            "customer_id = ? AND reference_id = ? AND transaction_type = 'PAYMENT_RECEIVED'",
+        whereArgs: [customerId, paymentId],
+      );
+
+      await CustomerRepository.reconcileCustomerLedger(txn, customerId);
+    });
+  }
+
   /// Make payment to supplier
   Future<int> recordSupplierPayment(Payment payment) async {
     final db = await _dbHelper.database;
@@ -235,6 +268,36 @@ class PaymentRepository {
             "supplier_id = ? AND reference_id = ? AND transaction_type = 'PAYMENT_PAID' AND debit = ?",
         whereArgs: [supplierId, paymentId, oldAmount],
       );
+      await SupplierRepository.reconcileSupplierLedger(txn, supplierId);
+    });
+  }
+
+  /// Permanently delete a standalone supplier payment voucher.
+  Future<void> deleteSupplierPayment(int paymentId) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        DatabaseTables.payments,
+        where: 'id = ?',
+        whereArgs: [paymentId],
+      );
+      if (rows.isEmpty) throw Exception('Payment not found');
+      final p = rows.first;
+      final supplierId = p['party_id'] as int;
+
+      await txn.delete(
+        DatabaseTables.payments,
+        where: 'id = ?',
+        whereArgs: [paymentId],
+      );
+
+      await txn.delete(
+        DatabaseTables.supplierLedger,
+        where:
+            "supplier_id = ? AND reference_id = ? AND transaction_type = 'PAYMENT_PAID'",
+        whereArgs: [supplierId, paymentId],
+      );
+
       await SupplierRepository.reconcileSupplierLedger(txn, supplierId);
     });
   }

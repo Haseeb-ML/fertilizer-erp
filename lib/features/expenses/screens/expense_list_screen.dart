@@ -46,6 +46,63 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
     );
   }
 
+  Future<void> _confirmDeleteExpense(Expense e) async {
+    if (e.id == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Expense?'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete this expense "${e.title}" (Rs. ${e.amount.toStringAsFixed(0)})?\n(کیا آپ واقعی اس خرچے کو ڈیلیٹ کرنا چاہتے ہیں؟)',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete (ڈیلیٹ کریں)'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(expenseRepoProvider).deleteExpense(e.id!);
+      setState(() {});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Expense deleted successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cannot delete expense: $err'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -240,22 +297,37 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                                   ],
                                 ],
                               ),
-                              trailing: IconButton(
-                                icon: const Icon(
-                                  Icons.edit_outlined,
-                                  size: 18,
-                                  color: AppColors.textSecondary,
-                                ),
-                                onPressed: () async {
-                                  final edited = await Navigator.of(context)
-                                      .push<bool>(
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              ExpenseFormScreen(expense: e),
-                                        ),
-                                      );
-                                  if (edited == true) setState(() {});
-                                },
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit_outlined,
+                                      size: 19,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    tooltip: 'Edit Expense',
+                                    onPressed: () async {
+                                      final edited = await Navigator.of(context)
+                                          .push<bool>(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  ExpenseFormScreen(expense: e),
+                                            ),
+                                          );
+                                      if (edited == true) setState(() {});
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      size: 19,
+                                      color: AppColors.danger,
+                                    ),
+                                    tooltip: 'Delete Expense',
+                                    onPressed: () => _confirmDeleteExpense(e),
+                                  ),
+                                ],
                               ),
                             ),
                           );

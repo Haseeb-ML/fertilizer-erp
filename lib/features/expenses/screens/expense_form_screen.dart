@@ -114,11 +114,80 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     }
   }
 
+  Future<void> _deleteExpense() async {
+    final e = widget.expense;
+    if (e == null || e.id == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Expense?'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete this expense "${e.title}" (Rs. ${e.amount.toStringAsFixed(0)})?\n(کیا آپ واقعی اس خرچے کو ڈیلیٹ کرنا چاہتے ہیں؟)',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete (ڈیلیٹ کریں)'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isLoading = true);
+    final repo = ref.read(expenseRepoProvider);
+    try {
+      await repo.deleteExpense(e.id!);
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Expense deleted successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (err) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cannot delete expense: $err'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Expense' : 'Add Daily Expense'),
+        actions: [
+          if (isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete Expense (خرچہ ڈیلیٹ کریں)',
+              onPressed: _isLoading ? null : _deleteExpense,
+            ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -266,6 +335,24 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                         )
                       : Text(isEditing ? 'Save Changes' : 'Record Expense'),
                 ),
+                if (isEditing) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _deleteExpense,
+                    icon: const Icon(Icons.delete_forever, color: AppColors.danger),
+                    label: const Text(
+                      'Delete Expense (خرچہ ڈیلیٹ کریں)',
+                      style: TextStyle(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.danger),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                  ),
+                ],
               ],
             ),
           );

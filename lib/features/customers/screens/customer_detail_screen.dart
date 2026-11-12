@@ -25,10 +25,85 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
     return ref.read(customerRepoProvider).getCustomerById(widget.customerId);
   }
 
+  Future<void> _deleteCustomer(Customer customer, {bool force = false}) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Customer?'),
+          ],
+        ),
+        content: Text(
+          force
+              ? 'Warning: This will permanently delete customer "${customer.name}" along with all their sales invoices, payments, and ledger history.\n\nAre you sure you want to proceed?'
+              : 'Are you sure you want to delete customer "${customer.name}"?\n(کیا آپ واقعی اس گاہک کو ڈیلیٹ کرنا چاہتے ہیں؟)',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(force ? 'Force Delete All' : 'Delete (ڈیلیٹ کریں)'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final repo = ref.read(customerRepoProvider);
+    try {
+      await repo.deleteCustomer(customer.id!, force: force);
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Customer "${customer.name}" deleted successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final errorStr = e.toString();
+      if (!force && errorStr.contains('sales invoice')) {
+        await _deleteCustomer(customer, force: true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cannot delete customer: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Customer Profile')),
+      appBar: AppBar(
+        title: const Text('Customer Profile'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Delete Customer (کسٹمر ڈیلیٹ کریں)',
+            onPressed: () async {
+              final c = await _fetchCustomer();
+              if (c != null && mounted) _deleteCustomer(c);
+            },
+          ),
+        ],
+      ),
       body: FutureBuilder<Customer?>(
         future: _fetchCustomer(),
         builder: (context, snapshot) {
@@ -232,6 +307,23 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                   },
                   icon: const Icon(Icons.edit),
                   label: const Text('Edit Customer Details'),
+                ),
+                const SizedBox(height: 10),
+
+                OutlinedButton.icon(
+                  onPressed: () => _deleteCustomer(customer),
+                  icon: const Icon(Icons.delete_forever, color: AppColors.danger),
+                  label: const Text(
+                    'Delete Customer (کسٹمر ڈیلیٹ کریں)',
+                    style: TextStyle(
+                      color: AppColors.danger,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.danger),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
                 ),
               ],
             ),

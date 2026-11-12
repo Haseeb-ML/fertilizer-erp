@@ -122,7 +122,7 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
       ];
       if (!methods.contains(method)) method = 'Cash';
 
-      final saved = await showDialog<bool>(
+      final action = await showDialog<String>(
         context: context,
         builder: (ctx) => StatefulBuilder(
           builder: (ctx, setD) => AlertDialog(
@@ -161,12 +161,20 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
               ),
             ),
             actions: [
+              TextButton.icon(
+                onPressed: () => Navigator.pop(ctx, 'delete'),
+                icon: const Icon(Icons.delete_forever, color: AppColors.danger, size: 18),
+                label: const Text(
+                  'Delete',
+                  style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
+                ),
+              ),
               TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
+                onPressed: () => Navigator.pop(ctx, 'cancel'),
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
+                onPressed: () => Navigator.pop(ctx, 'update'),
                 child: const Text('Update'),
               ),
             ],
@@ -174,7 +182,67 @@ class _SupplierLedgerScreenState extends ConsumerState<SupplierLedgerScreen> {
         ),
       );
 
-      if (saved != true) return;
+      if (action == null || action == 'cancel' || !mounted) return;
+
+      if (action == 'delete') {
+        final confirmDelete = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.delete_forever, color: AppColors.danger),
+                SizedBox(width: 8),
+                Text('Delete Payment Voucher?'),
+              ],
+            ),
+            content: Text(
+              'Are you sure you want to delete supplier payment voucher of ${CurrencyFormatter.format(pay.amount)} dated ${pay.paymentDate}?\n(سپلائر کی یہ ادائیگی مکمل حذف کر دی جائے گی اور کھاتہ خود بخود درست ہو جائے گا۔)',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.danger,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Delete Permanently'),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmDelete != true || !mounted) return;
+
+        try {
+          await payRepo.deleteSupplierPayment(pay.id!);
+          ref.read(productsUpdateTriggerProvider.notifier).state++;
+          await _loadLedger();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Supplier payment deleted successfully / ادائیگی حذف ہو گئی'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          }
+        } catch (err) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Delete nahi hui: $err'),
+                backgroundColor: AppColors.danger,
+              ),
+            );
+          }
+        }
+        return;
+      }
+
+      // action == 'update'
       final amount = double.tryParse(amountCtrl.text.trim()) ?? 0;
       try {
         await payRepo.updateSupplierPayment(

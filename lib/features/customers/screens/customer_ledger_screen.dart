@@ -97,11 +97,11 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
     String method = pay.paymentMethod;
     const methods = ['Cash', 'Bank Transfer', 'Cheque', 'Online'];
     if (!methods.contains(method)) method = 'Cash';
-    final saved = await showDialog<bool>(
+    final action = await showDialog<String>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
-          title: const Text('Edit Payment'),
+          title: const Text('Edit Customer Payment'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -109,7 +109,7 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                 TextField(
                   controller: amountCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Amount'),
+                  decoration: const InputDecoration(labelText: 'Amount (PKR)'),
                 ),
                 const SizedBox(height: 8),
                 TextField(
@@ -121,7 +121,7 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: method,
-                  decoration: const InputDecoration(labelText: 'Method'),
+                  decoration: const InputDecoration(labelText: 'Payment Method'),
                   items: methods
                       .map((m) => DropdownMenuItem(value: m, child: Text(m)))
                       .toList(),
@@ -130,10 +130,48 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: notesCtrl,
-                  decoration: const InputDecoration(labelText: 'Notes'),
+                  decoration: const InputDecoration(labelText: 'Notes / Remarks'),
                 ),
               ],
             ),
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () => Navigator.pop(ctx, 'delete'),
+              icon: const Icon(Icons.delete_forever, color: AppColors.danger, size: 18),
+              label: const Text(
+                'Delete',
+                style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'cancel'),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, 'update'),
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (action == null || action == 'cancel' || !mounted) return;
+
+    if (action == 'delete') {
+      final confirmDelete = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.delete_forever, color: AppColors.danger),
+              SizedBox(width: 8),
+              Text('Delete Payment Voucher?'),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to delete payment voucher of ${CurrencyFormatter.format(pay.amount)} dated ${pay.paymentDate}?\n(گاہک کی یہ رسید مکمل حذف کر دی جائے گی اور کھاتہ خود بخود درست ہو جائے گا۔)',
           ),
           actions: [
             TextButton(
@@ -142,13 +180,44 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Update'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete Permanently'),
             ),
           ],
         ),
-      ),
-    );
-    if (saved != true) return;
+      );
+
+      if (confirmDelete != true || !mounted) return;
+
+      try {
+        await payRepo.deleteCustomerPayment(pay.id!);
+        ref.read(salesUpdateTriggerProvider.notifier).state++;
+        await _loadLedger();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment deleted successfully / رسید حذف ہو گئی'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (err) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Delete nahi hui: $err'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    // action == 'update'
     final amount = double.tryParse(amountCtrl.text.trim()) ?? 0;
     try {
       await payRepo.updateCustomerPayment(
@@ -1094,7 +1163,13 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                                         children: [
                                           if (e.debit > 0)
                                             Text(
-                                              'Billed (+): ${CurrencyFormatter.format(e.debit)}',
+                                              e.isSale
+                                                  ? 'Billed (+): ${CurrencyFormatter.format(e.debit)}'
+                                                  : (e.transactionType == 'CASH_REFUND'
+                                                      ? 'Cash Refund (+): ${CurrencyFormatter.format(e.debit)}'
+                                                      : (e.isOpeningBalance
+                                                          ? 'Opening Balance (+): ${CurrencyFormatter.format(e.debit)}'
+                                                          : 'Debit (+): ${CurrencyFormatter.format(e.debit)}')),
                                               style: const TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.bold,
@@ -1103,7 +1178,13 @@ class _CustomerLedgerScreenState extends ConsumerState<CustomerLedgerScreen> {
                                             ),
                                           if (e.credit > 0)
                                             Text(
-                                              'Paid (-): ${CurrencyFormatter.format(e.credit)}',
+                                              e.isReturn
+                                                  ? 'Returned (-): ${CurrencyFormatter.format(e.credit)}'
+                                                  : (e.isPayment
+                                                      ? 'Paid (-): ${CurrencyFormatter.format(e.credit)}'
+                                                      : (e.isOpeningBalance
+                                                          ? 'Advance (-): ${CurrencyFormatter.format(e.credit)}'
+                                                          : 'Credit (-): ${CurrencyFormatter.format(e.credit)}')),
                                               style: const TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.bold,

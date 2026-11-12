@@ -114,11 +114,87 @@ class _SupplierFormScreenState extends ConsumerState<SupplierFormScreen> {
     }
   }
 
+  Future<void> _deleteSupplier({bool force = false}) async {
+    final s = widget.supplier;
+    if (s == null || s.id == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Supplier?'),
+          ],
+        ),
+        content: Text(
+          force
+              ? 'Warning: This will permanently delete supplier "${s.name}" along with all their purchase invoices, payments, and ledger history.\n\nAre you sure you want to proceed?'
+              : 'Are you sure you want to delete supplier "${s.name}"?\n(کیا آپ واقعی اس سپلائر کو ڈیلیٹ کرنا چاہتے ہیں؟)',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(force ? 'Force Delete All' : 'Delete (ڈیلیٹ کریں)'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isLoading = true);
+    final repo = ref.read(supplierRepoProvider);
+    try {
+      await repo.deleteSupplier(s.id!, force: force);
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Supplier "${s.name}" deleted successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      final errorStr = e.toString();
+      if (!force && errorStr.contains('purchase invoice')) {
+        await _deleteSupplier(force: true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cannot delete supplier: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Supplier' : 'Add New Supplier'),
+        actions: [
+          if (isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Delete Supplier (سپلائر ڈیلیٹ کریں)',
+              onPressed: _isLoading ? null : () => _deleteSupplier(),
+            ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -214,6 +290,24 @@ class _SupplierFormScreenState extends ConsumerState<SupplierFormScreen> {
                         )
                       : Text(isEditing ? 'Save Changes' : 'Create Supplier'),
                 ),
+                if (isEditing) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: _isLoading ? null : () => _deleteSupplier(),
+                    icon: const Icon(Icons.delete_forever, color: AppColors.danger),
+                    label: const Text(
+                      'Delete Supplier (سپلائر ڈیلیٹ کریں)',
+                      style: TextStyle(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.danger),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

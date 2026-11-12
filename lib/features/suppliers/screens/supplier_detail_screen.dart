@@ -25,10 +25,85 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
     return ref.read(supplierRepoProvider).getSupplierById(widget.supplierId);
   }
 
+  Future<void> _deleteSupplier(Supplier supplier, {bool force = false}) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Supplier?'),
+          ],
+        ),
+        content: Text(
+          force
+              ? 'Warning: This will permanently delete supplier "${supplier.name}" along with all their purchase invoices, payments, and ledger history.\n\nAre you sure you want to proceed?'
+              : 'Are you sure you want to delete supplier "${supplier.name}"?\n(کیا آپ واقعی اس سپلائر کو ڈیلیٹ کرنا چاہتے ہیں؟)',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(force ? 'Force Delete All' : 'Delete (ڈیلیٹ کریں)'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final repo = ref.read(supplierRepoProvider);
+    try {
+      await repo.deleteSupplier(supplier.id!, force: force);
+      if (mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Supplier "${supplier.name}" deleted successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final errorStr = e.toString();
+      if (!force && errorStr.contains('purchase invoice')) {
+        await _deleteSupplier(supplier, force: true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cannot delete supplier: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Supplier Profile')),
+      appBar: AppBar(
+        title: const Text('Supplier Profile'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Delete Supplier (سپلائر ڈیلیٹ کریں)',
+            onPressed: () async {
+              final s = await _fetchSupplier();
+              if (s != null && mounted) _deleteSupplier(s);
+            },
+          ),
+        ],
+      ),
       body: FutureBuilder<Supplier?>(
         future: _fetchSupplier(),
         builder: (context, snapshot) {
@@ -207,6 +282,23 @@ class _SupplierDetailScreenState extends ConsumerState<SupplierDetailScreen> {
                   },
                   icon: const Icon(Icons.edit),
                   label: const Text('Edit Supplier Details'),
+                ),
+                const SizedBox(height: 10),
+
+                OutlinedButton.icon(
+                  onPressed: () => _deleteSupplier(supplier),
+                  icon: const Icon(Icons.delete_forever, color: AppColors.danger),
+                  label: const Text(
+                    'Delete Supplier (سپلائر ڈیلیٹ کریں)',
+                    style: TextStyle(
+                      color: AppColors.danger,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.danger),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
                 ),
               ],
             ),

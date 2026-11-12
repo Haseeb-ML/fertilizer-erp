@@ -411,6 +411,69 @@ class _ReturnsListScreenState extends ConsumerState<ReturnsListScreen>
     return groups;
   }
 
+  Future<void> _deleteReturnGroup(_ReturnSlipGroup group) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever, color: AppColors.danger),
+            SizedBox(width: 8),
+            Text('Delete Return Slip?'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete this return slip (${group.items.length} items, ${CurrencyFormatter.format(group.totalAmount)})?\n\nThis will restore product stock inventory and reverse the ledger balance automatically.\n(اس مال واپسی کو ختم کرنے سے اسٹاک دوبارہ بحال ہو جائے گا اور کھاتہ درست ہو جائے گا)',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete Permanently (حذف کریں)'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final repo = ref.read(returnRepoProvider);
+    try {
+      for (final item in group.items) {
+        if (item.id != null) {
+          await repo.deleteReturn(item.id!);
+        }
+      }
+      ref.read(productsUpdateTriggerProvider.notifier).state++;
+      ref.read(salesUpdateTriggerProvider.notifier).state++;
+      _refresh();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Return deleted and stock restored successfully'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cannot delete return: $e'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildReturnCard(_ReturnSlipGroup group) {
     final isCustomerReturn = group.returnType == 'SALE_RETURN';
     final cardColor = isCustomerReturn
@@ -488,14 +551,32 @@ class _ReturnsListScreenState extends ConsumerState<ReturnsListScreen>
                     ],
                   ],
                 ),
-                Text(
-                  DateFormatter.formatDate(
-                      DateTime.tryParse(group.returnDate) ?? DateTime.now()),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      DateFormatter.formatDate(
+                          DateTime.tryParse(group.returnDate) ?? DateTime.now()),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    InkWell(
+                      onTap: () => _deleteReturnGroup(group),
+                      borderRadius: BorderRadius.circular(4),
+                      child: const Padding(
+                        padding: EdgeInsets.all(2.0),
+                        child: Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: AppColors.danger,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
