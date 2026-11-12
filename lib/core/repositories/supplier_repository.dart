@@ -268,70 +268,95 @@ class SupplierRepository {
       );
     }
 
-    // Group multiple consecutive returns on the same date into a single statement row
-    return _groupConsecutiveReturns(entries, isCustomer: false);
+    // Group all returns (and cash refunds) on the same date into a single
+    // statement row - same behaviour as the customer ledger.
+    return _groupReturnsByDate(entries);
   }
 
-  /// Groups consecutive return entries on the same date into a single unified row
-  static List<LedgerEntry> _groupConsecutiveReturns(
-    List<LedgerEntry> list, {
-    required bool isCustomer,
-  }) {
+  /// Merges every PURCHASE_RETURN row of the same date (even if other rows sit
+  /// between them) into ONE row, and merges same-date CASH_REFUND rows into one,
+  /// then recomputes the running balance top-to-bottom.
+  static List<LedgerEntry> _groupReturnsByDate(List<LedgerEntry> list) {
     if (list.length <= 1) return list;
-    final result = <LedgerEntry>[];
 
+    final retByDate = <String, List<int>>{};
+    final refByDate = <String, List<int>>{};
     for (int i = 0; i < list.length; i++) {
-      final cur = list[i];
-      if (cur.isReturn) {
-        final group = <LedgerEntry>[cur];
-        while (i + 1 < list.length &&
-            list[i + 1].isReturn &&
-            list[i + 1].transactionDate == cur.transactionDate) {
-          group.add(list[i + 1]);
-          i++;
-        }
-
-        if (group.length > 1) {
-          double sumBags = 0.0;
-          double sumDebit = 0.0;
-          double sumCredit = 0.0;
-          final allItems = <String>[];
-          final allStructured = <LedgerItemDetail>[];
-
-          for (final g in group) {
-            sumBags += g.totalBags;
-            sumDebit += g.debit;
-            sumCredit += g.credit;
-            allItems.addAll(g.itemsDetails);
-            allStructured.addAll(g.parsedItems);
-          }
-
-          final last = group.last;
-          final bagsCountStr = sumBags == sumBags.roundToDouble()
-              ? sumBags.toInt().toString()
-              : sumBags.toString();
-          final typeName = isCustomer ? 'Sales Return' : 'Purchase Return';
-
-          result.add(
-            last.copyWith(
-              description: '$typeName (Total $bagsCountStr Bags)',
-              itemsDetails: allItems,
-              structuredItems: allStructured,
-              totalBags: sumBags,
-              debit: sumDebit,
-              credit: sumCredit,
-              runningBalance: last.runningBalance,
-            ),
-          );
-        } else {
-          result.add(cur);
-        }
-      } else {
-        result.add(cur);
+      final e = list[i];
+      if (e.isReturn) {
+        retByDate.putIfAbsent(e.transactionDate, () => []).add(i);
+      } else if (e.transactionType == 'CASH_REFUND') {
+        refByDate.putIfAbsent(e.transactionDate, () => []).add(i);
       }
     }
 
-    return result;
+    String fmt(double v) =>
+        v == v.roundToDouble() ? v.toInt().toString() : v.toString();
+
+    final skip = <int>{};
+    final replace = <int, LedgerEntry>{};
+
+    for (final idxs in retByDate.values) {
+      if (idxs.length < 2) continue;
+      double bags = 0, debit = 0, credit = 0;
+      final items = <String>[];
+      final structured = <LedgerItemDetail>[];
+      bool cash = false;
+      for (final i in idxs) {
+        final g = list[i];
+        bags += g.totalBags;
+        debit += g.debit;
+        credit += g.credit;
+        items.addAll(g.itemsDetails);
+        structured.addAll(g.parsedItems);
+        if (g.description.toLowerCase().contains('cash refund')) cash = true;
+      }
+      replace[idxs.first] = list[idxs.first].copyWith(
+        description:
+            'Purchase Return${cash ? ' (Cash Refunded)' : ''} (Total ${fmt(bags)} Bags)',
+        itemsDetails: items,
+        structuredItems: structured,
+        totalBags: bags,
+        debit: debit,
+        credit: credit,
+      );
+      skip.addAll(idxs.skip(1));
+    }
+
+    for (final idxs in refByDate.values) {
+      if (idxs.length < 2) continue;
+      double credit = 0, debit = 0;
+      for (final i in idxs) {
+        credit += list[i].credit;
+        debit += list[i].debit;
+      }
+      replace[idxs.first] = list[idxs.first].copyWith(
+        description: 'Cash Refund for Purchase Returns (${idxs.length} items)',
+        debit: debit,
+        credit: credit,
+      );
+      skip.addAll(idxs.skip(1));
+    }
+
+    final result = <LedgerEntry>[];
+    for (int i = 0; i < list.length; i++) {
+      if (skip.contains(i)) continue;
+      result.add(replace[i] ?? list[i]);
+    }
+
+    // Recompute running balance (credit increases payable, debit decreases it)
+    double running = 0.0;
+    final out = <LedgerEntry>[];
+    for (final e in result) {
+      if (e.isOpeningBalance) {
+        running = e.runningBalance;
+        out.add(e);
+      } else {
+        running = running + e.credit - e.debit;
+        out.add(e.copyWith(runningBalance: running));
+      }
+    }
+    return out;
   }
 
   static Future<void> reconcileSupplierLedger(

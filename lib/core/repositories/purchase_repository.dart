@@ -654,6 +654,34 @@ class PurchaseRepository {
           credit: 0.0,
         );
       } else if (refundType == 'CASH_REFUND') {
+        // Document the return in the supplier ledger (so bags show up in the
+        // statement) AND the cash refund; net payable stays unchanged because
+        // the supplier paid back in cash.
+        if (supplierId > 0) {
+          await AccountingService.addSupplierLedgerEntry(
+            txn,
+            supplierId: supplierId,
+            transactionDate: date,
+            transactionType: 'PURCHASE_RETURN',
+            referenceId: purchaseId,
+            referenceNumber: invoiceNumber ?? 'DIRECT_RETURN',
+            description:
+                'Purchase Return (Cash Refunded) ($quantity x $prodName) ${reason != null && reason.isNotEmpty ? "- $reason" : ""}'.trim(),
+            debit: totalReturnAmount,
+            credit: 0.0,
+          );
+          await AccountingService.addSupplierLedgerEntry(
+            txn,
+            supplierId: supplierId,
+            transactionDate: date,
+            transactionType: 'CASH_REFUND',
+            referenceId: purchaseId,
+            referenceNumber: invoiceNumber ?? 'DIRECT_RETURN',
+            description: 'Cash Refund for Return ($quantity x $prodName)',
+            debit: 0.0,
+            credit: totalReturnAmount,
+          );
+        }
         // Cash received from supplier back into business cash
         await txn.insert(DatabaseTables.payments, {
           'payment_type': 'CUSTOMER_IN',
