@@ -12,6 +12,7 @@ import '../models/business_settings.dart';
 import '../models/ledger_entry.dart';
 import '../models/report_models.dart';
 import '../models/product.dart';
+import '../models/expense.dart';
 import '../utils/currency_formatter.dart';
 
 class PdfService {
@@ -1769,6 +1770,178 @@ ${lines.isEmpty ? "کوئی ٹرانزیکشن موجود نہیں" : lines.join
       bytes: bytes,
       filename: 'Profit_and_Loss_Statement.pdf',
       shareText: 'Profit & Loss Statement - ${settings.businessName}',
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // DAILY BUSINESS EXPENSES REPORT PDF
+  // ---------------------------------------------------------------------------
+
+  /// Builds a PDF of the given (already filtered) expenses.
+  /// [categoryLabel] is 'All' or the selected category (e.g. Transport).
+  static Future<pw.Document> buildExpenseReportDocument({
+    required List<Expense> expenses,
+    required BusinessSettings settings,
+    required String categoryLabel,
+  }) async {
+    final pdf = pw.Document();
+    final total = expenses.fold<double>(0, (s, e) => s + e.amount);
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        header: (context) => pw.Column(
+          children: [
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      _cleanPdfText(settings.businessName),
+                      style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.green900,
+                      ),
+                    ),
+                    if (settings.phone.isNotEmpty)
+                      pw.Text('Phone: ${settings.phone}',
+                          style: const pw.TextStyle(fontSize: 10)),
+                    if (settings.address.isNotEmpty)
+                      pw.Text(_cleanPdfText(settings.address),
+                          style: const pw.TextStyle(fontSize: 10)),
+                  ],
+                ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text(
+                      'DAILY EXPENSES REPORT',
+                      style: pw.TextStyle(
+                        fontSize: 14,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.green900,
+                      ),
+                    ),
+                    pw.Text(
+                      'Category: ${_cleanPdfText(categoryLabel)}',
+                      style: const pw.TextStyle(fontSize: 9),
+                    ),
+                    pw.Text(
+                      'Generated: ${DateTime.now().toLocal().toString().substring(0, 16)}',
+                      style: const pw.TextStyle(
+                          fontSize: 8, color: PdfColors.grey700),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 8),
+            pw.Divider(thickness: 1.5, color: PdfColors.green900),
+            pw.SizedBox(height: 8),
+          ],
+        ),
+        build: (context) => [
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+            columnWidths: {
+              0: const pw.FixedColumnWidth(24),
+              1: const pw.FixedColumnWidth(62),
+              2: const pw.FlexColumnWidth(3),
+              3: const pw.FlexColumnWidth(2.5),
+              4: const pw.FixedColumnWidth(55),
+              5: const pw.FixedColumnWidth(70),
+            },
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                children: [
+                  _th('#'),
+                  _th('Date'),
+                  _th('Title / Notes'),
+                  _th('Category'),
+                  _th('Method'),
+                  _th('Amount (PKR)'),
+                ],
+              ),
+              ...expenses.asMap().entries.map((entry) {
+                final e = entry.value;
+                return pw.TableRow(
+                  children: [
+                    _td('${entry.key + 1}', align: pw.TextAlign.center),
+                    _td(e.expenseDate),
+                    _td(e.notes.isNotEmpty ? '${e.title}\n${e.notes}' : e.title),
+                    _td(e.category),
+                    _td(e.paymentMethod),
+                    _td(
+                      CurrencyFormatter.format(e.amount, showSymbol: false),
+                      align: pw.TextAlign.right,
+                    ),
+                  ],
+                );
+              }),
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                children: [
+                  _th(''),
+                  _th(''),
+                  _th('TOTAL (${expenses.length} entries)'),
+                  _th(''),
+                  _th(''),
+                  _th(CurrencyFormatter.format(total, showSymbol: false),
+                      align: pw.TextAlign.right),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    return pdf;
+  }
+
+  /// Opens the system print / save-as-PDF dialog for the expenses report.
+  static Future<void> printExpenseReport({
+    required List<Expense> expenses,
+    required BusinessSettings settings,
+    required String categoryLabel,
+  }) async {
+    final pdf = await buildExpenseReportDocument(
+      expenses: expenses,
+      settings: settings,
+      categoryLabel: categoryLabel,
+    );
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'Expenses_Report.pdf',
+    );
+  }
+
+  /// Downloads / shares the expenses report PDF (WhatsApp, Files, etc.).
+  static Future<void> shareExpenseReport({
+    required List<Expense> expenses,
+    required BusinessSettings settings,
+    required String categoryLabel,
+  }) async {
+    final pdf = await buildExpenseReportDocument(
+      expenses: expenses,
+      settings: settings,
+      categoryLabel: categoryLabel,
+    );
+    final bytes = await pdf.save();
+    final safe = categoryLabel
+        .split('/')
+        .first
+        .trim()
+        .replaceAll(RegExp(r'[^A-Za-z0-9]+'), '_');
+    await _safeShareOrDownloadPdf(
+      bytes: bytes,
+      filename: 'Expenses_${safe.isEmpty ? 'All' : safe}.pdf',
+      shareText: 'Daily Expenses Report - ${settings.businessName}',
     );
   }
 

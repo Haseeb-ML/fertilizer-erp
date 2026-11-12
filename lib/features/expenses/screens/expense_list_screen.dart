@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/expense.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/services/pdf_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import 'expense_form_screen.dart';
@@ -25,12 +26,37 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
     );
   }
 
+  /// PDF of exactly what is currently filtered: 'All Categories' -> everything,
+  /// e.g. Transport selected -> only Transport expenses.
+  Future<void> _exportPdf() async {
+    final expenses = await _loadExpenses();
+    if (!mounted) return;
+    if (expenses.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Is category mein koi expense nahi hai')),
+      );
+      return;
+    }
+    final settings = await ref.read(settingsRepoProvider).getSettings();
+    await PdfService.shareExpenseReport(
+      expenses: expenses,
+      settings: settings,
+      categoryLabel:
+          _selectedCategory == 'All' ? 'All Categories' : _selectedCategory,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Daily Business Expenses'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'PDF Download (selected category)',
+            onPressed: _exportPdf,
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add Expense',
@@ -61,7 +87,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                         setState(() => _selectedCategory = 'All'),
                   ),
                   const SizedBox(width: 6),
-                  ...AppConstants.expenseCategories.take(5).map((cat) {
+                  ...AppConstants.expenseCategories.map((cat) {
                     final shortName = cat.split('/').first.trim();
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),
